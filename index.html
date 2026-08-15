@@ -2,117 +2,577 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Aadhyant Manpower & Staffing provides industrial manpower, recruitment and staffing support from Kadi, Mahesana, Gujarat.">
+  <meta name="theme-color" content="#102447">
   <title>Aadhyant Manpower & Staffing | Industrial Manpower Solutions</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="config.js" defer></script>
+  <script src="supabase-client.js" defer></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
-<header class="topbar">
-  <div class="container nav">
-    <a class="brand" href="#home" aria-label="Aadhyant Manpower & Staffing">
-      <span class="mark">A</span>
-      <span><strong>AADHYANT</strong><small>MANPOWER & STAFFING</small></span>
-    </a>
-    <nav>
-      <a href="#about">About</a><a href="#services">Services</a><a href="#industries">Industries</a><a href="#business">Business Info</a><a href="#contact">Contact</a>
-    </nav>
-  </div>
-</header>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
 
-<main>
-<section id="home" class="hero">
-  <div class="container hero-grid">
-    <div>
-      <p class="eyebrow">INDUSTRIAL MANPOWER • RECRUITMENT • STAFFING</p>
-      <h1>Reliable Industrial Manpower & Staffing Solutions</h1>
-      <p class="lead">Supporting businesses with dependable workforce coordination and helping candidates connect with suitable industrial employment opportunities.</p>
-      <div class="actions">
-        <a class="btn primary" href="tel:+919586785800">Call +91 95867 85800</a>
-        <a class="btn secondary" href="#contact">Contact Us</a>
+  <header class="site-header" data-header>
+    <div class="container header-inner">
+      <a class="brand" href="#home" aria-label="Aadhyant Manpower & Staffing home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span class="brand-copy">
+          <strong>AADHYANT</strong>
+          <small>MANPOWER &amp; STAFFING</small>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" data-menu-toggle>
+        <span class="menu-toggle-label">Menu</span>
+        <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+
+      <nav class="primary-nav" id="primary-navigation" aria-label="Primary navigation" data-navigation>
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#services">Services</a>
+        <a href="#industries">Industries</a>
+        <a href="#employers">Employers</a>
+        <a href="#candidates">Candidates</a>
+        <a href="#contact">Contact</a>
+        <div class="nav-actions">
+          <a class="nav-company-link" href="company/login.html">Company Login</a>
+          <a class="nav-link-secondary" href="#candidate-form">Find a Job</a>
+          <a class="button button-small button-primary" href="#employer-form">Hire Manpower</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" id="home">
+      <div class="hero-pattern" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <p class="eyebrow">Industrial manpower &amp; staffing solutions</p>
+          <h1>Reliable Manpower.<br><span>Right People. Right Time.</span></h1>
+          <p class="hero-lead">Aadhyant Manpower &amp; Staffing helps industrial businesses meet workforce requirements through practical recruitment support, candidate mobilisation and staffing coordination.</p>
+          <div class="button-group">
+            <a class="button button-primary" href="#employer-form">Hire Manpower <span aria-hidden="true">→</span></a>
+            <a class="button button-outline" href="#candidate-form">Find a Job</a>
+          </div>
+          <p class="hero-support"><span aria-hidden="true">●</span> Industrial workforce solutions for growing businesses.</p>
+        </div>
+
+        <aside class="hero-panel" aria-label="Workforce support overview">
+          <div class="panel-accent"></div>
+          <p class="panel-label">Workforce support</p>
+          <h2>Built around your operational requirements.</h2>
+          <ul class="check-list">
+            <li>Requirement-based candidate coordination</li>
+            <li>Industrial and manufacturing focus</li>
+            <li>Recruitment and joining support</li>
+          </ul>
+          <a class="text-link" href="tel:+919586785800">Discuss your requirement <span aria-hidden="true">→</span></a>
+        </aside>
       </div>
-      <div class="trust"><span>GST Registered</span><span>Partnership Firm</span><span>Kadi, Gujarat</span></div>
+    </section>
+
+    <section class="value-strip" aria-label="Our workforce focus">
+      <div class="container value-grid">
+        <div><span>01</span><strong>Industrial Workforce Focus</strong></div>
+        <div><span>02</span><strong>Skilled &amp; General Manpower</strong></div>
+        <div><span>03</span><strong>Employer-Focused Support</strong></div>
+        <div><span>04</span><strong>Candidate Mobilisation</strong></div>
+      </div>
+    </section>
+
+    <section class="section about-section" id="about">
+      <div class="container about-grid">
+        <div class="section-intro">
+          <p class="eyebrow">About Aadhyant</p>
+          <h2>Workforce Support Built Around Business Needs</h2>
+        </div>
+        <div class="about-copy">
+          <p>Aadhyant Manpower &amp; Staffing supports employers, HR teams, manpower partners and candidates with industrial manpower, recruitment support, workforce sourcing and staffing coordination.</p>
+          <p>Our approach connects clearly defined business requirements with suitable candidate availability, helping coordinate the journey from vacancy communication to interview and joining support.</p>
+          <a class="text-link" href="#services">Learn More <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-soft" id="services">
+      <div class="container">
+        <div class="section-heading centered">
+          <p class="eyebrow">Our Services</p>
+          <h2>Practical Staffing Support for Industry</h2>
+          <p>Workforce services shaped around role, location, qualification and operational requirements.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="card-number">01</span>
+            <h3>Industrial Manpower</h3>
+            <p>Workforce support for industrial and manufacturing requirements.</p>
+          </article>
+          <article class="service-card">
+            <span class="card-number">02</span>
+            <h3>Skilled &amp; Semi-Skilled Staffing</h3>
+            <p>Candidates based on job role, trade, qualification and operational needs.</p>
+          </article>
+          <article class="service-card">
+            <span class="card-number">03</span>
+            <h3>General Workforce</h3>
+            <p>Support for suitable general manpower requirements across industrial operations.</p>
+          </article>
+          <article class="service-card">
+            <span class="card-number">04</span>
+            <h3>Bulk Recruitment</h3>
+            <p>Candidate sourcing support where employers require multiple workers.</p>
+          </article>
+          <article class="service-card">
+            <span class="card-number">05</span>
+            <h3>Candidate Mobilisation</h3>
+            <p>Candidate outreach and coordination aligned with recruitment needs.</p>
+          </article>
+          <article class="service-card">
+            <span class="card-number">06</span>
+            <h3>Workforce Coordination</h3>
+            <p>Support between hiring requirements and candidate availability.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section industries-section" id="industries">
+      <div class="container industries-grid">
+        <div class="section-heading">
+          <p class="eyebrow">Industries We Serve</p>
+          <h2>Workforce Solutions Suitable for Industrial Operations</h2>
+          <p>Support structured around the role requirements and working environments found across key industrial sectors.</p>
+        </div>
+        <div class="industry-list">
+          <article><span>01</span><h3>Automobile</h3></article>
+          <article><span>02</span><h3>Manufacturing</h3></article>
+          <article><span>03</span><h3>Engineering</h3></article>
+          <article><span>04</span><h3>Warehouse &amp; Logistics</h3></article>
+          <article><span>05</span><h3>FMCG</h3></article>
+          <article><span>06</span><h3>Packaging</h3></article>
+          <article><span>07</span><h3>Pharmaceutical</h3></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="pathways" aria-label="Employer and candidate pathways">
+      <article class="pathway pathway-employer" id="employers">
+        <div class="pathway-content">
+          <p class="eyebrow light">For Employers &amp; HR Teams</p>
+          <h2>Looking for Reliable Manpower?</h2>
+          <p>Share your workforce requirement, job roles, work location and expected joining needs with our team.</p>
+          <a class="button button-light" href="#employer-form">Submit Manpower Requirement <span aria-hidden="true">→</span></a>
+          <small>Prepare your requirement and choose WhatsApp or email after review.</small>
+        </div>
+      </article>
+      <article class="pathway pathway-candidate" id="candidates">
+        <div class="pathway-content">
+          <p class="eyebrow">For Candidates</p>
+          <h2>Looking for Your Next Job Opportunity?</h2>
+          <p>Connect with us for information about suitable industrial employment opportunities as they become available.</p>
+          <a class="button button-dark" href="#candidate-form">Register as Candidate <span aria-hidden="true">→</span></a>
+          <small>Review your details before choosing how to contact our team.</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="section form-section" id="employer-form">
+      <div class="container form-layout">
+        <div class="form-intro">
+          <p class="eyebrow">Employer Requirement</p>
+          <h2>Tell Us About Your Manpower Need</h2>
+          <p>Complete the details below, review your requirement, and then choose WhatsApp or email to contact Aadhyant.</p>
+          <div class="process-list" aria-label="Employer enquiry process">
+            <span><b>1</b> Fill requirement</span><span><b>2</b> Review details</span><span><b>3</b> Contact Aadhyant</span>
+          </div>
+        </div>
+
+        <div class="form-shell">
+          <form id="employer-requirement-form" class="lead-form" data-lead-form="employer" novalidate>
+            <div class="form-status" role="status" aria-live="polite"></div>
+            <p class="required-key"><span aria-hidden="true">*</span> Required fields</p>
+            <fieldset>
+              <legend><span>01</span> Company Information</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="employer-company">Company Name <span aria-hidden="true">*</span></label>
+                  <input id="employer-company" name="company" type="text" autocomplete="organization" required>
+                  <span class="field-error" id="employer-company-error"></span>
+                </div>
+                <div class="field">
+                  <label for="employer-contact">HR / Contact Person Name <span aria-hidden="true">*</span></label>
+                  <input id="employer-contact" name="contactPerson" type="text" autocomplete="name" required>
+                  <span class="field-error" id="employer-contact-error"></span>
+                </div>
+                <div class="field">
+                  <label for="employer-mobile">Mobile Number <span aria-hidden="true">*</span></label>
+                  <input id="employer-mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit Indian mobile number" required>
+                  <span class="field-help">Enter 10 digits without +91 or spaces.</span>
+                  <span class="field-error" id="employer-mobile-error"></span>
+                </div>
+                <div class="field">
+                  <label for="employer-email">Email Address <span class="optional">Optional</span></label>
+                  <input id="employer-email" name="email" type="email" autocomplete="email">
+                  <span class="field-error" id="employer-email-error"></span>
+                </div>
+                <div class="field field-wide">
+                  <label for="employer-location">Company Location <span aria-hidden="true">*</span></label>
+                  <input id="employer-location" name="location" type="text" autocomplete="street-address" required>
+                  <span class="field-error" id="employer-location-error"></span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>02</span> Manpower Requirement</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="employer-role">Job Role / Designation <span aria-hidden="true">*</span></label>
+                  <input id="employer-role" name="jobRole" type="text" placeholder="e.g. Production Operator" required>
+                  <span class="field-error" id="employer-role-error"></span>
+                </div>
+                <div class="field">
+                  <label for="employer-headcount">Required Headcount <span aria-hidden="true">*</span></label>
+                  <input id="employer-headcount" name="headcount" type="number" inputmode="numeric" min="1" step="1" required>
+                  <span class="field-error" id="employer-headcount-error"></span>
+                </div>
+                <div class="field">
+                  <label for="employer-qualification">Qualification <span class="optional">Optional</span></label>
+                  <select id="employer-qualification" name="qualification">
+                    <option value="">Select qualification</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Any Suitable Qualification</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="employer-trade">ITI Trade / Specialization <span class="optional">Optional</span></label>
+                  <input id="employer-trade" name="trade" type="text">
+                </div>
+                <div class="field">
+                  <label for="employer-experience">Experience Requirement <span class="optional">Optional</span></label>
+                  <select id="employer-experience" name="experience"><option value="">Select experience</option><option>Fresher</option><option>Experienced</option><option>Both</option></select>
+                </div>
+                <div class="field">
+                  <label for="employer-gender">Gender Preference <span class="optional">Optional</span></label>
+                  <select id="employer-gender" name="genderPreference"><option value="">Select preference</option><option>Any</option><option>Male</option><option>Female</option></select>
+                </div>
+                <div class="field">
+                  <label for="employer-salary">Salary / Wage <span class="optional">Optional</span></label>
+                  <input id="employer-salary" name="salary" type="text" placeholder="Enter offered salary or wage">
+                </div>
+                <div class="field">
+                  <label for="employer-shift">Shift Details <span class="optional">Optional</span></label>
+                  <input id="employer-shift" name="shift" type="text">
+                </div>
+                <div class="field">
+                  <label for="employer-hours">Working Hours <span class="optional">Optional</span></label>
+                  <input id="employer-hours" name="workingHours" type="text">
+                </div>
+                <div class="field">
+                  <label for="employer-joining">Expected Joining Date <span class="optional">Optional</span></label>
+                  <input id="employer-joining" name="joining" type="date">
+                </div>
+                <div class="field">
+                  <label for="employer-accommodation">Accommodation Available <span class="optional">Optional</span></label>
+                  <select id="employer-accommodation" name="accommodation"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
+                </div>
+                <div class="field">
+                  <label for="employer-canteen">Canteen Available <span class="optional">Optional</span></label>
+                  <select id="employer-canteen" name="canteen"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
+                </div>
+                <div class="field">
+                  <label for="employer-transport">Transport Available <span class="optional">Optional</span></label>
+                  <select id="employer-transport" name="transport"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
+                </div>
+                <div class="field field-wide">
+                  <label for="employer-notes">Additional Requirement / Notes <span class="optional">Optional</span></label>
+                  <textarea id="employer-notes" name="notes" rows="4"></textarea>
+                </div>
+              </div>
+            </fieldset>
+
+            <label class="consent-field">
+              <input id="employer-consent" name="consent" type="checkbox" required>
+              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
+            </label>
+            <span class="field-error consent-error" id="employer-consent-error"></span>
+            <button class="button button-primary form-submit" type="submit">Review Requirement <span aria-hidden="true">→</span></button>
+          </form>
+
+          <section class="review-panel" id="employer-review" data-review="employer" aria-labelledby="employer-review-title" hidden>
+            <p class="eyebrow">Review Details</p>
+            <h3 id="employer-review-title">Employer Manpower Requirement</h3>
+            <p>Please check the information before choosing how to contact us.</p>
+            <dl class="review-list" data-review-list></dl>
+            <div class="database-submit">
+              <button class="button button-primary" type="button" data-database-submit="employer">Submit Requirement</button>
+              <div class="submission-status" data-submission-status="employer" role="status" aria-live="polite"></div>
+            </div>
+            <p class="fallback-heading">You can also send these details directly:</p>
+            <div class="review-actions">
+              <a class="button button-whatsapp" href="#contact" data-whatsapp="employer" target="_blank" rel="noopener">Continue to WhatsApp</a>
+              <a class="button button-secondary" href="#contact" data-email="employer">Send by Email</a>
+              <button class="button button-outline" type="button" data-edit="employer">Edit Details</button>
+            </div>
+            <div class="review-fallback">
+              <strong>Prefer direct contact?</strong>
+              <a href="tel:+919586785800">Call +91 95867 85800</a>
+              <a href="mailto:aadhyantmanpowerstaffing@gmail.com">Email Aadhyant</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="section form-section form-section-alt" id="candidate-form">
+      <div class="container form-layout">
+        <div class="form-intro">
+          <p class="eyebrow">Candidate Registration</p>
+          <h2>Share Your Job Profile</h2>
+          <p>Complete your details, review the information, and contact Aadhyant through WhatsApp or email.</p>
+          <div class="process-list" aria-label="Candidate registration process">
+            <span><b>1</b> Add details</span><span><b>2</b> Review profile</span><span><b>3</b> Contact Aadhyant</span>
+          </div>
+        </div>
+
+        <div class="form-shell">
+          <form id="candidate-registration-form" class="lead-form" data-lead-form="candidate" novalidate>
+            <div class="form-status" role="status" aria-live="polite"></div>
+            <p class="required-key"><span aria-hidden="true">*</span> Required fields</p>
+            <fieldset>
+              <legend><span>01</span> Personal Details</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-name">Full Name <span aria-hidden="true">*</span></label>
+                  <input id="candidate-name" name="fullName" type="text" autocomplete="name" required>
+                  <span class="field-error" id="candidate-name-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-age">Age <span aria-hidden="true">*</span></label>
+                  <input id="candidate-age" name="age" type="number" inputmode="numeric" min="16" max="75" step="1" required>
+                  <span class="field-help">Enter an age between 16 and 75.</span>
+                  <span class="field-error" id="candidate-age-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-gender">Gender <span aria-hidden="true">*</span></label>
+                  <select id="candidate-gender" name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other / Prefer not to say</option></select>
+                  <span class="field-error" id="candidate-gender-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-mobile">Mobile Number <span aria-hidden="true">*</span></label>
+                  <input id="candidate-mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit Indian mobile number" required>
+                  <span class="field-help">Enter 10 digits without +91 or spaces.</span>
+                  <span class="field-error" id="candidate-mobile-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-whatsapp">WhatsApp Number <span class="optional">Optional</span></label>
+                  <input id="candidate-whatsapp" name="whatsapp" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}">
+                  <span class="field-error" id="candidate-whatsapp-error"></span>
+                  <label class="inline-check" for="same-as-mobile"><input id="same-as-mobile" type="checkbox" data-same-mobile> Same as mobile number</label>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>02</span> Location</legend>
+              <div class="field-grid">
+                <div class="field"><label for="candidate-city">Current Village / City <span aria-hidden="true">*</span></label><input id="candidate-city" name="city" type="text" autocomplete="address-level2" required><span class="field-error" id="candidate-city-error"></span></div>
+                <div class="field"><label for="candidate-district">District <span aria-hidden="true">*</span></label><input id="candidate-district" name="district" type="text" required><span class="field-error" id="candidate-district-error"></span></div>
+                <div class="field"><label for="candidate-state">State <span aria-hidden="true">*</span></label><input id="candidate-state" name="state" type="text" autocomplete="address-level1" required><span class="field-error" id="candidate-state-error"></span></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>03</span> Education &amp; Skill</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-qualification">Highest Qualification <span aria-hidden="true">*</span></label>
+                  <select id="candidate-qualification" name="qualification" required><option value="">Select qualification</option><option>Below 10th</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Post Graduate</option><option>Other</option></select>
+                  <span class="field-error" id="candidate-qualification-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-trade">Course / Trade / Specialization <span class="optional">Optional</span></label>
+                  <input id="candidate-trade" name="trade" type="text" placeholder="e.g. ITI Fitter or Diploma Mechanical">
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>04</span> Experience</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-type">Candidate Type <span aria-hidden="true">*</span></label>
+                  <select id="candidate-type" name="candidateType" required data-candidate-type><option value="">Select type</option><option>Fresher</option><option>Experienced</option></select>
+                  <span class="field-error" id="candidate-type-error"></span>
+                </div>
+                <div class="conditional-fields field-wide" data-experience-fields hidden>
+                  <div class="field-grid">
+                    <div class="field"><label for="candidate-experience">Total Experience <span class="optional">Optional</span></label><input id="candidate-experience" name="totalExperience" type="text" placeholder="e.g. 2 years" disabled></div>
+                    <div class="field"><label for="candidate-role">Previous Job Role <span class="optional">Optional</span></label><input id="candidate-role" name="previousRole" type="text" disabled></div>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>05</span> Job Readiness</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-interview">Can Attend Interview? <span aria-hidden="true">*</span></label>
+                  <select id="candidate-interview" name="interview" required><option value="">Select option</option><option>Yes</option><option>No</option></select>
+                  <span class="field-error" id="candidate-interview-error"></span>
+                </div>
+                <div class="field"><label for="candidate-preferred-location">Preferred Job Location <span class="optional">Optional</span></label><input id="candidate-preferred-location" name="preferredLocation" type="text"></div>
+                <div class="field field-wide"><label for="candidate-additional">Additional Information <span class="optional">Optional</span></label><textarea id="candidate-additional" name="additional" rows="4"></textarea></div>
+              </div>
+            </fieldset>
+
+            <label class="consent-field">
+              <input id="candidate-consent" name="consent" type="checkbox" required>
+              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
+            </label>
+            <span class="field-error consent-error" id="candidate-consent-error"></span>
+            <button class="button button-primary form-submit" type="submit">Review Registration <span aria-hidden="true">→</span></button>
+          </form>
+
+          <section class="review-panel" id="candidate-review" data-review="candidate" aria-labelledby="candidate-review-title" hidden>
+            <p class="eyebrow">Review Details</p>
+            <h3 id="candidate-review-title">Candidate Registration</h3>
+            <p>Please check the information before choosing how to contact us.</p>
+            <dl class="review-list" data-review-list></dl>
+            <div class="database-submit">
+              <button class="button button-primary" type="button" data-database-submit="candidate">Submit Registration</button>
+              <div class="submission-status" data-submission-status="candidate" role="status" aria-live="polite"></div>
+            </div>
+            <p class="fallback-heading">You can also send these details directly:</p>
+            <div class="review-actions">
+              <a class="button button-whatsapp" href="#contact" data-whatsapp="candidate" target="_blank" rel="noopener">Continue to WhatsApp</a>
+              <a class="button button-secondary" href="#contact" data-email="candidate">Send by Email</a>
+              <button class="button button-outline" type="button" data-edit="candidate">Edit Details</button>
+            </div>
+            <div class="review-fallback">
+              <strong>Prefer direct contact?</strong>
+              <a href="tel:+919586785800">Call +91 95867 85800</a>
+              <a href="mailto:aadhyantmanpowerstaffing@gmail.com">Email Aadhyant</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="section opportunities" id="jobs">
+      <div class="container">
+        <div class="section-heading centered">
+          <p class="eyebrow">Jobs Preview</p>
+          <h2>Current Opportunities</h2>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">↗</div>
+          <div>
+            <h3>New opportunities are being prepared.</h3>
+            <p>Current openings will be published here as they become available.</p>
+          </div>
+          <a class="button button-outline" href="#candidate-form">Register as Candidate</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="why-aadhyant">
+      <div class="container why-grid">
+        <div class="section-heading">
+          <p class="eyebrow light">Why Aadhyant</p>
+          <h2>A Clear, Practical Approach to Workforce Coordination</h2>
+          <p>Focused support for employers and candidates throughout the recruitment coordination process.</p>
+        </div>
+        <div class="approach-list">
+          <article><span>01</span><div><h3>Industry-Focused Sourcing</h3><p>Candidate sourcing aligned with industrial workforce requirements.</p></div></article>
+          <article><span>02</span><div><h3>Requirement-Based Coordination</h3><p>Clear attention to role, location, qualification and joining needs.</p></div></article>
+          <article><span>03</span><div><h3>Candidate Screening Support</h3><p>Profile coordination based on the information provided by employers.</p></div></article>
+          <article><span>04</span><div><h3>Responsive Communication</h3><p>Practical follow-up between workforce demand and candidate availability.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section credentials" id="business">
+      <div class="container">
+        <div class="section-heading centered">
+          <p class="eyebrow">Business Credentials</p>
+          <h2>Registered Business Information</h2>
+          <p>Key details for Aadhyant Manpower &amp; Staffing.</p>
+        </div>
+        <div class="credential-grid">
+          <div><small>LEGAL / TRADE NAME</small><strong>Aadhyant Manpower &amp; Staffing</strong></div>
+          <div><small>GSTIN</small><strong>24ACNFA4445J1Z9</strong></div>
+          <div><small>CONSTITUTION</small><strong>Partnership</strong></div>
+          <div><small>GST REGISTRATION</small><strong>Regular</strong></div>
+        </div>
+        <div class="credential-address">
+          <small>PRINCIPAL PLACE OF BUSINESS</small>
+          <p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="contact">
+      <div class="container contact-grid">
+        <div class="contact-intro">
+          <p class="eyebrow">Contact Aadhyant</p>
+          <h2>Let’s Discuss Your Workforce Requirement</h2>
+          <p>Contact our team for manpower requirements, recruitment assistance, candidate registration or business enquiries.</p>
+          <p class="contact-note">Choose the employer or candidate pathway above, or call and email our team directly.</p>
+        </div>
+        <div class="contact-actions">
+          <a class="contact-card" href="tel:+919586785800">
+            <span class="contact-label">Call</span>
+            <strong>+91 95867 85800</strong>
+            <span class="contact-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="contact-card" href="mailto:aadhyantmanpowerstaffing@gmail.com">
+            <span class="contact-label">Email</span>
+            <strong>aadhyantmanpowerstaffing@gmail.com</strong>
+            <span class="contact-arrow" aria-hidden="true">↗</span>
+          </a>
+          <div class="contact-card contact-address">
+            <span class="contact-label">Office</span>
+            <p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-main">
+      <div class="footer-brand">
+        <a class="brand brand-light" href="#home" aria-label="Aadhyant Manpower & Staffing home">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span>
+        </a>
+        <p>Industrial manpower, recruitment support and staffing coordination for workforce requirements.</p>
+      </div>
+      <div class="footer-column">
+        <h2>Navigate</h2>
+        <a href="#about">About</a><a href="#services">Services</a><a href="#industries">Industries</a><a href="#business">Business Info</a>
+      </div>
+      <div class="footer-column">
+        <h2>For You</h2>
+        <a href="#employer-form">Hire Manpower</a><a href="#candidate-form">Find a Job</a><a href="company/login.html">Company Login</a><a href="company/register.html">Company Register</a><a href="#jobs">Current Opportunities</a><a href="#contact">Contact</a>
+      </div>
+      <div class="footer-column footer-contact">
+        <h2>Contact</h2>
+        <a href="tel:+919586785800">+91 95867 85800</a>
+        <a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a>
+        <p>Kadi, Mahesana, Gujarat – 384440</p>
+      </div>
     </div>
-    <div class="hero-card">
-      <h3>Your Workforce Partner</h3>
-      <p>Practical staffing support for production, manufacturing, warehouse, logistics and other industrial operations.</p>
-      <hr>
-      <strong>Business Enquiries</strong>
-      <a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a>
+    <div class="container footer-bottom">
+      <p>GSTIN: 24ACNFA4445J1Z9</p>
+      <p>© 2026 Aadhyant Manpower &amp; Staffing. All rights reserved.</p>
     </div>
-  </div>
-</section>
-
-<section id="about" class="section">
-  <div class="container narrow">
-    <p class="eyebrow">ABOUT US</p>
-    <h2>Aadhyant Manpower & Staffing</h2>
-    <p>Aadhyant Manpower & Staffing is a professional manpower and staffing service provider focused on industrial workforce requirements. We support employers, HR teams, manpower partners and candidates through recruitment coordination, candidate mobilisation and joining support.</p>
-    <p>Our aim is to create a dependable connection between businesses that require manpower and candidates looking for suitable employment opportunities.</p>
-  </div>
-</section>
-
-<section id="services" class="section alt">
-  <div class="container">
-    <p class="eyebrow">OUR SERVICES</p><h2>Workforce Support for Industry</h2>
-    <div class="cards">
-      <article><b>01</b><h3>Industrial Manpower Staffing</h3><p>Workforce support for production, assembly, packing, warehouse, dispatch, material handling and industrial operations.</p></article>
-      <article><b>02</b><h3>Recruitment Support</h3><p>Candidate coordination based on job profile, location, qualification, experience and employer requirements.</p></article>
-      <article><b>03</b><h3>Contract Staffing Support</h3><p>Support for recurring, project-based, short-term and long-term workforce requirements.</p></article>
-      <article><b>04</b><h3>Candidate Mobilisation</h3><p>Connecting available job seekers with suitable vacancies and coordinating interview and joining activities.</p></article>
-      <article><b>05</b><h3>Workforce Coordination</h3><p>Support for vacancy communication, candidate follow-up, interview coordination and joining status.</p></article>
-      <article><b>06</b><h3>Bulk Hiring Support</h3><p>Structured coordination for location-specific and volume manpower requirements.</p></article>
-    </div>
-  </div>
-</section>
-
-<section id="industries" class="section">
-  <div class="container">
-    <p class="eyebrow">INDUSTRIES WE SERVE</p><h2>Focused on Industrial Requirements</h2>
-    <div class="chips"><span>Automobile & Auto Components</span><span>Manufacturing</span><span>Engineering</span><span>Warehousing</span><span>Logistics</span><span>FMCG</span><span>Packaging</span><span>Pharmaceuticals</span><span>Production Units</span></div>
-  </div>
-</section>
-
-<section class="cta">
-  <div class="container cta-grid">
-    <div><p class="eyebrow light">FOR EMPLOYERS</p><h2>Have a Manpower Requirement?</h2><p>Share your vacancy, work location, required headcount, qualification, salary/wages, shift and expected joining date with our team.</p></div>
-    <a class="btn white" href="mailto:aadhyantmanpowerstaffing@gmail.com?subject=Manpower%20Requirement">Send Requirement</a>
-  </div>
-</section>
-
-<section id="business" class="section alt">
-  <div class="container">
-    <p class="eyebrow">BUSINESS INFORMATION</p><h2>Registered Business Details</h2>
-    <div class="business">
-      <div><small>LEGAL / TRADE NAME</small><strong>Aadhyant Manpower & Staffing</strong></div>
-      <div><small>GSTIN</small><strong>24ACNFA4445J1Z9</strong></div>
-      <div><small>CONSTITUTION</small><strong>Partnership</strong></div>
-      <div><small>GST REGISTRATION</small><strong>Regular</strong></div>
-    </div>
-    <div class="address">
-      <small>PRINCIPAL PLACE OF BUSINESS</small>
-      <p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p>
-    </div>
-  </div>
-</section>
-
-<section id="contact" class="section">
-  <div class="container contact-grid">
-    <div><p class="eyebrow">CONTACT US</p><h2>Let’s Discuss Your Workforce Requirement</h2><p>For manpower requirements, recruitment assistance, candidate registration or business enquiries, contact Aadhyant Manpower & Staffing.</p></div>
-    <div class="contact-card">
-      <div><small>PHONE</small><a href="tel:+919586785800">+91 95867 85800</a></div>
-      <div><small>EMAIL</small><a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a></div>
-      <div><small>OFFICE</small><p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p></div>
-    </div>
-  </div>
-</section>
-</main>
-
-<footer>
-  <div class="container footer-grid">
-    <div><strong>Aadhyant Manpower & Staffing</strong><p>Industrial Manpower • Recruitment • Staffing Solutions</p></div>
-    <div><p>GSTIN: 24ACNFA4445J1Z9</p><p>© 2026 Aadhyant Manpower & Staffing. All rights reserved.</p></div>
-  </div>
-</footer>
+  </footer>
 </body>
 </html>
