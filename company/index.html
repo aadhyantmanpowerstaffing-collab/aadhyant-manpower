@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Company Portal | Aadhyant Manpower &amp; Staffing</title>
+  <link rel="stylesheet" href="company.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../config.js" defer></script>
+  <script src="../supabase-client.js" defer></script>
+  <script src="company.js" defer></script>
+</head>
+<body class="portal-page" data-company-page="dashboard">
+  <div class="portal-loading" data-portal-loading role="status">Verifying company access…</div>
+  <div data-portal hidden>
+    <header class="company-header portal-header">
+      <a class="company-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>COMPANY PORTAL</small></strong></a>
+      <div class="portal-account"><span data-user-email></span><button class="company-button company-button-quiet" type="button" data-logout>Log Out</button></div>
+    </header>
+
+    <main class="portal-main">
+      <div class="company-message" data-page-message role="status" aria-live="polite"></div>
+      <section class="status-gate" data-status-gate hidden aria-labelledby="status-title">
+        <span class="status-icon" aria-hidden="true">⌛</span>
+        <p class="eyebrow">Company account status</p>
+        <h1 id="status-title" data-status-title>Account under review</h1>
+        <p data-status-copy>Your company account is under review by Aadhyant.</p>
+        <dl class="status-summary"><div><dt>Company</dt><dd data-gate-company>—</dd></div><div><dt>Status</dt><dd><span class="account-badge" data-account-status>—</span></dd></div></dl>
+        <p class="status-support">Questions about your review? <a href="mailto:aadhyantmanpowerstaffing@gmail.com">Contact Aadhyant</a>.</p>
+      </section>
+
+      <div data-active-dashboard hidden>
+        <section class="portal-welcome">
+          <div><p class="eyebrow">Approved company workspace</p><h1>Welcome, <span data-company-name>Company</span></h1><p>Your secure company portal is ready. Requirement management will be introduced in the next milestone.</p></div>
+          <span class="account-badge" data-active-badge>Active</span>
+        </section>
+
+        <section class="profile-card" aria-labelledby="profile-title">
+          <div class="section-heading"><div><p class="eyebrow">Organization details</p><h2 id="profile-title">Company Profile</h2></div><span>Read-only in Milestone 8A</span></div>
+          <dl class="profile-grid">
+            <div><dt>Legal name</dt><dd data-profile="legal_name">—</dd></div><div><dt>Contact person</dt><dd data-profile="contact_person">—</dd></div>
+            <div><dt>Industry</dt><dd data-profile="industry">—</dd></div><div><dt>Work email</dt><dd data-profile="main_email">—</dd></div>
+            <div><dt>Mobile</dt><dd data-profile="main_phone">—</dd></div><div><dt>Location</dt><dd data-profile="location">—</dd></div>
+            <div><dt>GSTIN</dt><dd data-profile="gstin">—</dd></div><div><dt>Workforce size</dt><dd data-profile="workforce_size">—</dd></div>
+          </dl>
+        </section>
+
+        <section class="future-section" aria-labelledby="workspace-title"><div class="section-heading"><div><p class="eyebrow">Workspace</p><h2 id="workspace-title">Coming next</h2></div><span>Milestone 8B and later</span></div>
+          <div class="future-grid">
+            <article><span aria-hidden="true">01</span><h3>Manpower Requirements</h3><p>Create and monitor structured staffing requirements.</p></article>
+            <article><span aria-hidden="true">02</span><h3>Staffing Partners</h3><p>View assigned contractors and agencies.</p></article>
+            <article><span aria-hidden="true">03</span><h3>Candidate Workflow</h3><p>Track applications through selection.</p></article>
+            <article><span aria-hidden="true">04</span><h3>Interviews &amp; Joining</h3><p>Coordinate interviews and joining outcomes.</p></article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

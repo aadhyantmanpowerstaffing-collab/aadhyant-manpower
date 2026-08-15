@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Dashboard | Aadhyant Manpower &amp; Staffing</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../config.js" defer></script>
+  <script src="../supabase-client.js" defer></script>
+  <script src="admin.js" defer></script>
+</head>
+<body data-admin-page="dashboard">
+  <div class="admin-loading" data-admin-loading role="status">Verifying administrator access…</div>
+  <div class="dashboard" data-dashboard hidden>
+    <header class="admin-header">
+      <a class="admin-brand" href="../index.html" aria-label="Aadhyant Manpower & Staffing website">
+        <span aria-hidden="true">A</span><strong>AADHYANT <small>ADMIN</small></strong>
+      </a>
+      <div class="admin-account"><span data-admin-email></span><button class="admin-button admin-button-quiet" type="button" data-logout>Log Out</button></div>
+    </header>
+
+    <main class="admin-main">
+      <div class="dashboard-heading">
+        <div><p class="admin-eyebrow">Operations overview</p><h1>Admin Dashboard</h1><p>Review submissions and manage company account approvals.</p></div>
+        <button class="admin-button admin-button-secondary" type="button" data-refresh>Refresh Data</button>
+      </div>
+
+      <div class="admin-message" data-dashboard-message role="status" aria-live="polite"></div>
+
+      <section class="summary-grid" aria-label="Submission summary">
+        <article><span>Total Employer Requirements</span><strong data-count="employer-total">—</strong></article>
+        <article><span>New Employer Requirements</span><strong data-count="employer-new">—</strong></article>
+        <article><span>Total Candidates</span><strong data-count="candidate-total">—</strong></article>
+        <article><span>New Candidates</span><strong data-count="candidate-new">—</strong></article>
+        <article><span>Total Company Accounts</span><strong data-count="company-total">—</strong></article>
+        <article><span>Pending Company Reviews</span><strong data-count="company-pending">—</strong></article>
+      </section>
+
+      <div class="admin-tabs" role="tablist" aria-label="Dashboard records">
+        <button type="button" role="tab" aria-selected="true" aria-controls="employer-panel" id="employer-tab" data-tab="employers">Employer Requirements</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="candidate-panel" id="candidate-tab" data-tab="candidates">Candidates</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="company-panel" id="company-tab" data-tab="companies">Company Accounts</button>
+      </div>
+
+      <section class="record-panel" id="employer-panel" role="tabpanel" aria-labelledby="employer-tab" data-panel="employers">
+        <div class="panel-heading"><div><h2>Employer Requirements</h2><p>Newest submissions appear first.</p></div></div>
+        <form class="filter-grid employer-filters" data-filter-form="employers">
+          <div class="admin-field"><label for="employer-filter-status">Status</label><select id="employer-filter-status" name="status"><option value="">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="in_progress">In Progress</option><option value="fulfilled">Fulfilled</option><option value="closed">Closed</option></select></div>
+          <div class="admin-field"><label for="employer-filter-company">Company</label><input id="employer-filter-company" name="company" type="search"></div>
+          <div class="admin-field"><label for="employer-filter-location">Location</label><input id="employer-filter-location" name="location" type="search"></div>
+          <div class="admin-field"><label for="employer-filter-role">Job role</label><input id="employer-filter-role" name="role" type="search"></div>
+          <div class="filter-actions"><button class="admin-button admin-button-primary" type="submit">Apply Filters</button><button class="admin-button admin-button-quiet" type="reset">Clear</button></div>
+        </form>
+        <div class="table-wrap" tabindex="0" aria-label="Employer requirements table, horizontally scrollable">
+          <table><thead><tr><th>Date</th><th>Company</th><th>Contact Person</th><th>Mobile</th><th>Location</th><th>Job Role</th><th>Headcount</th><th>Status</th><th>Actions</th></tr></thead><tbody data-table-body="employers"></tbody></table>
+        </div>
+        <div class="empty-records" data-empty="employers" hidden>No employer requirements have been received yet.</div>
+        <nav class="pagination" aria-label="Employer requirements pages"><button class="admin-button admin-button-quiet" type="button" data-page="employers-prev">Previous</button><span data-page-label="employers">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="employers-next">Next</button></nav>
+      </section>
+
+      <section class="record-panel" id="candidate-panel" role="tabpanel" aria-labelledby="candidate-tab" data-panel="candidates" hidden>
+        <div class="panel-heading"><div><h2>Candidate Registrations</h2><p>Newest submissions appear first.</p></div></div>
+        <form class="filter-grid candidate-filters" data-filter-form="candidates">
+          <div class="admin-field"><label for="candidate-filter-status">Status</label><select id="candidate-filter-status" name="status"><option value="">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="selected">Selected</option><option value="joined">Joined</option><option value="inactive">Inactive</option></select></div>
+          <div class="admin-field"><label for="candidate-filter-search">Name or mobile</label><input id="candidate-filter-search" name="search" type="search"></div>
+          <div class="admin-field"><label for="candidate-filter-state">State</label><input id="candidate-filter-state" name="state" type="search"></div>
+          <div class="admin-field"><label for="candidate-filter-district">District</label><input id="candidate-filter-district" name="district" type="search"></div>
+          <div class="admin-field"><label for="candidate-filter-qualification">Qualification</label><select id="candidate-filter-qualification" name="qualification"><option value="">All qualifications</option><option>Below 10th</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Post Graduate</option><option>Other</option></select></div>
+          <div class="admin-field"><label for="candidate-filter-type">Candidate type</label><select id="candidate-filter-type" name="candidateType"><option value="">All types</option><option>Fresher</option><option>Experienced</option></select></div>
+          <div class="filter-actions"><button class="admin-button admin-button-primary" type="submit">Apply Filters</button><button class="admin-button admin-button-quiet" type="reset">Clear</button></div>
+        </form>
+        <div class="table-wrap" tabindex="0" aria-label="Candidate registrations table, horizontally scrollable">
+          <table><thead><tr><th>Date</th><th>Name</th><th>Mobile</th><th>Location</th><th>Qualification</th><th>Trade / Specialization</th><th>Candidate Type</th><th>Status</th><th>Actions</th></tr></thead><tbody data-table-body="candidates"></tbody></table>
+        </div>
+        <div class="empty-records" data-empty="candidates" hidden>No candidate registrations have been received yet.</div>
+        <nav class="pagination" aria-label="Candidate registration pages"><button class="admin-button admin-button-quiet" type="button" data-page="candidates-prev">Previous</button><span data-page-label="candidates">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="candidates-next">Next</button></nav>
+      </section>
+
+      <section class="record-panel" id="company-panel" role="tabpanel" aria-labelledby="company-tab" data-panel="companies" hidden>
+        <div class="panel-heading"><div><h2>Company Accounts</h2><p>Review company onboarding details and control platform access.</p></div></div>
+        <form class="filter-grid company-filters" data-filter-form="companies">
+          <div class="admin-field"><label for="company-filter-status">Account status</label><select id="company-filter-status" name="status"><option value="">All statuses</option><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option></select></div>
+          <div class="admin-field"><label for="company-filter-search">Company name</label><input id="company-filter-search" name="search" type="search"></div>
+          <div class="admin-field"><label for="company-filter-location">City or state</label><input id="company-filter-location" name="location" type="search"></div>
+          <div class="filter-actions"><button class="admin-button admin-button-primary" type="submit">Apply Filters</button><button class="admin-button admin-button-quiet" type="reset">Clear</button></div>
+        </form>
+        <div class="table-wrap" tabindex="0" aria-label="Company accounts table, horizontally scrollable">
+          <table><thead><tr><th>Registered</th><th>Company</th><th>Account Email</th><th>Contact Person</th><th>Mobile</th><th>Location</th><th>GSTIN</th><th>Status</th><th>Actions</th></tr></thead><tbody data-table-body="companies"></tbody></table>
+        </div>
+        <div class="empty-records" data-empty="companies" hidden>No company accounts have been registered yet.</div>
+        <nav class="pagination" aria-label="Company account pages"><button class="admin-button admin-button-quiet" type="button" data-page="companies-prev">Previous</button><span data-page-label="companies">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="companies-next">Next</button></nav>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="detail-dialog" data-detail-dialog aria-labelledby="detail-title">
+    <div class="dialog-heading"><div><p class="admin-eyebrow">Submission details</p><h2 id="detail-title" data-detail-title>Details</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close details">×</button></div>
+    <dl class="detail-list" data-detail-list></dl>
+    <form class="detail-workflow" data-detail-form>
+      <input type="hidden" name="recordId"><input type="hidden" name="recordType">
+      <div class="admin-field"><label for="detail-status">Status</label><select id="detail-status" name="status" required></select></div>
+      <div class="admin-field"><label for="detail-notes">Internal notes</label><textarea id="detail-notes" name="internalNotes" rows="4" placeholder="Visible only to approved administrators"></textarea></div>
+      <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Status &amp; Notes</button><button class="admin-button admin-button-quiet" type="button" data-close-dialog>Cancel</button></div>
+      <div class="admin-message" data-detail-message role="status" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <dialog class="detail-dialog company-review-dialog" data-company-dialog aria-labelledby="company-review-title">
+    <div class="dialog-heading"><div><p class="admin-eyebrow">Company onboarding review</p><h2 id="company-review-title" data-company-dialog-title>Company Account</h2></div><button class="dialog-close" type="button" data-close-company-dialog aria-label="Close company review">×</button></div>
+    <dl class="detail-list" data-company-detail-list></dl>
+    <form class="detail-workflow company-review-workflow" data-company-status-form>
+      <input type="hidden" name="companyId">
+      <div class="admin-field"><label for="company-account-status">Account status</label><select id="company-account-status" name="accountStatus" required><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option></select></div>
+      <p class="status-warning">Status changes affect Company Portal access immediately. Records are preserved.</p>
+      <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Account Status</button><button class="admin-button admin-button-quiet" type="button" data-close-company-dialog>Cancel</button></div>
+      <div class="admin-message" data-company-dialog-message role="status" aria-live="polite"></div>
+    </form>
+  </dialog>
+</body>
+</html>
