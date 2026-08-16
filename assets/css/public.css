@@ -210,10 +210,18 @@
 .public-site .public-job-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .public-site .public-job-card dt { color: var(--public-text-muted); font-size: .75rem; }
 .public-site .public-job-card dd { margin: 0; color: var(--public-text); font-weight: 700; }
+.public-site .public-job-code { margin: 0 0 .5rem; color: var(--public-accent-strong); font-size: .75rem; font-weight: 850; letter-spacing: .08em; }
+.public-site .public-job-department { margin: .4rem 0 0; color: var(--public-text-muted); }
+.public-site .public-job-card .public-button { margin-top: 1rem; }
 .public-site .public-jobs-empty { margin-top: 2rem; padding: clamp(2rem, 6vw, 4rem); background: #fff; border: 1px dashed #aeb9c8; border-radius: var(--public-radius-md); text-align: center; }
 .public-site .public-jobs-empty h3 { margin: 0; color: var(--public-primary); font-size: 1.4rem; }
 .public-site .public-jobs-empty p { max-width: 40rem; margin: .75rem auto 1.5rem; color: var(--public-text-muted); }
 .public-site .public-jobs-empty > div { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
+.public-site .public-jobs-state { margin-top: 2rem; padding: clamp(2rem, 6vw, 3rem); color: var(--public-text-muted); background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-md); text-align: center; }
+.public-site .public-jobs-state h3 { margin: 0; color: var(--public-primary); font-size: 1.35rem; }
+.public-site .public-jobs-state p { margin: .75rem auto 0; }
+.public-site .public-jobs-state > div { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 1.5rem; }
+.public-site .public-jobs-error { border-color: #e4c7c9; background: #fffafa; }
 
 /* R7 professional public pages */
 .public-site .public-footer-grid { grid-template-columns: 1.35fr .75fr 1fr 1.2fr; }
