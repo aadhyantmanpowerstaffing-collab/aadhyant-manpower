@@ -71,8 +71,8 @@
     ].filter(Boolean).forEach((item) => details.append(item));
     const action = document.createElement('a');
     action.className = 'public-button public-button--primary';
-    action.href = '../candidate/register/';
-    action.textContent = 'Register as a Candidate';
+    action.href = `../candidate/register/?requirement=${encodeURIComponent(text(job.requirement_code))}`;
+    action.textContent = 'Register Interest';
     card.append(code, title, department, details, action);
     return card;
   };

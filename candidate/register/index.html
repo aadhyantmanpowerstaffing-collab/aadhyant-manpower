@@ -21,7 +21,7 @@
   <main id="main-content">
     <section class="public-inner-hero public-candidate-hero"><div class="container"><p class="eyebrow">Candidate registration · No login required</p><h1>Register Your Candidate Profile</h1><p>Share your current details with Aadhyant for consideration for suitable workforce opportunities. Registration does not guarantee placement, an interview, or contact.</p><a class="public-text-link" href="../../jobs/">View Current Jobs</a></div></section>
     <section class="section form-section form-section-alt candidate-registration-page" id="candidate-form">
-      <div class="container form-layout">
+        <div class="container form-layout">
         <div class="form-intro">
           <p class="eyebrow">Candidate Registration</p>
           <h2>Share Your Job Profile</h2>
@@ -32,6 +32,16 @@
         </div>
 
         <div class="form-shell">
+          <aside class="candidate-opportunity" data-candidate-opportunity hidden aria-live="polite">
+            <p class="eyebrow">Opportunity interest</p>
+            <h2>Interested in this opportunity</h2>
+            <dl><div><dt>Requirement code</dt><dd data-opportunity-code></dd></div><div><dt>Role</dt><dd data-opportunity-role></dd></div><div><dt>Location</dt><dd data-opportunity-location></dd></div></dl>
+            <p>By registering interest, your Candidate profile may be considered for this requirement.</p>
+          </aside>
+          <div class="candidate-opportunity candidate-opportunity--notice" data-candidate-opportunity-unavailable hidden role="status">
+            <strong>This opportunity is no longer available for interest registration.</strong>
+            <span>You can still complete a general Candidate Registration or <a href="../../jobs/">view current jobs</a>.</span>
+          </div>
           <form id="candidate-registration-form" class="lead-form" data-lead-form="candidate" novalidate>
             <div class="form-status" role="status" aria-live="polite"></div>
             <p class="required-key"><span aria-hidden="true">*</span> Required fields</p>

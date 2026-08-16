@@ -293,6 +293,15 @@
   .public-site .public-nav__actions { display: grid; grid-template-columns: 1fr 1fr; margin: .75rem 0 0; }
 }
 
+.public-site .candidate-opportunity { margin: 0 0 1.25rem; padding: 1.25rem; border: 1px solid var(--public-border); border-left: 4px solid var(--public-accent); border-radius: var(--public-radius-md); background: var(--public-background); }
+.public-site .candidate-opportunity h2 { margin: .2rem 0 .85rem; font-size: clamp(1.2rem, 3vw, 1.55rem); }
+.public-site .candidate-opportunity dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin: 0 0 .85rem; }
+.public-site .candidate-opportunity dl div { min-width: 0; }
+.public-site .candidate-opportunity dt { color: var(--public-text-muted); font-size: .76rem; font-weight: 750; text-transform: uppercase; }
+.public-site .candidate-opportunity dd { margin: .15rem 0 0; overflow-wrap: anywhere; font-weight: 750; }
+.public-site .candidate-opportunity > p:last-child { margin: 0; }
+.public-site .candidate-opportunity--notice:not([hidden]) { display: grid; gap: .35rem; border-left-color: var(--public-warning); }
+
 @media (max-width: 900px) {
   .public-site .public-home-hero__grid, .public-site .public-overview-grid, .public-site .public-industries, .public-site .public-trust { grid-template-columns: 1fr; }
   .public-site .public-home-hero__grid { min-height: auto; }
@@ -319,6 +328,7 @@
   .public-site .public-job-filters, .public-site .public-job-grid { grid-template-columns: 1fr; }
   .public-site .public-service-catalog, .public-site .public-industry-catalog { grid-template-columns: 1fr; }
   .public-site .public-partner-types, .public-site .public-partner-process { grid-template-columns: 1fr; }
+  .public-site .candidate-opportunity dl { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
