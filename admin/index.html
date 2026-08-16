@@ -71,9 +71,12 @@
           <div class="admin-field"><label for="interest-filter-role">Role</label><input id="interest-filter-role" name="role" type="search"></div>
           <div class="admin-field"><label for="interest-filter-candidate">Candidate name or mobile</label><input id="interest-filter-candidate" name="candidate" type="search"></div>
           <div class="admin-field"><label for="interest-filter-status">Status</label><select id="interest-filter-status" name="status"><option value="">All statuses</option><option value="interested">Interested</option><option value="applied">Applied</option><option value="screening">Screening</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="selected">Selected</option><option value="rejected">Rejected</option><option value="joining_pending">Joining pending</option><option value="joined">Joined</option><option value="left">Left</option><option value="cancelled">Cancelled</option></select></div>
+          <div class="admin-field"><label for="interest-filter-location">Candidate location</label><input id="interest-filter-location" name="location" type="search"></div>
+          <div class="admin-field"><label for="interest-filter-qualification">Qualification</label><input id="interest-filter-qualification" name="qualification" type="search"></div>
+          <div class="admin-field"><label for="interest-filter-date">Interested since</label><input id="interest-filter-date" name="since" type="date"></div>
           <div class="filter-actions"><button class="admin-button admin-button-primary" type="submit">Apply Filters</button><button class="admin-button admin-button-quiet" type="reset">Clear</button></div>
         </form>
-        <div class="table-wrap" tabindex="0" aria-label="Candidate job interests table, horizontally scrollable"><table><thead><tr><th>Interest date</th><th>Requirement</th><th>Role</th><th>Candidate</th><th>Mobile</th><th>Location</th><th>Education</th><th>Experience</th><th>Status</th></tr></thead><tbody data-table-body="candidateInterests"></tbody></table></div>
+        <div class="table-wrap" tabindex="0" aria-label="Candidate job interests table, horizontally scrollable"><table><thead><tr><th>Interest date</th><th>Requirement</th><th>Role</th><th>Candidate</th><th>Mobile</th><th>Location</th><th>Qualification</th><th>Trade</th><th>Type / Experience</th><th>Status</th><th>Action</th></tr></thead><tbody data-table-body="candidateInterests"></tbody></table></div>
         <div class="empty-records" data-empty="candidateInterests" hidden>No Candidate job interests have been received yet.</div>
         <nav class="pagination" aria-label="Candidate job interest pages"><button class="admin-button admin-button-quiet" type="button" data-page="candidateInterests-prev">Previous</button><span data-page-label="candidateInterests">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="candidateInterests-next">Next</button></nav>
       </section>
@@ -136,6 +139,21 @@
       <div class="admin-field"><label for="detail-notes">Internal notes</label><textarea id="detail-notes" name="internalNotes" rows="4" placeholder="Visible only to approved administrators"></textarea></div>
       <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Status &amp; Notes</button><button class="admin-button admin-button-quiet" type="button" data-close-dialog>Cancel</button></div>
       <div class="admin-message" data-detail-message role="status" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <dialog class="detail-dialog application-management-dialog" data-application-dialog aria-labelledby="application-dialog-title">
+    <div class="dialog-heading"><div><p class="admin-eyebrow">Candidate application management</p><h2 id="application-dialog-title" data-application-title>Candidate Interest</h2></div><button class="dialog-close" type="button" data-close-application aria-label="Close Candidate application details">×</button></div>
+    <div class="application-detail-sections">
+      <section aria-labelledby="application-opportunity-heading"><h3 id="application-opportunity-heading">Opportunity / Requirement</h3><dl class="detail-list" data-application-requirement></dl></section>
+      <section aria-labelledby="application-candidate-heading"><h3 id="application-candidate-heading">Candidate Profile</h3><dl class="detail-list" data-application-candidate></dl></section>
+    </div>
+    <form class="detail-workflow application-management-form" data-application-form>
+      <input type="hidden" name="applicationId">
+      <div class="admin-field"><label for="application-management-status">Application status</label><select id="application-management-status" name="applicationStatus" required><option value="interested">Interested</option><option value="applied">Applied</option><option value="screening">Screening</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="selected">Selected</option><option value="rejected">Rejected</option><option value="joining_pending">Joining pending</option><option value="joined">Joined</option><option value="left">Left</option><option value="cancelled">Cancelled</option></select></div>
+      <div class="admin-field"><label for="application-admin-notes">Internal Admin Note <span class="optional">Optional</span></label><textarea id="application-admin-notes" name="adminNotes" rows="5" maxlength="4000" aria-describedby="application-admin-notes-help"></textarea><span id="application-admin-notes-help" class="status-warning">Visible only to approved Aadhyant administrators. Maximum 4,000 characters.</span></div>
+      <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Application</button><button class="admin-button admin-button-quiet" type="button" data-close-application>Cancel</button></div>
+      <div class="admin-message" data-application-message role="status" aria-live="polite"></div>
     </form>
   </dialog>
 

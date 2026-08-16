@@ -175,11 +175,45 @@
     [formatDate(record.applied_at), requirement.requirement_code, requirement.job_role,
       candidate.full_name, candidate.mobile,
       [candidate.current_location, candidate.district, candidate.state].filter(Boolean).join(', '),
-      [candidate.highest_qualification, candidate.specialization].filter(Boolean).join(' / '),
+      candidate.highest_qualification, candidate.specialization,
       [candidate.candidate_type, candidate.total_experience].filter(Boolean).join(' / ')
     ].forEach((value) => addCell(row, value));
     const statusCell = document.createElement('td'); statusCell.append(statusBadge(record.application_status)); row.append(statusCell);
+    const actionCell = document.createElement('td'); const manage = createElement('button', 'table-action', 'View / Manage'); manage.type = 'button'; manage.addEventListener('click', () => openCandidateApplication(record, manage)); actionCell.append(manage); row.append(actionCell);
     return row;
+  };
+
+  let applicationReturnFocus = null;
+  const appendDetails = (list, details) => {
+    list.replaceChildren();
+    details.filter(([, value]) => value !== null && value !== undefined && value !== '').forEach(([label, value]) => {
+      const item = createElement('div'); item.append(createElement('dt', '', label), createElement('dd', '', String(value))); list.append(item);
+    });
+  };
+  const openCandidateApplication = (record, trigger) => {
+    if (!record) return;
+    const candidate = record.candidates || {}; const requirement = record.employer_requirements || {};
+    const dialog = document.querySelector('[data-application-dialog]'); const form = document.querySelector('[data-application-form]');
+    applicationReturnFocus = trigger;
+    document.querySelector('[data-application-title]').textContent = `${requirement.requirement_code || 'Requirement'} · ${candidate.full_name || 'Candidate'}`;
+    appendDetails(document.querySelector('[data-application-requirement]'), [
+      ['Requirement code', requirement.requirement_code], ['Job role', requirement.job_role], ['Department', requirement.department],
+      ['Job location', requirement.job_location], ['Open positions', Math.max(0, Number(requirement.required_headcount || 0) - Number(requirement.filled_positions || 0))],
+      ['Salary', [requirement.salary_min, requirement.salary_max].filter((value) => value !== null).join(' – ')],
+      ['Qualification', requirement.qualification], ['Experience', requirement.experience_requirement], ['Shift', requirement.shift_details],
+      ['Facilities', [['Canteen', requirement.canteen], ['Transport', requirement.transport], ['Accommodation', requirement.accommodation]].filter(([, value]) => value === 'Yes').map(([label]) => label).join(', ')],
+      ['Stage', readableStatus(requirement.requirement_stage || '')], ['Visibility', readableStatus(requirement.requirement_visibility || '')]
+    ]);
+    appendDetails(document.querySelector('[data-application-candidate]'), [
+      ['Full name', candidate.full_name], ['Age', candidate.age], ['Gender', candidate.gender], ['Mobile', candidate.mobile],
+      ['WhatsApp', candidate.whatsapp_number], ['Village / City', candidate.current_location], ['District', candidate.district], ['State', candidate.state],
+      ['Qualification', candidate.highest_qualification], ['Specialization', candidate.specialization], ['Candidate type', candidate.candidate_type],
+      ['Experience', candidate.total_experience], ['Previous role', candidate.previous_job_role], ['Interview availability', candidate.interview_available],
+      ['Preferred job location', candidate.preferred_job_location], ['Additional information', candidate.additional_information], ['Registered', formatDate(candidate.created_at)],
+      ['Interest source', readableStatus(record.source_type || '')], ['Interested', formatDate(record.applied_at)], ['Last updated', formatDate(record.updated_at)]
+    ]);
+    form.elements.applicationId.value = record.id; form.elements.applicationStatus.value = record.application_status; form.elements.adminNotes.value = record.admin_notes || '';
+    showMessage(document.querySelector('[data-application-message]'), ''); dialog.showModal(); form.elements.applicationStatus.focus();
   };
 
   const openCompanyReview = (record) => {
@@ -258,11 +292,15 @@
     if (type === 'candidateInterests') {
       const code = safeFilterTerm(filters.get('code')); const role = safeFilterTerm(filters.get('role'));
       const candidate = safeFilterTerm(filters.get('candidate')); const status = String(filters.get('status') || '');
-      let query = client.from('candidate_applications').select('id,application_status,applied_at,candidates!inner(full_name,mobile,current_location,district,state,highest_qualification,specialization,candidate_type,total_experience),employer_requirements!inner(requirement_code,job_role)', { count: 'exact' });
+      const location = safeFilterTerm(filters.get('location')); const qualification = safeFilterTerm(filters.get('qualification')); const since = String(filters.get('since') || '');
+      let query = client.from('candidate_applications').select('id,source_type,application_status,admin_notes,applied_at,updated_at,candidates!inner(full_name,age,gender,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,candidate_type,total_experience,previous_job_role,interview_available,preferred_job_location,additional_information,created_at),employer_requirements!inner(requirement_code,job_role,department,job_location,required_headcount,filled_positions,salary_min,salary_max,qualification,experience_requirement,shift_details,canteen,transport,accommodation,requirement_stage,requirement_visibility)', { count: 'exact' });
       if (code) query = query.ilike('employer_requirements.requirement_code', `%${code}%`);
       if (role) query = query.ilike('employer_requirements.job_role', `%${role}%`);
       if (candidate) query = /^[0-9]+$/.test(candidate) ? query.ilike('candidates.mobile', `%${candidate}%`) : query.ilike('candidates.full_name', `%${candidate}%`);
       if (status) query = query.eq('application_status', status);
+      if (location) query = query.or(`current_location.ilike.%${location}%,district.ilike.%${location}%,state.ilike.%${location}%`, { referencedTable: 'candidates' });
+      if (qualification) query = query.ilike('candidates.highest_qualification', `%${qualification}%`);
+      if (since) query = query.gte('applied_at', `${since}T00:00:00.000Z`);
       const from = pages[type] * PAGE_SIZE;
       return query.order('applied_at', { ascending: false }).range(from, from + PAGE_SIZE - 1);
     }
@@ -427,6 +465,26 @@
       window.location.replace('./login.html');
     });
     document.querySelector('[data-refresh]').addEventListener('click', loadDashboard);
+
+    const applicationDialog = document.querySelector('[data-application-dialog]');
+    const closeApplicationDialog = () => { applicationDialog.close(); applicationReturnFocus?.focus(); applicationReturnFocus = null; };
+    document.querySelectorAll('[data-close-application]').forEach((button) => button.addEventListener('click', closeApplicationDialog));
+    applicationDialog.addEventListener('click', (event) => { if (event.target === applicationDialog) closeApplicationDialog(); });
+    applicationDialog.addEventListener('close', () => { if (applicationReturnFocus) { applicationReturnFocus.focus(); applicationReturnFocus = null; } });
+    document.querySelector('[data-application-form]').addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-application-message]');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      button.disabled = true; button.textContent = 'Saving…'; showMessage(message, '');
+      const { error } = await client.rpc('admin_update_candidate_application', {
+        p_application_id: form.elements.applicationId.value,
+        p_application_status: form.elements.applicationStatus.value,
+        p_admin_notes: form.elements.adminNotes.value.trim() || null
+      });
+      button.disabled = false; button.textContent = 'Save Application';
+      if (error) { showMessage(message, 'The application could not be updated. Check your access and connection, then try again.', 'error'); return; }
+      showMessage(message, 'Application status and internal note saved.', 'success');
+      try { await loadRecords('candidateInterests'); const updated = recordsById.get(`candidateInterests:${form.elements.applicationId.value}`); if (updated) { form.elements.applicationStatus.value = updated.application_status; form.elements.adminNotes.value = updated.admin_notes || ''; } } catch (_error) { showMessage(message, 'The update was saved, but the filtered list could not be refreshed.', 'error'); }
+    });
 
     document.querySelectorAll('[data-tab]').forEach((tab) => {
       tab.addEventListener('click', () => {
