@@ -6,8 +6,8 @@
 
   const employerStatuses = ['new', 'contacted', 'in_progress', 'fulfilled', 'closed'];
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
-  const pages = { employers: 0, candidates: 0, companies: 0 };
-  const pageCounts = { employers: 0, candidates: 0, companies: 0 };
+  const pages = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0 };
+  const pageCounts = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0 };
   const recordsById = new Map();
 
   const detailFields = {
@@ -210,10 +210,24 @@
     actionsCell.append(actions); row.append(actionsCell); return row;
   };
 
+  const openCompanyRequirement = (record) => {
+    const dialog = document.querySelector('[data-requirement-admin-dialog]'); const list = document.querySelector('[data-requirement-admin-list]'); const form = document.querySelector('[data-requirement-admin-form]');
+    document.querySelector('[data-requirement-admin-title]').textContent = `${record.requirement_code} · ${record.job_role}`; list.replaceChildren();
+    const open = Math.max(0, record.required_headcount - record.filled_positions); const details = [['Company', record.company_name], ['Contact', `${record.contact_person || '—'} · ${record.mobile || '—'}`], ['Department / role', `${record.department} / ${record.job_role}`], ['Location', record.job_location], ['Headcount', record.required_headcount], ['Filled / open', `${record.filled_positions} / ${open}`], ['Salary', `${record.salary_min ?? '—'} - ${record.salary_max ?? '—'}`], ['Interview', record.interview_date ? formatDate(record.interview_date) : 'Not scheduled'], ['Notes', record.additional_notes]];
+    details.filter(([, value]) => value !== null && value !== '').forEach(([label, value]) => { const item = createElement('div'); item.append(createElement('dt', '', label), createElement('dd', '', String(value))); list.append(item); });
+    form.elements.requirementId.value = record.id; form.elements.stage.value = record.requirement_stage; form.elements.visibility.value = record.requirement_visibility; showMessage(document.querySelector('[data-requirement-admin-message]'), ''); dialog.showModal();
+  };
+
+  const renderCompanyRequirementRow = (record) => {
+    const row = document.createElement('tr'); const open = Math.max(0, record.required_headcount - record.filled_positions);
+    [formatDate(record.created_at), record.requirement_code, `${record.company_name}\n${record.contact_person || ''}`, `${record.department} / ${record.job_role}`, record.job_location, String(record.required_headcount), `${record.filled_positions} filled / ${open} open`, `${record.salary_min ?? '—'} - ${record.salary_max ?? '—'}`, readableStatus(record.requirement_stage), readableStatus(record.requirement_visibility)].forEach((value) => addCell(row, value));
+    const cell = document.createElement('td'); const button = createElement('button', 'table-action', 'Review'); button.type = 'button'; button.addEventListener('click', () => openCompanyRequirement(record)); cell.append(button); row.append(cell); return row;
+  };
+
   const buildQuery = (type) => {
     const form = document.querySelector(`[data-filter-form="${type}"]`);
     const filters = new FormData(form);
-    const table = type === 'employers' ? 'employer_requirements' : type === 'candidates' ? 'candidates' : 'companies';
+    const table = type === 'employers' || type === 'companyRequirements' ? 'employer_requirements' : type === 'candidates' ? 'candidates' : 'companies';
     let query = client.from(table).select('*', { count: 'exact' });
     const status = String(filters.get('status') || '');
     if (status) query = query.eq(type === 'companies' ? 'account_status' : 'status', status);
@@ -224,6 +238,10 @@
       if (company) query = query.ilike('company_name', `%${company}%`);
       if (location) query = query.ilike('company_location', `%${location}%`);
       if (role) query = query.ilike('job_role', `%${role}%`);
+    } else if (type === 'companyRequirements') {
+      query = query.not('company_id', 'is', null);
+      const stage = String(filters.get('stage') || ''); const company = safeFilterTerm(filters.get('company')); const code = safeFilterTerm(filters.get('code')); const location = safeFilterTerm(filters.get('location'));
+      if (stage) query = query.eq('requirement_stage', stage); if (company) query = query.ilike('company_name', `%${company}%`); if (code) query = query.ilike('requirement_code', `%${code}%`); if (location) query = query.ilike('job_location', `%${location}%`);
     } else if (type === 'candidates') {
       const search = safeFilterTerm(filters.get('search'));
       const state = safeFilterTerm(filters.get('state'));
@@ -265,11 +283,11 @@
     }
     records.forEach((record) => {
       recordsById.set(`${type}:${record.id}`, record);
-      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : renderCompanyRow(record));
+      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : renderCompanyRow(record));
     });
     const filters = new FormData(document.querySelector(`[data-filter-form="${type}"]`));
     const hasFilters = [...filters.values()].some((value) => String(value).trim());
-    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : 'company accounts';
+    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : type === 'companyRequirements' ? 'company requirements' : 'company accounts';
     empty.textContent = hasFilters ? `No ${recordLabel} match the selected filters.` : `No ${recordLabel} have been received yet.`;
     empty.hidden = Boolean(records.length);
     const label = document.querySelector(`[data-page-label="${type}"]`);
@@ -357,7 +375,7 @@
     const loadDashboard = async () => {
       showMessage(dashboardMessage, 'Loading dashboard data…');
       try {
-        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('companies')]);
+        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('companies'), loadRecords('companyRequirements')]);
         showMessage(dashboardMessage, '');
       } catch (_error) {
         showMessage(dashboardMessage, 'Dashboard data could not be loaded. Check the connection and try again.', 'error');
@@ -429,6 +447,16 @@
       if (statusError) { showMessage(companyMessage, 'The company status could not be updated. No access change was made.', 'error'); return; }
       showMessage(companyMessage, 'Company account status updated.', 'success');
       try { await Promise.all([loadCounts(), loadRecords('companies')]); } catch (_error) { showMessage(dashboardMessage, 'Status was updated, but company records could not be refreshed.', 'error'); }
+    });
+
+    const requirementDialog = document.querySelector('[data-requirement-admin-dialog]');
+    document.querySelectorAll('[data-close-requirement-admin]').forEach((button) => button.addEventListener('click', () => requirementDialog.close()));
+    requirementDialog.addEventListener('click', (event) => { if (event.target === requirementDialog) requirementDialog.close(); });
+    document.querySelector('[data-requirement-admin-form]').addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-requirement-admin-message]'); button.disabled = true; button.textContent = 'Saving…'; showMessage(message, '');
+      const { error } = await client.rpc('set_company_requirement_stage', { p_requirement_id: form.elements.requirementId.value, p_requirement_stage: form.elements.stage.value, p_requirement_visibility: form.elements.visibility.value });
+      button.disabled = false; button.textContent = 'Save Requirement Stage'; if (error) { showMessage(message, 'The operational stage could not be changed.', 'error'); return; } showMessage(message, 'Requirement stage updated.', 'success');
+      try { await loadRecords('companyRequirements'); } catch (_error) { showMessage(dashboardMessage, 'Stage saved, but Company Requirements could not be refreshed.', 'error'); }
     });
 
     client.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') window.location.replace('./login.html'); });
