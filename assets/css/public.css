@@ -215,6 +215,30 @@
 .public-site .public-jobs-empty p { max-width: 40rem; margin: .75rem auto 1.5rem; color: var(--public-text-muted); }
 .public-site .public-jobs-empty > div { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
 
+/* R7 professional public pages */
+.public-site .public-footer-grid { grid-template-columns: 1.35fr .75fr 1fr 1.2fr; }
+.public-site .public-credential-panel { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.public-site .public-credential-panel h2 { margin: 0; color: var(--public-primary); font-size: var(--public-heading-sm); }
+.public-site .public-credential-panel p:last-child { max-width: 46rem; color: var(--public-text-muted); }
+.public-site .public-service-catalog, .public-site .public-industry-catalog { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.public-site .public-service-catalog article, .public-site .public-industry-catalog article { padding: 1.5rem; background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-md); box-shadow: var(--public-shadow-sm); }
+.public-site .public-service-catalog article > span { color: var(--public-accent); font-size: .8rem; font-weight: 850; letter-spacing: .1em; }
+.public-site .public-service-catalog h3, .public-site .public-industry-catalog h3 { margin: .7rem 0; color: var(--public-primary); font-size: 1.25rem; }
+.public-site .public-service-catalog p, .public-site .public-industry-catalog p, .public-site .public-industry-catalog li { color: var(--public-text-muted); }
+.public-site .public-service-catalog p { margin: .5rem 0; }
+.public-site .public-service-catalog .public-text-link { display: inline-block; margin-top: .75rem; }
+.public-site .public-industry-catalog ul { display: grid; gap: .4rem; margin: 1rem 0 0; padding-left: 1.25rem; }
+.public-site .public-contact-layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(2rem, 6vw, 5rem); }
+.public-site .public-contact-card { display: grid; gap: 0; overflow: hidden; background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-md); box-shadow: var(--public-shadow-sm); font-style: normal; }
+.public-site .public-contact-card > div { display: grid; gap: .35rem; padding: 1.25rem; border-bottom: 1px solid var(--public-border); }
+.public-site .public-contact-card > div:last-child { border-bottom: 0; }
+.public-site .public-contact-card span { color: var(--public-text-muted); font-size: .78rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.public-site .public-contact-card a, .public-site .public-contact-card p { margin: 0; color: var(--public-primary); overflow-wrap: anywhere; }
+.public-site .public-contact-pathways { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.public-site .public-contact-pathways article { padding: 1.25rem; background: var(--public-background); border-radius: var(--public-radius-sm); }
+.public-site .public-contact-pathways h3 { margin: 0; color: var(--public-primary); }
+.public-site .public-contact-pathways p { color: var(--public-text-muted); }
+
 @media (max-width: 1080px) {
   .public-site .public-header .menu-toggle { display: inline-flex; }
   .public-site .public-nav {
@@ -240,6 +264,9 @@
   .public-site .public-employer-options article { min-height: 21rem; }
   .public-site .public-employer-final { align-items: flex-start; flex-direction: column; }
   .public-site .public-job-filters { grid-template-columns: 1fr 1fr; }
+  .public-site .public-service-catalog, .public-site .public-industry-catalog { grid-template-columns: 1fr 1fr; }
+  .public-site .public-contact-layout { grid-template-columns: 1fr; }
+  .public-site .public-credential-panel { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 760px) {
@@ -249,12 +276,14 @@
   .public-site .public-service-list article:nth-child(odd), .public-site .public-industries li:nth-child(odd) { border-right: 0; }
   .public-site .public-jobs-teaser { align-items: flex-start; flex-direction: column; }
   .public-site .public-job-filters, .public-site .public-job-grid { grid-template-columns: 1fr; }
+  .public-site .public-service-catalog, .public-site .public-industry-catalog { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
   .public-site .brand-copy small { letter-spacing: .12em; }
   .public-site .public-nav__actions, .public-site .public-footer .footer-main { grid-template-columns: 1fr; }
   .public-site .public-button { width: 100%; }
+  .public-site .public-contact-pathways { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
