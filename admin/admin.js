@@ -6,8 +6,8 @@
 
   const employerStatuses = ['new', 'contacted', 'in_progress', 'fulfilled', 'closed'];
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
-  const pages = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0, contractors: 0 };
-  const pageCounts = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0, contractors: 0 };
+  const pages = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
+  const pageCounts = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const recordsById = new Map();
 
   const detailFields = {
@@ -168,6 +168,20 @@
     actionsCell.append(actions); row.append(actionsCell); return row;
   };
 
+  const renderCandidateInterestRow = (record) => {
+    const candidate = record.candidates || {};
+    const requirement = record.employer_requirements || {};
+    const row = document.createElement('tr');
+    [formatDate(record.applied_at), requirement.requirement_code, requirement.job_role,
+      candidate.full_name, candidate.mobile,
+      [candidate.current_location, candidate.district, candidate.state].filter(Boolean).join(', '),
+      [candidate.highest_qualification, candidate.specialization].filter(Boolean).join(' / '),
+      [candidate.candidate_type, candidate.total_experience].filter(Boolean).join(' / ')
+    ].forEach((value) => addCell(row, value));
+    const statusCell = document.createElement('td'); statusCell.append(statusBadge(record.application_status)); row.append(statusCell);
+    return row;
+  };
+
   const openCompanyReview = (record) => {
     if (!record) return;
     const dialog = document.querySelector('[data-company-dialog]');
@@ -241,6 +255,17 @@
   const buildQuery = (type) => {
     const form = document.querySelector(`[data-filter-form="${type}"]`);
     const filters = new FormData(form);
+    if (type === 'candidateInterests') {
+      const code = safeFilterTerm(filters.get('code')); const role = safeFilterTerm(filters.get('role'));
+      const candidate = safeFilterTerm(filters.get('candidate')); const status = String(filters.get('status') || '');
+      let query = client.from('candidate_applications').select('id,application_status,applied_at,candidates!inner(full_name,mobile,current_location,district,state,highest_qualification,specialization,candidate_type,total_experience),employer_requirements!inner(requirement_code,job_role)', { count: 'exact' });
+      if (code) query = query.ilike('employer_requirements.requirement_code', `%${code}%`);
+      if (role) query = query.ilike('employer_requirements.job_role', `%${role}%`);
+      if (candidate) query = /^[0-9]+$/.test(candidate) ? query.ilike('candidates.mobile', `%${candidate}%`) : query.ilike('candidates.full_name', `%${candidate}%`);
+      if (status) query = query.eq('application_status', status);
+      const from = pages[type] * PAGE_SIZE;
+      return query.order('applied_at', { ascending: false }).range(from, from + PAGE_SIZE - 1);
+    }
     const table = type === 'employers' || type === 'companyRequirements' ? 'employer_requirements' : type === 'candidates' ? 'candidates' : type === 'contractors' ? 'contractors' : 'companies';
     let query = client.from(table).select('*', { count: 'exact' });
     const status = String(filters.get('status') || '');
@@ -298,11 +323,11 @@
     }
     records.forEach((record) => {
       recordsById.set(`${type}:${record.id}`, record);
-      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : type==='contractors'?renderContractorRow(record):renderCompanyRow(record));
+      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'candidateInterests' ? renderCandidateInterestRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : type==='contractors'?renderContractorRow(record):renderCompanyRow(record));
     });
     const filters = new FormData(document.querySelector(`[data-filter-form="${type}"]`));
     const hasFilters = [...filters.values()].some((value) => String(value).trim());
-    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : type === 'companyRequirements' ? 'company requirements' : type==='contractors'?'staffing partners':'company accounts';
+    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : type === 'candidateInterests' ? 'Candidate job interests' : type === 'companyRequirements' ? 'company requirements' : type==='contractors'?'staffing partners':'company accounts';
     empty.textContent = hasFilters ? `No ${recordLabel} match the selected filters.` : `No ${recordLabel} have been received yet.`;
     empty.hidden = Boolean(records.length);
     const label = document.querySelector(`[data-page-label="${type}"]`);
@@ -390,7 +415,7 @@
     const loadDashboard = async () => {
       showMessage(dashboardMessage, 'Loading dashboard data…');
       try {
-        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('companies'), loadRecords('companyRequirements'),loadRecords('contractors')]);
+        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('candidateInterests'), loadRecords('companies'), loadRecords('companyRequirements'),loadRecords('contractors')]);
         showMessage(dashboardMessage, '');
       } catch (_error) {
         showMessage(dashboardMessage, 'Dashboard data could not be loaded. Check the connection and try again.', 'error');

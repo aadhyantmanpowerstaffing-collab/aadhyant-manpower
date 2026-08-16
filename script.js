@@ -125,6 +125,51 @@ const databaseConfig = {
   }
 };
 
+let candidateInterestCode = '';
+const candidateOpportunity = document.querySelector('[data-candidate-opportunity]');
+const candidateOpportunityUnavailable = document.querySelector('[data-candidate-opportunity-unavailable]');
+
+const initializeCandidateOpportunity = async () => {
+  if (!candidateOpportunity || !candidateOpportunityUnavailable) return;
+  const requestedCode = String(new URLSearchParams(window.location.search).get('requirement') || '').trim().toUpperCase();
+  if (!requestedCode) return;
+  const showUnavailable = () => {
+    candidateInterestCode = '';
+    candidateOpportunity.hidden = true;
+    candidateOpportunityUnavailable.hidden = false;
+  };
+  if (!/^AAD-[0-9]{4}-[0-9]{6}$/.test(requestedCode)) {
+    showUnavailable();
+    return;
+  }
+  const connection = window.aadhyantSupabase;
+  if (!connection?.isConfigured || !connection.client) {
+    showUnavailable();
+    return;
+  }
+  try {
+    let match = null;
+    for (let offset = 0; offset <= 950 && !match; offset += 50) {
+      const { data, error } = await connection.client.rpc('get_public_job_requirements', { p_limit: 50, p_offset: offset });
+      if (error) throw new Error('opportunity_lookup_failed');
+      match = (data || []).find((job) => job.requirement_code === requestedCode) || null;
+      if ((data || []).length < 50) break;
+    }
+    if (!match) {
+      showUnavailable();
+      return;
+    }
+    candidateInterestCode = requestedCode;
+    candidateOpportunity.querySelector('[data-opportunity-code]').textContent = match.requirement_code;
+    candidateOpportunity.querySelector('[data-opportunity-role]').textContent = match.job_role || 'Workforce opportunity';
+    candidateOpportunity.querySelector('[data-opportunity-location]').textContent = match.job_location || 'Location shared during coordination';
+    candidateOpportunity.hidden = false;
+    candidateOpportunityUnavailable.hidden = true;
+  } catch (_error) {
+    showUnavailable();
+  }
+};
+
 const setSubmissionStatus = (element, message, type = '', title = '') => {
   element.replaceChildren();
   element.classList.toggle('is-success', type === 'success');
@@ -296,9 +341,23 @@ document.querySelectorAll('[data-database-submit]').forEach((button) => {
     setSubmissionStatus(status, '');
     try {
       const payload = settings.payload(new FormData(form));
-      const { error } = await connection.client.from(settings.table).insert(payload);
+      const result = type === 'candidate' && candidateInterestCode
+        ? await connection.client.rpc('register_candidate_requirement_interest', {
+          p_requirement_code: candidateInterestCode,
+          p_candidate: payload
+        })
+        : await connection.client.from(settings.table).insert(payload);
+      const { data, error } = result;
       if (error) throw new Error('submission_failed');
-      setSubmissionStatus(status, settings.success, 'success', settings.successTitle);
+      const duplicateInterest = type === 'candidate' && candidateInterestCode && data === 'already_registered';
+      const linkedInterest = type === 'candidate' && candidateInterestCode;
+      const successMessage = duplicateInterest
+        ? 'Your interest is already registered for this opportunity.'
+        : linkedInterest
+          ? 'Your Candidate registration and interest for this opportunity have been received.'
+          : settings.success;
+      const successTitle = duplicateInterest ? 'Interest Already Registered' : settings.successTitle;
+      setSubmissionStatus(status, successMessage, 'success', successTitle);
       button.textContent = 'Submitted';
       review.querySelector(`[data-edit="${type}"]`).hidden = true;
     } catch (_error) {
@@ -340,3 +399,5 @@ if (sameAsMobile && candidateMobile && candidateWhatsApp) {
   sameAsMobile.addEventListener('change', copyMobile);
   candidateMobile.addEventListener('input', copyMobile);
 }
+
+initializeCandidateOpportunity();
