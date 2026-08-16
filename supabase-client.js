@@ -14,7 +14,8 @@
   if (!hasPlaceholders && window.supabase?.createClient) {
     try {
       const usesAuthenticatedPortal = window.location.pathname.includes('/admin/')
-        || window.location.pathname.includes('/company/');
+        || window.location.pathname.includes('/company/')
+        || window.location.pathname.includes('/contractor/');
       api.client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
         auth: usesAuthenticatedPortal
           ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
