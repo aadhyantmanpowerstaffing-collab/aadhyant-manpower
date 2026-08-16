@@ -197,6 +197,24 @@
 .public-site .public-after-submit p { color: var(--public-text-muted); }
 .public-site .public-after-submit .container > div { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
 
+/* R6 Candidate and Jobs journey */
+.public-site .public-candidate-options article { min-height: 19rem; }
+.public-site .candidate-registration-page { padding-top: 4.5rem; }
+.public-site .public-job-filters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.25rem; background: var(--public-background); border: 1px solid var(--public-border); border-radius: var(--public-radius-md); }
+.public-site .public-job-filters label { display: grid; gap: .4rem; color: var(--public-primary); font-size: .85rem; font-weight: 750; }
+.public-site .public-job-filters input { width: 100%; min-height: var(--public-control-height); padding: .7rem .8rem; color: var(--public-text); background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-sm); font: inherit; }
+.public-site .public-job-filters > div { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .75rem; }
+.public-site .public-job-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 2rem; }
+.public-site .public-job-card { padding: 1.5rem; background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-md); box-shadow: var(--public-shadow-sm); }
+.public-site .public-job-card h3 { margin: 0; color: var(--public-primary); font-size: 1.3rem; }
+.public-site .public-job-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.public-site .public-job-card dt { color: var(--public-text-muted); font-size: .75rem; }
+.public-site .public-job-card dd { margin: 0; color: var(--public-text); font-weight: 700; }
+.public-site .public-jobs-empty { margin-top: 2rem; padding: clamp(2rem, 6vw, 4rem); background: #fff; border: 1px dashed #aeb9c8; border-radius: var(--public-radius-md); text-align: center; }
+.public-site .public-jobs-empty h3 { margin: 0; color: var(--public-primary); font-size: 1.4rem; }
+.public-site .public-jobs-empty p { max-width: 40rem; margin: .75rem auto 1.5rem; color: var(--public-text-muted); }
+.public-site .public-jobs-empty > div { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
+
 @media (max-width: 1080px) {
   .public-site .public-header .menu-toggle { display: inline-flex; }
   .public-site .public-nav {
@@ -221,6 +239,7 @@
   .public-site .public-employer-options, .public-site .public-guidance { grid-template-columns: 1fr; }
   .public-site .public-employer-options article { min-height: 21rem; }
   .public-site .public-employer-final { align-items: flex-start; flex-direction: column; }
+  .public-site .public-job-filters { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -229,6 +248,7 @@
   .public-site .public-service-list, .public-site .public-industries ul, .public-site .public-trust-grid { grid-template-columns: 1fr; }
   .public-site .public-service-list article:nth-child(odd), .public-site .public-industries li:nth-child(odd) { border-right: 0; }
   .public-site .public-jobs-teaser { align-items: flex-start; flex-direction: column; }
+  .public-site .public-job-filters, .public-site .public-job-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

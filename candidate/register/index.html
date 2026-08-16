@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Register your Candidate profile with Aadhyant for consideration for suitable industrial and workforce opportunities."><meta name="theme-color" content="#102447">
+  <link rel="canonical" href="https://aadhyantmanpower.in/candidate/register/"><title>Candidate Registration | Aadhyant</title>
+  <link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="../../assets/css/public.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script><script src="../../config.js" defer></script><script src="../../supabase-client.js" defer></script><script src="../../assets/js/public-navigation.js" defer></script><script src="../../script.js" defer></script>
+</head>
+<body class="public-site public-inner-page">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <header class="site-header public-header" data-public-header><div class="container header-inner public-header__inner">
+    <a class="brand public-brand" href="../../index.html" aria-label="Aadhyant home"><span class="brand-mark" aria-hidden="true">A</span><span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span></a>
+    <button class="menu-toggle public-menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation" data-public-menu-button><span class="menu-toggle-label">Menu</span><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+    <nav class="primary-nav public-nav" id="primary-navigation" aria-label="Primary navigation" data-public-navigation>
+      <a href="../../index.html">Home</a><a href="../../index.html#about">About</a><a href="../../index.html#services">Services</a><a href="../../index.html#industries">Industries</a><a href="../../jobs/" aria-current="page">Jobs</a><a href="../../index.html#contact">Contact</a>
+      <div class="public-portal" data-public-portal><button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button><div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu><a href="../../company/login.html">Company Login</a><a href="../../contractor/login.html">Staffing Partner Login</a></div></div>
+      <div class="nav-actions public-nav__actions"><a class="nav-link-secondary public-button public-button--secondary" href="../../jobs/">Find Jobs</a><a class="button button-small button-primary public-button public-button--primary" href="../../hire-manpower/">Hire Manpower</a></div>
+    </nav>
+  </div></header>
+  <main id="main-content">
+    <section class="public-inner-hero public-candidate-hero"><div class="container"><p class="eyebrow">Candidate registration · No login required</p><h1>Register Your Candidate Profile</h1><p>Share your current details with Aadhyant for consideration for suitable workforce opportunities. Registration does not guarantee placement, an interview, or contact.</p><a class="public-text-link" href="../../jobs/">View Current Jobs</a></div></section>
+    <section class="section form-section form-section-alt candidate-registration-page" id="candidate-form">
+      <div class="container form-layout">
+        <div class="form-intro">
+          <p class="eyebrow">Candidate Registration</p>
+          <h2>Share Your Job Profile</h2>
+          <p>Complete your details, review the information, and contact Aadhyant through WhatsApp or email.</p>
+          <div class="process-list" aria-label="Candidate registration process">
+            <span><b>1</b> Add details</span><span><b>2</b> Review profile</span><span><b>3</b> Contact Aadhyant</span>
+          </div>
+        </div>
+
+        <div class="form-shell">
+          <form id="candidate-registration-form" class="lead-form" data-lead-form="candidate" novalidate>
+            <div class="form-status" role="status" aria-live="polite"></div>
+            <p class="required-key"><span aria-hidden="true">*</span> Required fields</p>
+            <fieldset>
+              <legend><span>01</span> Personal Details</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-name">Full Name <span aria-hidden="true">*</span></label>
+                  <input id="candidate-name" name="fullName" type="text" autocomplete="name" required>
+                  <span class="field-error" id="candidate-name-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-age">Age <span aria-hidden="true">*</span></label>
+                  <input id="candidate-age" name="age" type="number" inputmode="numeric" min="16" max="75" step="1" required>
+                  <span class="field-help">Enter an age between 16 and 75.</span>
+                  <span class="field-error" id="candidate-age-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-gender">Gender <span aria-hidden="true">*</span></label>
+                  <select id="candidate-gender" name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other / Prefer not to say</option></select>
+                  <span class="field-error" id="candidate-gender-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-mobile">Mobile Number <span aria-hidden="true">*</span></label>
+                  <input id="candidate-mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit Indian mobile number" required>
+                  <span class="field-help">Enter 10 digits without +91 or spaces.</span>
+                  <span class="field-error" id="candidate-mobile-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-whatsapp">WhatsApp Number <span class="optional">Optional</span></label>
+                  <input id="candidate-whatsapp" name="whatsapp" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}">
+                  <span class="field-error" id="candidate-whatsapp-error"></span>
+                  <label class="inline-check" for="same-as-mobile"><input id="same-as-mobile" type="checkbox" data-same-mobile> Same as mobile number</label>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>02</span> Location</legend>
+              <div class="field-grid">
+                <div class="field"><label for="candidate-city">Current Village / City <span aria-hidden="true">*</span></label><input id="candidate-city" name="city" type="text" autocomplete="address-level2" required><span class="field-error" id="candidate-city-error"></span></div>
+                <div class="field"><label for="candidate-district">District <span aria-hidden="true">*</span></label><input id="candidate-district" name="district" type="text" required><span class="field-error" id="candidate-district-error"></span></div>
+                <div class="field"><label for="candidate-state">State <span aria-hidden="true">*</span></label><input id="candidate-state" name="state" type="text" autocomplete="address-level1" required><span class="field-error" id="candidate-state-error"></span></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>03</span> Education &amp; Skill</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-qualification">Highest Qualification <span aria-hidden="true">*</span></label>
+                  <select id="candidate-qualification" name="qualification" required><option value="">Select qualification</option><option>Below 10th</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Post Graduate</option><option>Other</option></select>
+                  <span class="field-error" id="candidate-qualification-error"></span>
+                </div>
+                <div class="field">
+                  <label for="candidate-trade">Course / Trade / Specialization <span class="optional">Optional</span></label>
+                  <input id="candidate-trade" name="trade" type="text" placeholder="e.g. ITI Fitter or Diploma Mechanical">
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>04</span> Experience</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-type">Candidate Type <span aria-hidden="true">*</span></label>
+                  <select id="candidate-type" name="candidateType" required data-candidate-type><option value="">Select type</option><option>Fresher</option><option>Experienced</option></select>
+                  <span class="field-error" id="candidate-type-error"></span>
+                </div>
+                <div class="conditional-fields field-wide" data-experience-fields hidden>
+                  <div class="field-grid">
+                    <div class="field"><label for="candidate-experience">Total Experience <span class="optional">Optional</span></label><input id="candidate-experience" name="totalExperience" type="text" placeholder="e.g. 2 years" disabled></div>
+                    <div class="field"><label for="candidate-role">Previous Job Role <span class="optional">Optional</span></label><input id="candidate-role" name="previousRole" type="text" disabled></div>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span>05</span> Job Readiness</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="candidate-interview">Can Attend Interview? <span aria-hidden="true">*</span></label>
+                  <select id="candidate-interview" name="interview" required><option value="">Select option</option><option>Yes</option><option>No</option></select>
+                  <span class="field-error" id="candidate-interview-error"></span>
+                </div>
+                <div class="field"><label for="candidate-preferred-location">Preferred Job Location <span class="optional">Optional</span></label><input id="candidate-preferred-location" name="preferredLocation" type="text"></div>
+                <div class="field field-wide"><label for="candidate-additional">Additional Information <span class="optional">Optional</span></label><textarea id="candidate-additional" name="additional" rows="4"></textarea></div>
+              </div>
+            </fieldset>
+
+            <label class="consent-field">
+              <input id="candidate-consent" name="consent" type="checkbox" required>
+              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
+            </label>
+            <span class="field-error consent-error" id="candidate-consent-error"></span>
+            <button class="button button-primary form-submit" type="submit">Review Registration <span aria-hidden="true">→</span></button>
+          </form>
+
+          <section class="review-panel" id="candidate-review" data-review="candidate" aria-labelledby="candidate-review-title" hidden>
+            <p class="eyebrow">Review Details</p>
+            <h3 id="candidate-review-title">Candidate Registration</h3>
+            <p>Please check the information before choosing how to contact us.</p>
+            <dl class="review-list" data-review-list></dl>
+            <div class="database-submit">
+              <button class="button button-primary" type="button" data-database-submit="candidate">Submit Registration</button>
+              <div class="submission-status" data-submission-status="candidate" role="status" aria-live="polite"></div>
+            </div>
+            <p class="fallback-heading">You can also send these details directly:</p>
+            <div class="review-actions">
+              <a class="button button-whatsapp" href="#contact" data-whatsapp="candidate" target="_blank" rel="noopener">Continue to WhatsApp</a>
+              <a class="button button-secondary" href="#contact" data-email="candidate">Send by Email</a>
+              <button class="button button-outline" type="button" data-edit="candidate">Edit Details</button>
+            </div>
+            <div class="review-fallback">
+              <strong>Prefer direct contact?</strong>
+              <a href="tel:+919586785800">Call +91 95867 85800</a>
+              <a href="mailto:aadhyantmanpowerstaffing@gmail.com">Email Aadhyant</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+    <section class="public-after-submit"><div class="container"><h2>What happens after registration?</h2><p>Aadhyant may use your submitted details for recruitment and workforce communication regarding suitable opportunities. Registration does not create a Candidate account.</p><div><a class="public-button public-button--primary" href="../../jobs/">View Jobs</a><a class="public-button public-button--secondary" href="../../index.html">Return Home</a></div></div></section>
+  </main>
+  <footer class="site-footer public-footer" id="contact"><div class="container footer-main"><div class="footer-brand"><a class="brand brand-light" href="../../index.html"><span class="brand-mark" aria-hidden="true">A</span><span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span></a><p>Industrial manpower, recruitment support and staffing coordination.</p></div><div class="footer-column"><h2>Candidates</h2><a href="../">Candidate Information</a><a href="../../jobs/">Jobs</a><a href="./">Candidate Registration</a><a href="../../hire-manpower/">Hire Manpower</a></div><div class="footer-column footer-contact"><h2>Contact</h2><a href="tel:+919586785800">+91 95867 85800</a><a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a><p>Kadi, Mahesana, Gujarat – 384440</p></div></div><div class="container footer-bottom"><p>GSTIN: 24ACNFA4445J1Z9</p><p>© 2026 Aadhyant Manpower &amp; Staffing.</p></div></footer>
+</body>
+</html>
