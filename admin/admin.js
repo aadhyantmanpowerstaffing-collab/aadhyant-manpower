@@ -8,6 +8,7 @@
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
   const pages = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const pageCounts = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
+  const loadVersions = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const recordsById = new Map();
 
   const detailFields = {
@@ -343,8 +344,9 @@
   const loadRecords = async (type) => {
     const body = document.querySelector(`[data-table-body="${type}"]`);
     const empty = document.querySelector(`[data-empty="${type}"]`);
-    body.replaceChildren();
+    const loadVersion = ++loadVersions[type];
     const { data, count, error } = await buildQuery(type);
+    if (loadVersion !== loadVersions[type]) return false;
     if (error) throw new Error('records');
     pageCounts[type] = count || 0;
     let records = data || [];
@@ -359,6 +361,8 @@
       }]));
       records = records.map((record) => ({ ...record, owner: owners.get(record.id) || null }));
     }
+    if (loadVersion !== loadVersions[type]) return false;
+    body.replaceChildren();
     records.forEach((record) => {
       recordsById.set(`${type}:${record.id}`, record);
       body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'candidateInterests' ? renderCandidateInterestRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : type==='contractors'?renderContractorRow(record):renderCompanyRow(record));
@@ -474,16 +478,40 @@
     document.querySelector('[data-application-form]').addEventListener('submit', async (event) => {
       event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-application-message]');
       if (!form.checkValidity()) { form.reportValidity(); return; }
-      button.disabled = true; button.textContent = 'Saving…'; showMessage(message, '');
-      const { error } = await client.rpc('admin_update_candidate_application', {
-        p_application_id: form.elements.applicationId.value,
-        p_application_status: form.elements.applicationStatus.value,
-        p_admin_notes: form.elements.adminNotes.value.trim() || null
-      });
-      button.disabled = false; button.textContent = 'Save Application';
-      if (error) { showMessage(message, 'The application could not be updated. Check your access and connection, then try again.', 'error'); return; }
-      showMessage(message, 'Application status and internal note saved.', 'success');
-      try { await loadRecords('candidateInterests'); const updated = recordsById.get(`candidateInterests:${form.elements.applicationId.value}`); if (updated) { form.elements.applicationStatus.value = updated.application_status; form.elements.adminNotes.value = updated.admin_notes || ''; } } catch (_error) { showMessage(message, 'The update was saved, but the filtered list could not be refreshed.', 'error'); }
+      if (form.dataset.saving === 'true') return;
+      const applicationId = form.elements.applicationId.value;
+      const requestedStatus = form.elements.applicationStatus.value;
+      const requestedNotes = form.elements.adminNotes.value.trim() || null;
+      form.dataset.saving = 'true'; button.disabled = true; button.textContent = 'Saving…'; showMessage(message, '');
+      try {
+        const { data: saved, error } = await client.rpc('admin_update_candidate_application', {
+          p_application_id: applicationId,
+          p_application_status: requestedStatus,
+          p_admin_notes: requestedNotes
+        });
+        if (error || saved !== true) {
+          showMessage(message, 'The application could not be updated. Check your access and connection, then try again.', 'error');
+          return;
+        }
+        const { data: persisted, error: verifyError } = await client.from('candidate_applications')
+          .select('id,application_status,admin_notes,updated_at')
+          .eq('id', applicationId)
+          .maybeSingle();
+        if (verifyError || !persisted || persisted.application_status !== requestedStatus || (persisted.admin_notes || null) !== requestedNotes) {
+          showMessage(message, 'The update could not be confirmed. Reload the application before trying again.', 'error');
+          return;
+        }
+        form.elements.applicationStatus.value = persisted.application_status;
+        form.elements.adminNotes.value = persisted.admin_notes || '';
+        const cached = recordsById.get(`candidateInterests:${applicationId}`);
+        if (cached) recordsById.set(`candidateInterests:${applicationId}`, { ...cached, ...persisted });
+        showMessage(message, 'Application status and internal note saved.', 'success');
+        try { await loadRecords('candidateInterests'); } catch (_error) { showMessage(message, 'The update was saved, but the filtered list could not be refreshed.', 'error'); }
+      } catch (_error) {
+        showMessage(message, 'The application could not be updated. Check your access and connection, then try again.', 'error');
+      } finally {
+        delete form.dataset.saving; button.disabled = false; button.textContent = 'Save Application';
+      }
     });
 
     document.querySelectorAll('[data-tab]').forEach((tab) => {
