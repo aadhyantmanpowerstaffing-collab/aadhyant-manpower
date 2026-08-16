@@ -6,8 +6,8 @@
 
   const employerStatuses = ['new', 'contacted', 'in_progress', 'fulfilled', 'closed'];
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
-  const pages = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0 };
-  const pageCounts = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0 };
+  const pages = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0, contractors: 0 };
+  const pageCounts = { employers: 0, candidates: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const recordsById = new Map();
 
   const detailFields = {
@@ -210,12 +210,26 @@
     actionsCell.append(actions); row.append(actionsCell); return row;
   };
 
-  const openCompanyRequirement = (record) => {
+  const openContractorReview = (record) => {
+    const dialog=document.querySelector('[data-contractor-dialog]'),list=document.querySelector('[data-contractor-details]'),form=document.querySelector('[data-contractor-status-form]'),owner=record.owner||{};
+    document.querySelector('[data-contractor-title]').textContent=record.agency_name;list.replaceChildren();[['Registered',formatDate(record.created_at)],['Agency',record.agency_name],['Contact',record.owner_name||owner.display_name],['Email',owner.email||record.main_email],['Mobile',record.main_phone||owner.mobile],['Location',[record.city,record.district,record.state].filter(Boolean).join(', ')],['GSTIN',record.gstin],['Labour licence',record.labour_license_number],['EPFO',record.epfo_code],['ESIC',record.esic_code],['Capacity',record.workforce_capacity],['Service areas',(record.operating_locations||[]).join(', ')],['Categories',(record.manpower_categories||[]).join(', ')],['Notes',record.onboarding_notes]].filter(([,v])=>v!==null&&v!=='').forEach(([k,v])=>{const d=createElement('div');d.append(createElement('dt','',k),createElement('dd','',String(v)));list.append(d)});form.elements.contractorId.value=record.id;form.elements.status.value=record.account_status;showMessage(document.querySelector('[data-contractor-message]'),'');dialog.showModal();
+  };
+  const renderContractorRow = record => {const row=document.createElement('tr'),owner=record.owner||{};[formatDate(record.created_at),record.agency_name,record.owner_name||owner.display_name,owner.email||record.main_email,record.main_phone||owner.mobile,[record.city,record.state].filter(Boolean).join(', '),record.gstin].forEach(v=>addCell(row,v));const s=document.createElement('td');s.append(statusBadge(record.account_status));row.append(s);const a=document.createElement('td'),b=createElement('button','table-action','Review');b.type='button';b.onclick=()=>openContractorReview(record);a.append(b);row.append(a);return row};
+
+  const loadRequirementAssignments = async (record) => {
+    const {data:assignments,error}=await client.from('requirement_contractors').select('id,contractor_id,assigned_headcount,assignment_status,assigned_at,accepted_at,declined_at,closed_at,contractors(agency_name)').eq('requirement_id',record.id).order('assigned_at');if(error)throw error;
+    const counted=(assignments||[]).filter(x=>['assigned','accepted','active'].includes(x.assignment_status)).reduce((sum,x)=>sum+x.assigned_headcount,0),open=Math.max(0,record.required_headcount-record.filled_positions),remaining=Math.max(0,open-counted);
+    document.querySelector('[data-assignment-summary=open]').textContent=open;document.querySelector('[data-assignment-summary=allocated]').textContent=counted;document.querySelector('[data-assignment-summary=remaining]').textContent=remaining;
+    const form=document.querySelector('[data-assignment-form]');form.elements.requirementId.value=record.id;form.elements.headcount.max=remaining;form.hidden=record.requirement_stage!=='open'||remaining===0;
+    const {data:contractors,error:ce}=await client.from('contractors').select('id,agency_name').eq('account_status','active').order('agency_name');if(ce)throw ce;form.elements.contractorId.replaceChildren(new Option('Select active partner',''));(contractors||[]).filter(c=>!(assignments||[]).some(a=>a.contractor_id===c.id)).forEach(c=>form.elements.contractorId.add(new Option(c.agency_name,c.id)));
+    const body=document.querySelector('[data-assignment-list]');body.replaceChildren();(assignments||[]).forEach(a=>{const row=document.createElement('tr');[a.contractors?.agency_name||'Partner',a.assigned_headcount,readableStatus(a.assignment_status),formatDate(a.assigned_at),formatDate(a.accepted_at||a.declined_at)].forEach(v=>addCell(row,String(v)));const cell=document.createElement('td');if(['assigned','accepted','active'].includes(a.assignment_status)){const cancel=createElement('button','table-action','Cancel');cancel.type='button';cancel.onclick=async()=>{const {error:e}=await client.rpc('set_requirement_assignment_status',{p_assignment_id:a.id,p_assignment_status:'cancelled'});if(e){showMessage(document.querySelector('[data-assignment-message]'),'Could not cancel assignment.','error');return}await loadRequirementAssignments(record)};cell.append(cancel)}if(a.assignment_status==='accepted'){const start=createElement('button','table-action','Start');start.type='button';start.onclick=async()=>{const {error:e}=await client.rpc('set_requirement_assignment_status',{p_assignment_id:a.id,p_assignment_status:'active'});if(e){showMessage(document.querySelector('[data-assignment-message]'),'Could not start assignment.','error');return}await loadRequirementAssignments(record)};cell.append(start)}row.append(cell);body.append(row)});
+  };
+  const openCompanyRequirement = async (record) => {
     const dialog = document.querySelector('[data-requirement-admin-dialog]'); const list = document.querySelector('[data-requirement-admin-list]'); const form = document.querySelector('[data-requirement-admin-form]');
     document.querySelector('[data-requirement-admin-title]').textContent = `${record.requirement_code} · ${record.job_role}`; list.replaceChildren();
     const open = Math.max(0, record.required_headcount - record.filled_positions); const details = [['Company', record.company_name], ['Contact', `${record.contact_person || '—'} · ${record.mobile || '—'}`], ['Department / role', `${record.department} / ${record.job_role}`], ['Location', record.job_location], ['Headcount', record.required_headcount], ['Filled / open', `${record.filled_positions} / ${open}`], ['Salary', `${record.salary_min ?? '—'} - ${record.salary_max ?? '—'}`], ['Interview', record.interview_date ? formatDate(record.interview_date) : 'Not scheduled'], ['Notes', record.additional_notes]];
     details.filter(([, value]) => value !== null && value !== '').forEach(([label, value]) => { const item = createElement('div'); item.append(createElement('dt', '', label), createElement('dd', '', String(value))); list.append(item); });
-    form.elements.requirementId.value = record.id; form.elements.stage.value = record.requirement_stage; form.elements.visibility.value = record.requirement_visibility; showMessage(document.querySelector('[data-requirement-admin-message]'), ''); dialog.showModal();
+    form.elements.requirementId.value = record.id; form.elements.stage.value = record.requirement_stage; form.elements.visibility.value = record.requirement_visibility; showMessage(document.querySelector('[data-requirement-admin-message]'), ''); dialog.showModal();await loadRequirementAssignments(record);
   };
 
   const renderCompanyRequirementRow = (record) => {
@@ -227,10 +241,10 @@
   const buildQuery = (type) => {
     const form = document.querySelector(`[data-filter-form="${type}"]`);
     const filters = new FormData(form);
-    const table = type === 'employers' || type === 'companyRequirements' ? 'employer_requirements' : type === 'candidates' ? 'candidates' : 'companies';
+    const table = type === 'employers' || type === 'companyRequirements' ? 'employer_requirements' : type === 'candidates' ? 'candidates' : type === 'contractors' ? 'contractors' : 'companies';
     let query = client.from(table).select('*', { count: 'exact' });
     const status = String(filters.get('status') || '');
-    if (status) query = query.eq(type === 'companies' ? 'account_status' : 'status', status);
+    if (status) query = query.eq(type === 'companies' || type === 'contractors' ? 'account_status' : 'status', status);
     if (type === 'employers') {
       const company = safeFilterTerm(filters.get('company'));
       const location = safeFilterTerm(filters.get('location'));
@@ -253,10 +267,10 @@
       if (district) query = query.ilike('district', `%${district}%`);
       if (qualification) query = query.eq('highest_qualification', qualification);
       if (candidateType) query = query.eq('candidate_type', candidateType);
-    } else {
+    } else if(type==='companies'||type==='contractors') {
       const search = safeFilterTerm(filters.get('search'));
       const location = safeFilterTerm(filters.get('location'));
-      if (search) query = query.ilike('legal_name', `%${search}%`);
+      if (search) query = query.ilike(type==='contractors'?'agency_name':'legal_name', `%${search}%`);
       if (location) query = query.or(`city.ilike.%${location}%,state.ilike.%${location}%`);
     }
     const from = pages[type] * PAGE_SIZE;
@@ -271,23 +285,24 @@
     if (error) throw new Error('records');
     pageCounts[type] = count || 0;
     let records = data || [];
-    if (type === 'companies' && records.length) {
-      const { data: memberships, error: membershipError } = await client.from('company_users')
-        .select('company_id, user_id, role, status, platform_users(display_name,email,mobile,account_status)')
-        .in('company_id', records.map((record) => record.id)).eq('role', 'owner');
+    if ((type === 'companies'||type==='contractors') && records.length) {
+      const membershipTable=type==='contractors'?'contractor_users':'company_users', idColumn=type==='contractors'?'contractor_id':'company_id';
+      const { data: memberships, error: membershipError } = await client.from(membershipTable)
+        .select(`${idColumn}, user_id, role, status, platform_users(display_name,email,mobile,account_status)`)
+        .in(idColumn, records.map((record) => record.id)).eq('role', 'owner');
       if (membershipError) throw new Error('company-memberships');
-      const owners = new Map((memberships || []).map((membership) => [membership.company_id, {
+      const owners = new Map((memberships || []).map((membership) => [membership[idColumn], {
         ...(membership.platform_users || {}), userId: membership.user_id, membershipStatus: membership.status
       }]));
       records = records.map((record) => ({ ...record, owner: owners.get(record.id) || null }));
     }
     records.forEach((record) => {
       recordsById.set(`${type}:${record.id}`, record);
-      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : renderCompanyRow(record));
+      body.append(type === 'employers' ? renderEmployerRow(record) : type === 'candidates' ? renderCandidateRow(record) : type === 'companyRequirements' ? renderCompanyRequirementRow(record) : type==='contractors'?renderContractorRow(record):renderCompanyRow(record));
     });
     const filters = new FormData(document.querySelector(`[data-filter-form="${type}"]`));
     const hasFilters = [...filters.values()].some((value) => String(value).trim());
-    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : type === 'companyRequirements' ? 'company requirements' : 'company accounts';
+    const recordLabel = type === 'employers' ? 'employer requirements' : type === 'candidates' ? 'candidate registrations' : type === 'companyRequirements' ? 'company requirements' : type==='contractors'?'staffing partners':'company accounts';
     empty.textContent = hasFilters ? `No ${recordLabel} match the selected filters.` : `No ${recordLabel} have been received yet.`;
     empty.hidden = Boolean(records.length);
     const label = document.querySelector(`[data-page-label="${type}"]`);
@@ -375,7 +390,7 @@
     const loadDashboard = async () => {
       showMessage(dashboardMessage, 'Loading dashboard data…');
       try {
-        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('companies'), loadRecords('companyRequirements')]);
+        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('companies'), loadRecords('companyRequirements'),loadRecords('contractors')]);
         showMessage(dashboardMessage, '');
       } catch (_error) {
         showMessage(dashboardMessage, 'Dashboard data could not be loaded. Check the connection and try again.', 'error');
@@ -449,6 +464,8 @@
       try { await Promise.all([loadCounts(), loadRecords('companies')]); } catch (_error) { showMessage(dashboardMessage, 'Status was updated, but company records could not be refreshed.', 'error'); }
     });
 
+    const contractorDialog=document.querySelector('[data-contractor-dialog]');document.querySelectorAll('[data-close-contractor]').forEach(b=>b.addEventListener('click',()=>contractorDialog.close()));document.querySelector('[data-contractor-status-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,button=form.querySelector('button[type=submit]');button.disabled=true;const {error}=await client.rpc('set_contractor_account_status',{p_contractor_id:form.elements.contractorId.value,p_account_status:form.elements.status.value});button.disabled=false;if(error){showMessage(document.querySelector('[data-contractor-message]'),'Partner status could not be updated.','error');return}showMessage(document.querySelector('[data-contractor-message]'),'Partner status updated.','success');await loadRecords('contractors')});
+
     const requirementDialog = document.querySelector('[data-requirement-admin-dialog]');
     document.querySelectorAll('[data-close-requirement-admin]').forEach((button) => button.addEventListener('click', () => requirementDialog.close()));
     requirementDialog.addEventListener('click', (event) => { if (event.target === requirementDialog) requirementDialog.close(); });
@@ -458,6 +475,7 @@
       button.disabled = false; button.textContent = 'Save Requirement Stage'; if (error) { showMessage(message, 'The operational stage could not be changed.', 'error'); return; } showMessage(message, 'Requirement stage updated.', 'success');
       try { await loadRecords('companyRequirements'); } catch (_error) { showMessage(dashboardMessage, 'Stage saved, but Company Requirements could not be refreshed.', 'error'); }
     });
+    document.querySelector('[data-assignment-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,requirement=recordsById.get(`companyRequirements:${form.elements.requirementId.value}`),button=form.querySelector('button[type=submit]');button.disabled=true;showMessage(document.querySelector('[data-assignment-message]'),'');const {error}=await client.rpc('assign_requirement_contractor',{p_requirement_id:form.elements.requirementId.value,p_contractor_id:form.elements.contractorId.value,p_assigned_headcount:Number(form.elements.headcount.value),p_internal_notes:form.elements.notes.value.trim()||null});button.disabled=false;if(error){showMessage(document.querySelector('[data-assignment-message]'),'Assignment could not be saved. Check partner status and remaining allocation.','error');return}form.reset();showMessage(document.querySelector('[data-assignment-message]'),'Staffing partner assigned.','success');await loadRequirementAssignments(requirement)});
 
     client.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') window.location.replace('./login.html'); });
     await loadDashboard();
