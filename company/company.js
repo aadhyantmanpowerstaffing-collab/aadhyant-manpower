@@ -190,7 +190,98 @@
     client.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') window.location.replace('login.html'); });
   };
 
+  const requirementFields = ['department', 'jobRole', 'jobLocation', 'requiredHeadcount', 'qualification', 'experienceRequirement', 'genderPreference', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax', 'shiftDetails', 'workingHours', 'overtimeDetails', 'canteen', 'transport', 'accommodation', 'interviewLocation', 'interviewDate', 'additionalNotes'];
+  const requirementColumns = 'id,requirement_code,department,job_role,job_location,required_headcount,filled_positions,qualification,experience_requirement,gender_preference,age_min,age_max,salary_min,salary_max,shift_details,working_hours,overtime_details,canteen,transport,accommodation,interview_location,interview_date,additional_notes,requirement_stage,requirement_visibility,created_at,updated_at';
+  const requirementMap = {
+    department: 'department', jobRole: 'job_role', jobLocation: 'job_location', requiredHeadcount: 'required_headcount', qualification: 'qualification',
+    experienceRequirement: 'experience_requirement', genderPreference: 'gender_preference', ageMin: 'age_min', ageMax: 'age_max', salaryMin: 'salary_min', salaryMax: 'salary_max',
+    shiftDetails: 'shift_details', workingHours: 'working_hours', overtimeDetails: 'overtime_details', canteen: 'canteen', transport: 'transport', accommodation: 'accommodation',
+    interviewLocation: 'interview_location', interviewDate: 'interview_date', additionalNotes: 'additional_notes'
+  };
+  const requirementParams = (form) => {
+    const value = (name) => String(form.elements[name].value || '').trim();
+    const nullableNumber = (name) => value(name) === '' ? null : Number(value(name));
+    return {
+      p_department: value('department'), p_job_role: value('jobRole'), p_job_location: value('jobLocation'), p_required_headcount: Number(value('requiredHeadcount')),
+      p_qualification: value('qualification') || null, p_experience_requirement: value('experienceRequirement'), p_gender_preference: value('genderPreference'),
+      p_age_min: nullableNumber('ageMin'), p_age_max: nullableNumber('ageMax'), p_salary_min: nullableNumber('salaryMin'), p_salary_max: nullableNumber('salaryMax'),
+      p_shift_details: value('shiftDetails') || null, p_working_hours: value('workingHours') || null, p_overtime_details: value('overtimeDetails') || null,
+      p_canteen: value('canteen'), p_transport: value('transport'), p_accommodation: value('accommodation'), p_interview_location: value('interviewLocation') || null,
+      p_interview_date: value('interviewDate') ? new Date(value('interviewDate')).toISOString() : null, p_additional_notes: value('additionalNotes') || null
+    };
+  };
+  const validateRequirement = (form) => {
+    let valid = true;
+    ['department', 'jobRole', 'jobLocation'].forEach((name) => { valid = fieldError(form, name, form.elements[name].value.trim() ? '' : 'This field is required.') && valid; });
+    const headcount = Number(form.elements.requiredHeadcount.value);
+    valid = fieldError(form, 'requiredHeadcount', Number.isInteger(headcount) && headcount > 0 && headcount <= 100000 ? '' : 'Enter a whole number between 1 and 100000.') && valid;
+    const ageMin = form.elements.ageMin.value === '' ? null : Number(form.elements.ageMin.value); const ageMax = form.elements.ageMax.value === '' ? null : Number(form.elements.ageMax.value);
+    valid = fieldError(form, 'ageRange', ageMin !== null && ageMax !== null && ageMin > ageMax ? 'Minimum age cannot exceed maximum age.' : '') && valid;
+    const salaryMin = form.elements.salaryMin.value === '' ? null : Number(form.elements.salaryMin.value); const salaryMax = form.elements.salaryMax.value === '' ? null : Number(form.elements.salaryMax.value);
+    valid = fieldError(form, 'salaryRange', (salaryMin !== null && salaryMin < 0) || (salaryMax !== null && salaryMax < 0) || (salaryMin !== null && salaryMax !== null && salaryMin > salaryMax) ? 'Enter a valid non-negative salary range.' : '') && valid;
+    valid = fieldError(form, 'interviewDate', form.elements.interviewDate.value && Number.isNaN(new Date(form.elements.interviewDate.value).getTime()) ? 'Enter a valid interview date.' : '') && valid;
+    return valid;
+  };
+  const readable = (value) => String(value || '').replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const money = (value) => value === null || value === undefined ? '—' : `₹${Number(value).toLocaleString('en-IN')}`;
+
+  const initializeRequirements = async () => {
+    const loading = document.querySelector('[data-portal-loading]'); const portal = document.querySelector('[data-portal]');
+    if (!connection?.isConfigured || !client) { loading.textContent = 'Company Portal is temporarily unavailable.'; return; }
+    let account;
+    try { account = await getCompanyAccount(); } catch (_error) { loading.textContent = 'Company access could not be verified.'; return; }
+    if (!account.session) { window.location.replace('login.html'); return; }
+    if (!account.platformUser || account.platformUser.account_status !== 'active' || !account.company || account.membership?.status !== 'active') { window.location.replace('index.html'); return; }
+    loading.hidden = true; portal.hidden = false;
+    document.querySelector('[data-user-email]').textContent = account.session.user.email || account.platformUser.email;
+    document.querySelector('[data-company-name]').textContent = account.company.legal_name;
+    document.querySelectorAll('[data-logout]').forEach((button) => button.addEventListener('click', async () => { await client.auth.signOut(); window.location.replace('login.html'); }));
+    const body = document.querySelector('[data-requirements-body]'); const empty = document.querySelector('[data-requirements-empty]'); const dialog = document.querySelector('[data-requirement-dialog]'); const form = document.querySelector('[data-requirement-form]');
+    let records = [];
+    const load = async () => {
+      const { data, error } = await client.from('employer_requirements').select(requirementColumns).order('created_at', { ascending: false });
+      if (error) throw error; records = data || [];
+      const filters = new FormData(document.querySelector('[data-requirement-filters]')); const search = String(filters.get('search') || '').trim().toLowerCase(); const stage = String(filters.get('stage') || '');
+      const visible = records.filter((record) => (!stage || record.requirement_stage === stage) && (!search || [record.requirement_code, record.job_role, record.job_location].some((item) => String(item || '').toLowerCase().includes(search))));
+      body.replaceChildren(); empty.hidden = Boolean(visible.length);
+      visible.forEach((record) => {
+        const row = document.createElement('tr'); const open = Math.max(0, record.required_headcount - record.filled_positions);
+        const values = [`${record.requirement_code}\n${record.department} · ${record.job_role}`, record.job_location, String(record.required_headcount), `${record.filled_positions} filled · ${open} open`, `${money(record.salary_min)} – ${money(record.salary_max)}`, `${readable(record.requirement_stage)} / ${readable(record.requirement_visibility)}`, new Date(record.created_at).toLocaleDateString('en-IN')];
+        values.forEach((value, index) => { const cell = document.createElement('td'); cell.textContent = value; if (index === 0) cell.className = 'requirement-primary'; row.append(cell); });
+        const action = document.createElement('td'); const button = document.createElement('button'); button.type = 'button'; button.className = 'table-action'; button.textContent = 'View'; button.addEventListener('click', () => openDialog(record)); action.append(button); row.append(action); body.append(row);
+      });
+    };
+    const openDialog = (record = null) => {
+      form.reset(); form.elements.requirementId.value = record?.id || '';
+      document.querySelector('[data-requirement-dialog-title]').textContent = record ? 'Requirement Details' : 'Create Requirement';
+      const code = document.querySelector('[data-requirement-code]'); code.hidden = !record; code.textContent = record ? `${record.requirement_code} · ${readable(record.requirement_stage)} · ${readable(record.requirement_visibility)}` : '';
+      if (record) requirementFields.forEach((name) => { const source = requirementMap[name]; let value = record[source] ?? ''; if (name === 'interviewDate' && value) value = new Date(value).toISOString().slice(0, 16); form.elements[name].value = value; });
+      const editable = !record || record.requirement_stage === 'draft'; form.querySelectorAll('input:not([type="hidden"]),select,textarea').forEach((control) => { control.disabled = !editable; });
+      form.querySelector('button[type="submit"]').hidden = !editable; const closeButton = form.querySelector('[data-close-requirement]'); closeButton.hidden = !record || !['draft', 'open', 'on_hold'].includes(record.requirement_stage); closeButton.textContent = record?.requirement_stage === 'draft' ? 'Cancel Requirement' : 'Close Requirement';
+      const detailMessage = document.querySelector('[data-requirement-message]'); detailMessage.textContent = ''; detailMessage.className = 'company-message'; dialog.showModal();
+    };
+    document.querySelector('[data-new-requirement]').addEventListener('click', () => openDialog());
+    document.querySelector('[data-requirement-filters]').addEventListener('submit', (event) => { event.preventDefault(); load(); });
+    document.querySelector('[data-requirement-filters]').addEventListener('reset', () => setTimeout(load, 0));
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (!validateRequirement(form)) { showMessage('Please correct the highlighted requirement fields.', 'error'); form.querySelector('[aria-invalid="true"]')?.focus(); return; }
+      const button = form.querySelector('button[type="submit"]'); button.disabled = true; const id = form.elements.requirementId.value; const params = requirementParams(form); if (id) params.p_requirement_id = id;
+      const { data, error } = await client.rpc(id ? 'update_company_requirement' : 'create_company_requirement', params);
+      button.disabled = false; if (error) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'The requirement could not be saved. No completion was recorded.'; message.className = 'company-message is-error'; return; }
+      dialog.close(); await load(); showMessage(`Requirement ${data.requirement_code} saved successfully.`, 'success');
+    });
+    form.querySelector('[data-close-requirement]').addEventListener('click', async () => {
+      const button = form.querySelector('[data-close-requirement]'); button.disabled = true; const { error } = await client.rpc('close_company_requirement', { p_requirement_id: form.elements.requirementId.value }); button.disabled = false;
+      if (error) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'This requirement could not be closed. Its status was not changed.'; message.className = 'company-message is-error'; return; }
+      dialog.close(); await load(); showMessage('Requirement lifecycle updated. History has been preserved.', 'success');
+    });
+    dialog.addEventListener('close', () => form.reset());
+    client.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') window.location.replace('login.html'); });
+    try { await load(); } catch (_error) { showMessage('Requirements could not be loaded. Please refresh or contact Aadhyant.', 'error'); }
+  };
+
   if (pageType === 'register') initializeRegistration();
   if (pageType === 'login') initializeLogin();
   if (pageType === 'dashboard') initializeDashboard();
+  if (pageType === 'requirements') initializeRequirements();
 }());

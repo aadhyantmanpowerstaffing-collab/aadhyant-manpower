@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Manpower Requirements | Aadhyant Company Portal</title>
+  <link rel="stylesheet" href="company.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../config.js" defer></script><script src="../supabase-client.js" defer></script><script src="company.js" defer></script>
+</head>
+<body class="portal-page" data-company-page="requirements">
+  <div class="portal-loading" data-portal-loading role="status">Verifying company access…</div>
+  <div data-portal hidden>
+    <header class="company-header portal-header"><a class="company-brand" href="../index.html"><span aria-hidden="true">A</span><strong>AADHYANT <small>COMPANY PORTAL</small></strong></a><div class="portal-account"><span data-user-email></span><button class="company-button company-button-quiet" type="button" data-logout>Log Out</button></div></header>
+    <nav class="portal-nav" aria-label="Company portal"><a href="index.html">Dashboard</a><a href="requirements.html" aria-current="page">Manpower Requirements</a><a href="index.html#profile-title">Company Profile</a></nav>
+    <main class="portal-main requirements-main">
+      <div class="company-message" data-page-message role="status" aria-live="polite"></div>
+      <div class="requirements-heading"><div><p class="eyebrow">Company workspace</p><h1>Manpower Requirements</h1><p>Create and monitor requirements owned by <strong data-company-name>your company</strong>.</p></div><button class="company-button company-button-primary" type="button" data-new-requirement>Create Requirement</button></div>
+      <form class="requirement-filters" data-requirement-filters><div class="field"><label for="requirement-search">Search</label><input id="requirement-search" name="search" type="search" placeholder="Code, role or location"></div><div class="field"><label for="requirement-stage-filter">Stage</label><select id="requirement-stage-filter" name="stage"><option value="">All stages</option><option value="draft">Draft</option><option value="open">Open</option><option value="on_hold">On hold</option><option value="filled">Filled</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><button class="company-button company-button-quiet" type="submit">Apply Filters</button><button class="text-button" type="reset">Clear</button></form>
+      <div class="requirement-table-wrap"><table class="requirement-table"><thead><tr><th>Code / Role</th><th>Location</th><th>Headcount</th><th>Progress</th><th>Salary</th><th>Stage</th><th>Created</th><th>Action</th></tr></thead><tbody data-requirements-body></tbody></table></div>
+      <div class="requirements-empty" data-requirements-empty hidden><h2>No requirements found</h2><p>Create your first structured manpower requirement or adjust the filters.</p></div>
+    </main>
+  </div>
+
+  <dialog class="requirement-dialog" data-requirement-dialog aria-labelledby="requirement-dialog-title">
+    <form method="dialog" class="dialog-close-form"><button type="submit" aria-label="Close requirement dialog">×</button></form>
+    <div class="dialog-heading"><p class="eyebrow">Company requirement</p><h2 id="requirement-dialog-title" data-requirement-dialog-title>Create Requirement</h2><p data-requirement-code hidden></p></div>
+    <div class="company-message" data-requirement-message role="status" aria-live="polite"></div>
+    <form class="requirement-form" data-requirement-form novalidate>
+      <input type="hidden" name="requirementId">
+      <fieldset><legend>Role and workforce</legend><div class="form-grid">
+        <div class="field"><label for="req-department">Department *</label><input id="req-department" name="department" maxlength="160" required><small class="field-error" data-error-for="department"></small></div>
+        <div class="field"><label for="req-role">Job role / trade *</label><input id="req-role" name="jobRole" maxlength="200" required><small class="field-error" data-error-for="jobRole"></small></div>
+        <div class="field"><label for="req-location">Job location *</label><input id="req-location" name="jobLocation" maxlength="240" required><small class="field-error" data-error-for="jobLocation"></small></div>
+        <div class="field"><label for="req-headcount">Required headcount *</label><input id="req-headcount" name="requiredHeadcount" type="number" min="1" max="100000" required><small class="field-error" data-error-for="requiredHeadcount"></small></div>
+        <div class="field"><label for="req-qualification">Minimum qualification</label><input id="req-qualification" name="qualification" maxlength="200"></div>
+        <div class="field"><label for="req-experience">Experience</label><select id="req-experience" name="experienceRequirement"><option>Both</option><option>Fresher</option><option>Experienced</option></select></div>
+        <div class="field"><label for="req-gender">Gender preference</label><select id="req-gender" name="genderPreference"><option>Any</option><option>Male</option><option>Female</option></select></div>
+        <div class="field range-fields"><label>Age range</label><span><input name="ageMin" type="number" min="16" max="75" aria-label="Minimum age" placeholder="Min"><input name="ageMax" type="number" min="16" max="75" aria-label="Maximum age" placeholder="Max"></span><small class="field-error" data-error-for="ageRange"></small></div>
+      </div></fieldset>
+      <fieldset><legend>Compensation and facilities</legend><div class="form-grid">
+        <div class="field range-fields"><label>Monthly salary range</label><span><input name="salaryMin" type="number" min="0" step="0.01" aria-label="Minimum salary" placeholder="Min"><input name="salaryMax" type="number" min="0" step="0.01" aria-label="Maximum salary" placeholder="Max"></span><small class="field-error" data-error-for="salaryRange"></small></div>
+        <div class="field"><label for="req-shift">Shift</label><input id="req-shift" name="shiftDetails" maxlength="200"></div>
+        <div class="field"><label for="req-hours">Duty / working hours</label><input id="req-hours" name="workingHours" maxlength="200"></div>
+        <div class="field"><label for="req-overtime">Overtime details</label><input id="req-overtime" name="overtimeDetails" maxlength="500"></div>
+        <div class="field"><label for="req-canteen">Canteen</label><select id="req-canteen" name="canteen"><option>Not Applicable</option><option>Yes</option><option>No</option></select></div>
+        <div class="field"><label for="req-transport">Transport</label><select id="req-transport" name="transport"><option>Not Applicable</option><option>Yes</option><option>No</option></select></div>
+        <div class="field"><label for="req-accommodation">Accommodation</label><select id="req-accommodation" name="accommodation"><option>Not Applicable</option><option>Yes</option><option>No</option></select></div>
+      </div></fieldset>
+      <fieldset><legend>Interview and notes</legend><div class="form-grid"><div class="field"><label for="req-interview-location">Interview location</label><input id="req-interview-location" name="interviewLocation" maxlength="240"></div><div class="field"><label for="req-interview-date">Interview date and time</label><input id="req-interview-date" name="interviewDate" type="datetime-local"><small class="field-error" data-error-for="interviewDate"></small></div><div class="field field-wide"><label for="req-notes">Requirement notes</label><textarea id="req-notes" name="additionalNotes" rows="4" maxlength="2000"></textarea></div></div></fieldset>
+      <div class="requirement-actions"><button class="company-button company-button-primary" type="submit">Save Requirement</button><button class="company-button company-button-danger" type="button" data-close-requirement hidden>Close Requirement</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

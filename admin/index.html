@@ -43,6 +43,7 @@
         <button type="button" role="tab" aria-selected="true" aria-controls="employer-panel" id="employer-tab" data-tab="employers">Employer Requirements</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="candidate-panel" id="candidate-tab" data-tab="candidates">Candidates</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="company-panel" id="company-tab" data-tab="companies">Company Accounts</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="company-requirements-panel" id="company-requirements-tab" data-tab="companyRequirements">Company Requirements</button>
       </div>
 
       <section class="record-panel" id="employer-panel" role="tabpanel" aria-labelledby="employer-tab" data-panel="employers">
@@ -59,6 +60,18 @@
         </div>
         <div class="empty-records" data-empty="employers" hidden>No employer requirements have been received yet.</div>
         <nav class="pagination" aria-label="Employer requirements pages"><button class="admin-button admin-button-quiet" type="button" data-page="employers-prev">Previous</button><span data-page-label="employers">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="employers-next">Next</button></nav>
+      </section>
+
+      <section class="record-panel" id="company-requirements-panel" role="tabpanel" aria-labelledby="company-requirements-tab" data-panel="companyRequirements" hidden>
+        <div class="panel-heading"><div><h2>Company Requirements</h2><p>Review Company Portal-owned manpower requirements without mixing them with anonymous submissions.</p></div></div>
+        <form class="filter-grid employer-filters" data-filter-form="companyRequirements">
+          <div class="admin-field"><label for="cr-filter-stage">Stage</label><select id="cr-filter-stage" name="stage"><option value="">All stages</option><option value="draft">Draft</option><option value="open">Open</option><option value="on_hold">On hold</option><option value="filled">Filled</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div>
+          <div class="admin-field"><label for="cr-filter-company">Company</label><input id="cr-filter-company" name="company" type="search"></div><div class="admin-field"><label for="cr-filter-code">Requirement code</label><input id="cr-filter-code" name="code" type="search"></div><div class="admin-field"><label for="cr-filter-location">Location</label><input id="cr-filter-location" name="location" type="search"></div>
+          <div class="filter-actions"><button class="admin-button admin-button-primary" type="submit">Apply Filters</button><button class="admin-button admin-button-quiet" type="reset">Clear</button></div>
+        </form>
+        <div class="table-wrap" tabindex="0" aria-label="Company requirements table, horizontally scrollable"><table><thead><tr><th>Created</th><th>Code</th><th>Company / Contact</th><th>Role</th><th>Location</th><th>Headcount</th><th>Progress</th><th>Salary</th><th>Stage</th><th>Visibility</th><th>Action</th></tr></thead><tbody data-table-body="companyRequirements"></tbody></table></div>
+        <div class="empty-records" data-empty="companyRequirements" hidden>No Company Portal requirements have been created yet.</div>
+        <nav class="pagination" aria-label="Company requirement pages"><button class="admin-button admin-button-quiet" type="button" data-page="companyRequirements-prev">Previous</button><span data-page-label="companyRequirements">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="companyRequirements-next">Next</button></nav>
       </section>
 
       <section class="record-panel" id="candidate-panel" role="tabpanel" aria-labelledby="candidate-tab" data-panel="candidates" hidden>
@@ -119,5 +132,6 @@
       <div class="admin-message" data-company-dialog-message role="status" aria-live="polite"></div>
     </form>
   </dialog>
+  <dialog class="detail-dialog" data-requirement-admin-dialog aria-labelledby="requirement-admin-title"><div class="dialog-heading"><div><p class="admin-eyebrow">Company requirement review</p><h2 id="requirement-admin-title" data-requirement-admin-title>Requirement</h2></div><button class="dialog-close" type="button" data-close-requirement-admin aria-label="Close requirement review">×</button></div><dl class="detail-list" data-requirement-admin-list></dl><form class="detail-workflow" data-requirement-admin-form><input type="hidden" name="requirementId"><div class="admin-field"><label for="admin-requirement-stage">Operational stage</label><select id="admin-requirement-stage" name="stage"><option value="draft">Draft</option><option value="open">Open</option><option value="on_hold">On hold</option><option value="filled">Filled</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><div class="admin-field"><label for="admin-requirement-visibility">Visibility</label><select id="admin-requirement-visibility" name="visibility"><option value="private">Private</option><option value="assigned">Assigned</option><option value="public">Public</option></select></div><p class="status-warning">Operational changes preserve the requirement record and history.</p><div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Requirement Stage</button><button class="admin-button admin-button-quiet" type="button" data-close-requirement-admin>Cancel</button></div><div class="admin-message" data-requirement-admin-message role="status" aria-live="polite"></div></form></dialog>
 </body>
 </html>
