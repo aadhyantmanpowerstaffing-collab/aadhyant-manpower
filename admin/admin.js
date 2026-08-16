@@ -185,17 +185,105 @@
   };
 
   let applicationReturnFocus = null;
+  let interviewLoadVersion = 0;
+  let activeInterviewApplicationId = null;
+  let activeInterviewMutation = null;
+  let interviewIntegrityFailure = false;
+  const interviewRecords = new Map();
   const appendDetails = (list, details) => {
     list.replaceChildren();
     details.filter(([, value]) => value !== null && value !== undefined && value !== '').forEach(([label, value]) => {
       const item = createElement('div'); item.append(createElement('dt', '', label), createElement('dd', '', String(value))); list.append(item);
     });
   };
+  const toDatetimeLocal = (value) => {
+    if (!value) return '';
+    const date = new Date(value); const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+  const resetInterviewForm = (applicationId) => {
+    const form = document.querySelector('[data-interview-form]');
+    form.reset(); form.elements.applicationId.value = applicationId; form.elements.interviewId.value = '';
+    form.querySelector('button[type="submit"]').textContent = 'Schedule Interview';
+    document.querySelector('[data-cancel-reschedule]').hidden = true;
+    showMessage(document.querySelector('[data-interview-form-message]'), '');
+  };
+  const editInterviewSchedule = (record) => {
+    const form = document.querySelector('[data-interview-form]');
+    form.elements.interviewId.value = record.id; form.elements.scheduledAt.value = toDatetimeLocal(record.scheduled_at);
+    form.elements.mode.value = record.mode || ''; form.elements.location.value = record.location || '';
+    form.elements.meetingLink.value = record.meeting_link || ''; form.elements.contactPerson.value = record.contact_person || '';
+    form.elements.contactPhone.value = record.contact_phone || ''; form.elements.instructions.value = record.instructions || '';
+    form.querySelector('button[type="submit"]').textContent = 'Reschedule Interview';
+    document.querySelector('[data-cancel-reschedule]').hidden = false; form.elements.scheduledAt.focus();
+  };
+  const editInterviewOutcome = (record) => {
+    const form = document.querySelector('[data-interview-outcome-form]');
+    form.hidden = false; form.elements.interviewId.value = record.id;
+    form.elements.status.value = record.status === 'attended' ? 'completed' : 'attended';
+    form.elements.result.value = record.result || ''; form.elements.resultNotes.value = record.result_notes || '';
+    showMessage(document.querySelector('[data-interview-outcome-message]'), ''); form.elements.status.focus();
+  };
+  const setInterviewMutationControls = (disabled) => {
+    document.querySelectorAll('[data-interview-form] button, [data-interview-outcome-form] button, [data-new-interview], [data-interview-history] button').forEach((control) => { control.disabled = disabled || interviewIntegrityFailure; });
+  };
+  const beginInterviewMutation = (applicationId) => {
+    if (activeInterviewMutation) return false;
+    activeInterviewMutation = applicationId; setInterviewMutationControls(true); return true;
+  };
+  const endInterviewMutation = (applicationId) => {
+    if (activeInterviewMutation === applicationId) activeInterviewMutation = null;
+    setInterviewMutationControls(false);
+  };
+  const interviewErrorMessage = (error, action) => {
+    const detail = String(error?.message || '').toLowerCase();
+    if (detail.includes('already scheduled')) return 'An interview is already scheduled for this application.';
+    if (detail.includes('not eligible')) return 'This application is no longer eligible for interview scheduling.';
+    return action === 'update' ? 'Interview status could not be updated. Refresh and try again.' : 'The interview could not be scheduled. Refresh and try again.';
+  };
+  const sameOptionalText = (persisted, requested) => (persisted || null) === (requested || null);
+  const loadInterviewHistory = async (applicationId) => {
+    const loadVersion = ++interviewLoadVersion; const message = document.querySelector('[data-interview-load-message]');
+    showMessage(message, 'Loading interview history…');
+    const { data, error } = await client.from('interviews')
+      .select('id,application_id,interview_round,supersedes_interview_id,scheduled_at,mode,location,meeting_link,contact_person,contact_phone,instructions,status,result,result_notes,created_at,updated_at')
+      .eq('application_id', applicationId).order('created_at', { ascending: false }).limit(50);
+    if (loadVersion !== interviewLoadVersion || applicationId !== activeInterviewApplicationId) return { ok: false, stale: true, records: [] };
+    if (error) { showMessage(message, 'Interview history could not be loaded. Please try again.', 'error'); return { ok: false, records: [] }; }
+    const records = data || []; const body = document.querySelector('[data-interview-history]'); body.replaceChildren(); interviewRecords.clear();
+    records.forEach((record) => {
+      interviewRecords.set(record.id, record); const row = document.createElement('tr');
+      [String(record.interview_round), formatDate(record.scheduled_at), readableStatus(record.mode || ''), readableStatus(record.status), readableStatus(record.result || 'pending'), formatDate(record.updated_at)].forEach((value) => addCell(row, value));
+      const actionCell = document.createElement('td'); const actions = createElement('div', 'table-actions');
+      if (record.status === 'scheduled') {
+        const reschedule = createElement('button', 'table-action', 'Reschedule'); reschedule.type = 'button'; reschedule.addEventListener('click', () => editInterviewSchedule(record)); actions.append(reschedule);
+        const outcome = createElement('button', 'table-action', 'Update Status'); outcome.type = 'button'; outcome.addEventListener('click', () => editInterviewOutcome(record)); actions.append(outcome);
+      } else if (record.status === 'attended') {
+        const outcome = createElement('button', 'table-action', 'Complete'); outcome.type = 'button'; outcome.addEventListener('click', () => editInterviewOutcome(record)); actions.append(outcome);
+      }
+      actionCell.append(actions); row.append(actionCell); body.append(row);
+    });
+    document.querySelector('[data-interview-empty]').hidden = Boolean(records.length);
+    const scheduled = records.filter((record) => record.status === 'scheduled');
+    const integrityFailure = scheduled.length > 1; interviewIntegrityFailure = integrityFailure;
+    const current = scheduled[0] || records[0]; const summary = document.querySelector('[data-interview-summary]');
+    setInterviewMutationControls(Boolean(activeInterviewMutation));
+    if (integrityFailure) showMessage(message, 'Interview records require review before another schedule change can be made.', 'error');
+    else if (!current) { appendDetails(summary, [['Status', 'No interview scheduled yet.']]); }
+    else appendDetails(summary, [
+      ['Interview round', current.interview_round], ['Scheduled', formatDate(current.scheduled_at)], ['Mode', readableStatus(current.mode || '')],
+      ['Status', readableStatus(current.status)], ['Result', readableStatus(current.result || 'pending')], ['Location', current.location || '—'],
+      ['Meeting link', current.meeting_link || '—'], ['Contact person', current.contact_person || '—'], ['Contact phone', current.contact_phone || '—'],
+      ['Last updated', formatDate(current.updated_at)]
+    ]);
+    if (!integrityFailure) showMessage(message, '');
+    return { ok: !integrityFailure, integrityFailure, records, current: scheduled[0] || null };
+  };
   const openCandidateApplication = (record, trigger) => {
     if (!record) return;
     const candidate = record.candidates || {}; const requirement = record.employer_requirements || {};
     const dialog = document.querySelector('[data-application-dialog]'); const form = document.querySelector('[data-application-form]');
-    applicationReturnFocus = trigger;
+    applicationReturnFocus = trigger; activeInterviewApplicationId = record.id; interviewIntegrityFailure = false;
     document.querySelector('[data-application-title]').textContent = `${requirement.requirement_code || 'Requirement'} · ${candidate.full_name || 'Candidate'}`;
     appendDetails(document.querySelector('[data-application-requirement]'), [
       ['Requirement code', requirement.requirement_code], ['Job role', requirement.job_role], ['Department', requirement.department],
@@ -214,7 +302,9 @@
       ['Interest source', readableStatus(record.source_type || '')], ['Interested', formatDate(record.applied_at)], ['Last updated', formatDate(record.updated_at)]
     ]);
     form.elements.applicationId.value = record.id; form.elements.applicationStatus.value = record.application_status; form.elements.adminNotes.value = record.admin_notes || '';
-    showMessage(document.querySelector('[data-application-message]'), ''); dialog.showModal(); form.elements.applicationStatus.focus();
+    resetInterviewForm(record.id); document.querySelector('[data-interview-outcome-form]').hidden = true;
+    showMessage(document.querySelector('[data-application-message]'), ''); dialog.showModal();
+    loadInterviewHistory(record.id); form.elements.applicationStatus.focus();
   };
 
   const openCompanyReview = (record) => {
@@ -471,10 +561,16 @@
     document.querySelector('[data-refresh]').addEventListener('click', loadDashboard);
 
     const applicationDialog = document.querySelector('[data-application-dialog]');
-    const closeApplicationDialog = () => { applicationDialog.close(); applicationReturnFocus?.focus(); applicationReturnFocus = null; };
+    const closeApplicationDialog = () => {
+      activeInterviewApplicationId = null; interviewLoadVersion += 1; activeInterviewMutation = null; interviewIntegrityFailure = false; setInterviewMutationControls(false);
+      applicationDialog.close(); applicationReturnFocus?.focus(); applicationReturnFocus = null;
+    };
     document.querySelectorAll('[data-close-application]').forEach((button) => button.addEventListener('click', closeApplicationDialog));
     applicationDialog.addEventListener('click', (event) => { if (event.target === applicationDialog) closeApplicationDialog(); });
-    applicationDialog.addEventListener('close', () => { if (applicationReturnFocus) { applicationReturnFocus.focus(); applicationReturnFocus = null; } });
+    applicationDialog.addEventListener('close', () => {
+      activeInterviewApplicationId = null; interviewLoadVersion += 1; activeInterviewMutation = null; interviewIntegrityFailure = false; setInterviewMutationControls(false);
+      if (applicationReturnFocus) { applicationReturnFocus.focus(); applicationReturnFocus = null; }
+    });
     document.querySelector('[data-application-form]').addEventListener('submit', async (event) => {
       event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-application-message]');
       if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -511,6 +607,104 @@
         showMessage(message, 'The application could not be updated. Check your access and connection, then try again.', 'error');
       } finally {
         delete form.dataset.saving; button.disabled = false; button.textContent = 'Save Application';
+      }
+    });
+
+    document.querySelector('[data-new-interview]').addEventListener('click', () => {
+      const applicationId = document.querySelector('[data-application-form]').elements.applicationId.value;
+      resetInterviewForm(applicationId); document.querySelector('[data-interview-form]').elements.scheduledAt.focus();
+    });
+    document.querySelector('[data-cancel-reschedule]').addEventListener('click', () => {
+      resetInterviewForm(document.querySelector('[data-interview-form]').elements.applicationId.value);
+    });
+    document.querySelector('[data-cancel-interview-outcome]').addEventListener('click', () => {
+      document.querySelector('[data-interview-outcome-form]').hidden = true;
+    });
+    document.querySelector('[data-interview-form]').addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-interview-form-message]');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      if (form.dataset.saving === 'true' || activeInterviewMutation) return;
+      const applicationId = form.elements.applicationId.value; const interviewId = form.elements.interviewId.value;
+      const scheduledDate = new Date(form.elements.scheduledAt.value);
+      if (!Number.isFinite(scheduledDate.getTime()) || scheduledDate <= new Date()) { showMessage(message, 'Choose a future interview date and time.', 'error'); return; }
+      const details = {
+        p_scheduled_at: scheduledDate.toISOString(), p_mode: form.elements.mode.value,
+        p_location: form.elements.location.value.trim() || null, p_meeting_link: form.elements.meetingLink.value.trim() || null,
+        p_contact_person: form.elements.contactPerson.value.trim() || null, p_contact_phone: form.elements.contactPhone.value.trim() || null,
+        p_instructions: form.elements.instructions.value.trim() || null
+      };
+      if (![details.p_location, details.p_meeting_link, details.p_contact_person, details.p_contact_phone, details.p_instructions]
+        .every((value, index) => !value || value.length <= [500, 1000, 200, 30, 4000][index])) {
+        showMessage(message, 'One or more interview details exceed the allowed length.', 'error'); return;
+      }
+      const rpcName = interviewId ? 'admin_reschedule_candidate_interview' : 'admin_schedule_candidate_interview';
+      const rpcArgs = interviewId ? { p_interview_id: interviewId, ...details } : { p_application_id: applicationId, ...details };
+      if (!beginInterviewMutation(applicationId)) return;
+      form.dataset.saving = 'true'; button.textContent = interviewId ? 'Rescheduling…' : 'Scheduling…'; showMessage(message, '');
+      try {
+        const { data: savedId, error } = await client.rpc(rpcName, rpcArgs);
+        if (applicationId !== activeInterviewApplicationId) return;
+        if (error || typeof savedId !== 'string') { showMessage(message, interviewErrorMessage(error, 'schedule'), 'error'); return; }
+        const refreshed = await loadInterviewHistory(applicationId);
+        if (!refreshed.ok || applicationId !== activeInterviewApplicationId) {
+          if (!refreshed.stale) showMessage(message, 'Interview details changed before confirmation. Refresh and try again.', 'error');
+          return;
+        }
+        const scheduled = refreshed.records.filter((record) => record.status === 'scheduled');
+        const persisted = scheduled[0]; const predecessor = interviewId ? refreshed.records.find((record) => record.id === interviewId) : null;
+        if (scheduled.length !== 1 || !persisted || persisted.id !== savedId || persisted.application_id !== applicationId
+            || persisted.mode !== details.p_mode || new Date(persisted.scheduled_at).getTime() !== scheduledDate.getTime()
+            || !sameOptionalText(persisted.location, details.p_location) || !sameOptionalText(persisted.meeting_link, details.p_meeting_link)
+            || !sameOptionalText(persisted.contact_person, details.p_contact_person) || !sameOptionalText(persisted.contact_phone, details.p_contact_phone)
+            || !sameOptionalText(persisted.instructions, details.p_instructions)
+            || (interviewId && (!predecessor || predecessor.status !== 'rescheduled' || persisted.supersedes_interview_id !== interviewId))) {
+          showMessage(message, 'Interview details changed before confirmation. Refresh and try again.', 'error'); return;
+        }
+        const { data: application, error: applicationError } = await client.from('candidate_applications')
+          .select('application_status').eq('id', applicationId).maybeSingle();
+        if (applicationId !== activeInterviewApplicationId) return;
+        if (applicationError || !application) { showMessage(message, 'Interview was saved, but the application status could not be refreshed.', 'error'); return; }
+        document.querySelector('[data-application-form]').elements.applicationStatus.value = application.application_status;
+        resetInterviewForm(applicationId);
+        showMessage(message, interviewId ? 'Interview rescheduled and history preserved.' : 'Interview scheduled.', 'success');
+        try { await loadRecords('candidateInterests'); } catch (_error) { showMessage(message, 'Interview was saved, but the application list could not be refreshed.', 'error'); }
+      } catch (_error) {
+        if (applicationId === activeInterviewApplicationId) showMessage(message, 'The interview could not be scheduled. Refresh and try again.', 'error');
+      } finally {
+        delete form.dataset.saving; endInterviewMutation(applicationId);
+        if (form.elements.interviewId.value) button.textContent = 'Reschedule Interview'; else button.textContent = 'Schedule Interview';
+      }
+    });
+    document.querySelector('[data-interview-outcome-form]').addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('[data-interview-outcome-message]');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      if (form.dataset.saving === 'true' || activeInterviewMutation) return;
+      const interviewId = form.elements.interviewId.value; const requestedStatus = form.elements.status.value;
+      const requestedResult = form.elements.result.value || null; const requestedNotes = form.elements.resultNotes.value.trim() || null;
+      const source = interviewRecords.get(interviewId); const applicationId = source?.application_id || activeInterviewApplicationId;
+      if (!applicationId || !beginInterviewMutation(applicationId)) return;
+      form.dataset.saving = 'true'; button.textContent = 'Saving…'; showMessage(message, '');
+      try {
+        const { data: saved, error } = await client.rpc('admin_update_candidate_interview', {
+          p_interview_id: interviewId, p_status: requestedStatus, p_result: requestedResult, p_result_notes: requestedNotes
+        });
+        if (applicationId !== activeInterviewApplicationId) return;
+        if (error || saved !== true) { showMessage(message, interviewErrorMessage(error, 'update'), 'error'); return; }
+        const refreshed = await loadInterviewHistory(applicationId);
+        if (!refreshed.ok || applicationId !== activeInterviewApplicationId) {
+          if (!refreshed.stale) showMessage(message, 'Interview details changed before confirmation. Refresh and try again.', 'error');
+          return;
+        }
+        const persisted = refreshed.records.find((record) => record.id === interviewId);
+        if (!persisted || persisted.status !== requestedStatus || (persisted.result || null) !== requestedResult || (persisted.result_notes || null) !== requestedNotes) {
+          showMessage(message, 'Interview details changed before confirmation. Refresh and try again.', 'error'); return;
+        }
+        form.hidden = true;
+        showMessage(document.querySelector('[data-interview-load-message]'), 'Interview status and result notes saved.', 'success');
+      } catch (_error) {
+        if (applicationId === activeInterviewApplicationId) showMessage(message, 'Interview status could not be updated. Refresh and try again.', 'error');
+      } finally {
+        delete form.dataset.saving; endInterviewMutation(applicationId); button.textContent = 'Save Interview Status';
       }
     });
 

@@ -155,6 +155,34 @@
       <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Application</button><button class="admin-button admin-button-quiet" type="button" data-close-application>Cancel</button></div>
       <div class="admin-message" data-application-message role="status" aria-live="polite"></div>
     </form>
+    <section class="interview-management" aria-labelledby="interview-management-heading">
+      <div class="interview-heading"><div><p class="admin-eyebrow">Admin-only workflow</p><h3 id="interview-management-heading">Interview Management</h3></div><button class="admin-button admin-button-secondary" type="button" data-new-interview>Schedule New Round</button></div>
+      <dl class="interview-summary" data-interview-summary aria-live="polite"><div><dt>Status</dt><dd>No interview scheduled yet.</dd></div></dl>
+      <form class="interview-form" data-interview-form>
+        <input type="hidden" name="applicationId"><input type="hidden" name="interviewId">
+        <div class="admin-field"><label for="interview-scheduled-at">Interview date and time</label><input id="interview-scheduled-at" name="scheduledAt" type="datetime-local" required></div>
+        <div class="admin-field"><label for="interview-mode">Interview mode</label><select id="interview-mode" name="mode" required><option value="">Select mode</option><option value="onsite">On-site</option><option value="phone">Phone</option><option value="video">Video</option><option value="other">Other</option></select></div>
+        <div class="admin-field"><label for="interview-location">Location <span class="optional">Optional</span></label><input id="interview-location" name="location" maxlength="500"></div>
+        <div class="admin-field"><label for="interview-meeting-link">Meeting link <span class="optional">Optional</span></label><input id="interview-meeting-link" name="meetingLink" type="url" maxlength="1000"></div>
+        <div class="admin-field"><label for="interview-contact-person">Contact person <span class="optional">Optional</span></label><input id="interview-contact-person" name="contactPerson" maxlength="200"></div>
+        <div class="admin-field"><label for="interview-contact-phone">Contact phone <span class="optional">Optional</span></label><input id="interview-contact-phone" name="contactPhone" type="tel" maxlength="30"></div>
+        <div class="admin-field interview-wide"><label for="interview-instructions">Interview instructions <span class="optional">Optional</span></label><textarea id="interview-instructions" name="instructions" rows="3" maxlength="4000"></textarea></div>
+        <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Schedule Interview</button><button class="admin-button admin-button-quiet" type="button" data-cancel-reschedule hidden>Cancel Reschedule</button></div>
+        <div class="admin-message" data-interview-form-message role="status" aria-live="polite"></div>
+      </form>
+      <form class="interview-outcome-form" data-interview-outcome-form hidden>
+        <input type="hidden" name="interviewId">
+        <div class="admin-field"><label for="interview-outcome-status">Interview status</label><select id="interview-outcome-status" name="status" required><option value="attended">Attended</option><option value="completed">Completed</option><option value="absent">No-show</option><option value="cancelled">Cancelled</option></select></div>
+        <div class="admin-field"><label for="interview-result">Result <span class="optional">Optional</span></label><select id="interview-result" name="result"><option value="">No result</option><option value="pending">Pending</option><option value="selected">Selected</option><option value="rejected">Rejected</option><option value="on_hold">On hold</option></select></div>
+        <div class="admin-field interview-wide"><label for="interview-result-notes">Interview Result Note <span class="optional">Optional</span></label><textarea id="interview-result-notes" name="resultNotes" rows="3" maxlength="4000"></textarea></div>
+        <div class="dialog-actions"><button class="admin-button admin-button-primary" type="submit">Save Interview Status</button><button class="admin-button admin-button-quiet" type="button" data-cancel-interview-outcome>Cancel</button></div>
+        <div class="admin-message" data-interview-outcome-message role="status" aria-live="polite"></div>
+      </form>
+      <h4>Interview History</h4>
+      <div class="table-wrap interview-history-wrap" tabindex="0" aria-label="Interview history, horizontally scrollable"><table><thead><tr><th>Round</th><th>Scheduled</th><th>Mode</th><th>Status</th><th>Result</th><th>Updated</th><th>Action</th></tr></thead><tbody data-interview-history></tbody></table></div>
+      <div class="empty-records" data-interview-empty>No interview history yet.</div>
+      <div class="admin-message" data-interview-load-message role="status" aria-live="polite"></div>
+    </section>
   </dialog>
 
   <dialog class="detail-dialog company-review-dialog" data-company-dialog aria-labelledby="company-review-title">
