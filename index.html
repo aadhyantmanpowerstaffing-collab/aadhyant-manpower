@@ -4,21 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Aadhyant Manpower & Staffing provides industrial manpower, recruitment and staffing support from Kadi, Mahesana, Gujarat.">
+  <meta name="description" content="Aadhyant Manpower & Staffing connects employers, candidates and approved Staffing Partners through professional industrial workforce support and job opportunities.">
   <meta name="theme-color" content="#102447">
-  <title>Aadhyant Manpower & Staffing | Industrial Manpower Solutions</title>
+  <link rel="canonical" href="https://aadhyantmanpower.in/">
+  <title>Aadhyant Manpower & Staffing | Industrial Staffing &amp; Job Opportunities</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/css/public.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="config.js" defer></script>
   <script src="supabase-client.js" defer></script>
+  <script src="assets/js/public-navigation.js" defer></script>
   <script src="script.js" defer></script>
 </head>
-<body>
+<body class="public-site">
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <header class="site-header" data-header>
-    <div class="container header-inner">
-      <a class="brand" href="#home" aria-label="Aadhyant Manpower & Staffing home">
+  <header class="site-header public-header" data-public-header>
+    <div class="container header-inner public-header__inner">
+      <a class="brand public-brand" href="#home" aria-label="Aadhyant Manpower & Staffing home">
         <span class="brand-mark" aria-hidden="true">A</span>
         <span class="brand-copy">
           <strong>AADHYANT</strong>
@@ -26,38 +29,95 @@
         </span>
       </a>
 
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" data-menu-toggle>
+      <button class="menu-toggle public-menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation" data-public-menu-button>
         <span class="menu-toggle-label">Menu</span>
         <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
       </button>
 
-      <nav class="primary-nav" id="primary-navigation" aria-label="Primary navigation" data-navigation>
+      <nav class="primary-nav public-nav" id="primary-navigation" aria-label="Primary navigation" data-public-navigation>
         <a href="#home">Home</a>
         <a href="#about">About</a>
         <a href="#services">Services</a>
         <a href="#industries">Industries</a>
-        <a href="#employers">Employers</a>
-        <a href="#candidates">Candidates</a>
+        <a href="#jobs">Jobs</a>
         <a href="#contact">Contact</a>
-        <div class="nav-actions">
-          <a class="nav-company-link" href="company/login.html">Company Login</a><a class="nav-company-link" href="contractor/login.html">Partner Login</a>
-          <a class="nav-link-secondary" href="#candidate-form">Find a Job</a>
-          <a class="button button-small button-primary" href="#employer-form">Hire Manpower</a>
+        <div class="public-portal" data-public-portal>
+          <button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button>
+          <div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu>
+            <a href="company/login.html">Company Login</a>
+            <a href="contractor/login.html">Staffing Partner Login</a>
+          </div>
+        </div>
+        <div class="nav-actions public-nav__actions">
+          <a class="nav-link-secondary public-button public-button--secondary" href="#candidate-form">Find Jobs</a>
+          <a class="button button-small button-primary public-button public-button--primary" href="hire-manpower/">Hire Manpower</a>
         </div>
       </nav>
     </div>
   </header>
 
   <main id="main-content">
-    <section class="hero" id="home">
+    <section class="public-home-hero" id="home">
+      <div class="container public-home-hero__grid">
+        <div class="public-home-hero__content">
+          <p class="eyebrow">Aadhyant Workforce Platform</p>
+          <h1>Reliable Workforce.<br><span>Better Opportunities.</span><br>Stronger Partnerships.</h1>
+          <p>Aadhyant supports employers, candidates, and approved Staffing Partners through structured industrial workforce coordination.</p>
+          <div class="public-home-actions"><a class="public-button public-button--primary" href="hire-manpower/">Hire Manpower</a><a class="public-button public-button--secondary" href="#candidate-form">Find Jobs</a></div>
+          <a class="public-hero-link" href="contractor/register.html">Become a Staffing Partner <span aria-hidden="true">→</span></a>
+        </div>
+        <aside class="public-home-hero__panel" aria-label="Aadhyant platform participants">
+          <p>One coordinated workforce network</p>
+          <ul><li><strong>Companies</strong><span>Share workforce requirements</span></li><li><strong>Candidates</strong><span>Register for suitable opportunities</span></li><li><strong>Staffing Partners</strong><span>Work on approved assignments</span></li></ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="public-home-section" id="about" aria-labelledby="pathways-title">
+      <div class="container"><div class="public-home-heading"><p class="eyebrow">Choose your pathway</p><h2 id="pathways-title">Workforce support built around your role</h2><p>Start with the route that fits what you need today.</p></div>
+        <div class="public-pathway-grid">
+          <article class="public-pathway-card" id="employers"><span>01</span><h3>Hire Manpower</h3><p>Submit workforce requirements and connect with Aadhyant for structured staffing support.</p><a href="hire-manpower/">Explore Employer Options <b aria-hidden="true">→</b></a></article>
+          <article class="public-pathway-card" id="candidates"><span>02</span><h3>Find Jobs</h3><p>Explore workforce opportunities and register your profile for suitable openings.</p><a href="#candidate-form">Register as a Candidate <b aria-hidden="true">→</b></a></article>
+          <article class="public-pathway-card public-pathway-card--accent"><span>03</span><h3>Become a Staffing Partner</h3><p>Join Aadhyant's staffing network and receive approved workforce assignments.</p><a href="contractor/register.html">Partner with Aadhyant <b aria-hidden="true">→</b></a></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="public-home-section public-home-section--soft" id="services" aria-labelledby="services-title">
+      <div class="container public-overview-grid"><div class="public-home-heading"><p class="eyebrow">Workforce services</p><h2 id="services-title">Practical support for industrial hiring</h2><p>Focused services shaped around real workforce requirements and operational needs.</p><a class="public-text-link" href="#services-list">Explore Services</a></div>
+        <div class="public-service-list" id="services-list"><article><h3>Industrial Manpower</h3><p>Skilled, semi-skilled, and general workforce support.</p></article><article><h3>Contract Staffing</h3><p>Coordinated staffing support for defined requirements.</p></article><article><h3>Workforce Mobilisation</h3><p>Candidate communication and joining coordination.</p></article><article><h3>Recruitment Support</h3><p>Requirement-led sourcing and interview coordination.</p></article><article><h3>Partner Coordination</h3><p>Controlled assignments with approved Staffing Partners.</p></article></div>
+      </div>
+    </section>
+
+    <section class="public-home-section" id="industries" aria-labelledby="industries-title">
+      <div class="container public-industries"><div class="public-home-heading"><p class="eyebrow">Industries we serve</p><h2 id="industries-title">Workforce support for industrial operations</h2><p>Aadhyant coordinates staffing support around practical role, location, and operational needs.</p><a class="public-text-link" href="#industry-list">Industries We Serve</a></div><ul id="industry-list"><li>Manufacturing</li><li>Automotive</li><li>Engineering</li><li>Warehouse &amp; Logistics</li><li>FMCG</li><li>Industrial Operations</li></ul></div>
+    </section>
+
+    <section class="public-home-section public-home-section--navy" aria-labelledby="process-title">
+      <div class="container"><div class="public-home-heading"><p class="eyebrow">How Aadhyant works</p><h2 id="process-title">Clear coordination from requirement to deployment</h2></div><ol class="public-process"><li><span>01</span><div><h3>Requirement / Opportunity</h3><p>Employers share clearly defined workforce needs.</p></div></li><li><span>02</span><div><h3>Workforce Coordination</h3><p>Aadhyant coordinates candidates and approved Staffing Partners.</p></div></li><li><span>03</span><div><h3>Interview &amp; Deployment</h3><p>Suitable candidates proceed through the employer's process.</p></div></li></ol></div>
+    </section>
+
+    <section class="public-home-section" aria-labelledby="trust-title">
+      <div class="container public-trust"><div class="public-home-heading"><p class="eyebrow">Why Aadhyant</p><h2 id="trust-title">Structured, professional workforce support</h2><p>A clear operating model for employers, candidates, and approved Staffing Partners.</p></div><div class="public-trust-grid"><article><h3>Industrial Focus</h3><p>Support aligned with practical workforce environments.</p></article><article><h3>Defined Pathways</h3><p>Separate journeys for every platform participant.</p></article><article><h3>Transparent Handling</h3><p>Requirements and assignments follow controlled workflows.</p></article><article><h3>Professional Communication</h3><p>Coordinated follow-up throughout the hiring process.</p></article></div><p class="public-credential"><strong>Registered business</strong> · GSTIN 24ACNFA4445J1Z9 · Kadi, Mahesana, Gujarat</p></div>
+    </section>
+
+    <section class="public-home-section public-home-section--soft" id="jobs" aria-labelledby="jobs-title">
+      <div class="container public-jobs-teaser"><div><p class="eyebrow">Workforce opportunities</p><h2 id="jobs-title">Looking for your next opportunity?</h2><p>Register your profile to share your qualification, trade, experience, and preferred work location with Aadhyant.</p></div><a class="public-button public-button--primary" href="#candidate-form">Register as a Candidate</a></div>
+    </section>
+
+    <section class="public-final-cta" id="contact" aria-labelledby="final-cta-title">
+      <div class="container"><div class="public-home-heading"><p class="eyebrow">Start with Aadhyant</p><h2 id="final-cta-title">Choose the workforce pathway for you</h2></div><div class="public-final-cta__actions"><a href="hire-manpower/"><span>Need workforce?</span><strong>Hire Manpower →</strong></a><a href="#candidate-form"><span>Looking for work?</span><strong>Register as Candidate →</strong></a><a href="contractor/register.html"><span>Staffing agency?</span><strong>Become a Staffing Partner →</strong></a></div><p>Prefer to talk? <a href="tel:+919586785800">+91 95867 85800</a> · <a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a></p></div>
+    </section>
+
+    <section class="hero legacy-home-section" hidden aria-hidden="true">
       <div class="hero-pattern" aria-hidden="true"></div>
       <div class="container hero-grid">
         <div class="hero-content">
           <p class="eyebrow">Industrial manpower &amp; staffing solutions</p>
-          <h1>Reliable Manpower.<br><span>Right People. Right Time.</span></h1>
+          <h2>Reliable Manpower.<br><span>Right People. Right Time.</span></h2>
           <p class="hero-lead">Aadhyant Manpower &amp; Staffing helps industrial businesses meet workforce requirements through practical recruitment support, candidate mobilisation and staffing coordination.</p>
           <div class="button-group">
-            <a class="button button-primary" href="#employer-form">Hire Manpower <span aria-hidden="true">→</span></a>
+            <a class="button button-primary" href="hire-manpower/">Hire Manpower <span aria-hidden="true">→</span></a>
             <a class="button button-outline" href="#candidate-form">Find a Job</a>
           </div>
           <p class="hero-support"><span aria-hidden="true">●</span> Industrial workforce solutions for growing businesses.</p>
@@ -77,7 +137,7 @@
       </div>
     </section>
 
-    <section class="value-strip" aria-label="Our workforce focus">
+    <section class="value-strip" hidden aria-hidden="true">
       <div class="container value-grid">
         <div><span>01</span><strong>Industrial Workforce Focus</strong></div>
         <div><span>02</span><strong>Skilled &amp; General Manpower</strong></div>
@@ -86,7 +146,7 @@
       </div>
     </section>
 
-    <section class="section about-section" id="about">
+    <section class="section about-section" hidden aria-hidden="true">
       <div class="container about-grid">
         <div class="section-intro">
           <p class="eyebrow">About Aadhyant</p>
@@ -100,7 +160,7 @@
       </div>
     </section>
 
-    <section class="section section-soft" id="services">
+    <section class="section section-soft" hidden aria-hidden="true">
       <div class="container">
         <div class="section-heading centered">
           <p class="eyebrow">Our Services</p>
@@ -142,7 +202,7 @@
       </div>
     </section>
 
-    <section class="section industries-section" id="industries">
+    <section class="section industries-section" hidden aria-hidden="true">
       <div class="container industries-grid">
         <div class="section-heading">
           <p class="eyebrow">Industries We Serve</p>
@@ -161,17 +221,17 @@
       </div>
     </section>
 
-    <section class="pathways" aria-label="Employer and candidate pathways">
-      <article class="pathway pathway-employer" id="employers">
+    <section class="pathways" hidden aria-hidden="true">
+      <article class="pathway pathway-employer">
         <div class="pathway-content">
           <p class="eyebrow light">For Employers &amp; HR Teams</p>
           <h2>Looking for Reliable Manpower?</h2>
           <p>Share your workforce requirement, job roles, work location and expected joining needs with our team.</p>
-          <a class="button button-light" href="#employer-form">Submit Manpower Requirement <span aria-hidden="true">→</span></a>
+          <a class="button button-light" href="hire-manpower/">Submit Manpower Requirement <span aria-hidden="true">→</span></a>
           <small>Prepare your requirement and choose WhatsApp or email after review.</small>
         </div>
       </article>
-      <article class="pathway pathway-candidate" id="candidates">
+      <article class="pathway pathway-candidate">
         <div class="pathway-content">
           <p class="eyebrow">For Candidates</p>
           <h2>Looking for Your Next Job Opportunity?</h2>
@@ -182,153 +242,11 @@
       </article>
     </section>
 
-    <section class="section form-section" id="employer-form">
-      <div class="container form-layout">
-        <div class="form-intro">
-          <p class="eyebrow">Employer Requirement</p>
-          <h2>Tell Us About Your Manpower Need</h2>
-          <p>Complete the details below, review your requirement, and then choose WhatsApp or email to contact Aadhyant.</p>
-          <div class="process-list" aria-label="Employer enquiry process">
-            <span><b>1</b> Fill requirement</span><span><b>2</b> Review details</span><span><b>3</b> Contact Aadhyant</span>
-          </div>
-        </div>
-
-        <div class="form-shell">
-          <form id="employer-requirement-form" class="lead-form" data-lead-form="employer" novalidate>
-            <div class="form-status" role="status" aria-live="polite"></div>
-            <p class="required-key"><span aria-hidden="true">*</span> Required fields</p>
-            <fieldset>
-              <legend><span>01</span> Company Information</legend>
-              <div class="field-grid">
-                <div class="field">
-                  <label for="employer-company">Company Name <span aria-hidden="true">*</span></label>
-                  <input id="employer-company" name="company" type="text" autocomplete="organization" required>
-                  <span class="field-error" id="employer-company-error"></span>
-                </div>
-                <div class="field">
-                  <label for="employer-contact">HR / Contact Person Name <span aria-hidden="true">*</span></label>
-                  <input id="employer-contact" name="contactPerson" type="text" autocomplete="name" required>
-                  <span class="field-error" id="employer-contact-error"></span>
-                </div>
-                <div class="field">
-                  <label for="employer-mobile">Mobile Number <span aria-hidden="true">*</span></label>
-                  <input id="employer-mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit Indian mobile number" required>
-                  <span class="field-help">Enter 10 digits without +91 or spaces.</span>
-                  <span class="field-error" id="employer-mobile-error"></span>
-                </div>
-                <div class="field">
-                  <label for="employer-email">Email Address <span class="optional">Optional</span></label>
-                  <input id="employer-email" name="email" type="email" autocomplete="email">
-                  <span class="field-error" id="employer-email-error"></span>
-                </div>
-                <div class="field field-wide">
-                  <label for="employer-location">Company Location <span aria-hidden="true">*</span></label>
-                  <input id="employer-location" name="location" type="text" autocomplete="street-address" required>
-                  <span class="field-error" id="employer-location-error"></span>
-                </div>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend><span>02</span> Manpower Requirement</legend>
-              <div class="field-grid">
-                <div class="field">
-                  <label for="employer-role">Job Role / Designation <span aria-hidden="true">*</span></label>
-                  <input id="employer-role" name="jobRole" type="text" placeholder="e.g. Production Operator" required>
-                  <span class="field-error" id="employer-role-error"></span>
-                </div>
-                <div class="field">
-                  <label for="employer-headcount">Required Headcount <span aria-hidden="true">*</span></label>
-                  <input id="employer-headcount" name="headcount" type="number" inputmode="numeric" min="1" step="1" required>
-                  <span class="field-error" id="employer-headcount-error"></span>
-                </div>
-                <div class="field">
-                  <label for="employer-qualification">Qualification <span class="optional">Optional</span></label>
-                  <select id="employer-qualification" name="qualification">
-                    <option value="">Select qualification</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Any Suitable Qualification</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="employer-trade">ITI Trade / Specialization <span class="optional">Optional</span></label>
-                  <input id="employer-trade" name="trade" type="text">
-                </div>
-                <div class="field">
-                  <label for="employer-experience">Experience Requirement <span class="optional">Optional</span></label>
-                  <select id="employer-experience" name="experience"><option value="">Select experience</option><option>Fresher</option><option>Experienced</option><option>Both</option></select>
-                </div>
-                <div class="field">
-                  <label for="employer-gender">Gender Preference <span class="optional">Optional</span></label>
-                  <select id="employer-gender" name="genderPreference"><option value="">Select preference</option><option>Any</option><option>Male</option><option>Female</option></select>
-                </div>
-                <div class="field">
-                  <label for="employer-salary">Salary / Wage <span class="optional">Optional</span></label>
-                  <input id="employer-salary" name="salary" type="text" placeholder="Enter offered salary or wage">
-                </div>
-                <div class="field">
-                  <label for="employer-shift">Shift Details <span class="optional">Optional</span></label>
-                  <input id="employer-shift" name="shift" type="text">
-                </div>
-                <div class="field">
-                  <label for="employer-hours">Working Hours <span class="optional">Optional</span></label>
-                  <input id="employer-hours" name="workingHours" type="text">
-                </div>
-                <div class="field">
-                  <label for="employer-joining">Expected Joining Date <span class="optional">Optional</span></label>
-                  <input id="employer-joining" name="joining" type="date">
-                </div>
-                <div class="field">
-                  <label for="employer-accommodation">Accommodation Available <span class="optional">Optional</span></label>
-                  <select id="employer-accommodation" name="accommodation"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
-                </div>
-                <div class="field">
-                  <label for="employer-canteen">Canteen Available <span class="optional">Optional</span></label>
-                  <select id="employer-canteen" name="canteen"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
-                </div>
-                <div class="field">
-                  <label for="employer-transport">Transport Available <span class="optional">Optional</span></label>
-                  <select id="employer-transport" name="transport"><option value="">Select option</option><option>Yes</option><option>No</option><option>Not Applicable</option></select>
-                </div>
-                <div class="field field-wide">
-                  <label for="employer-notes">Additional Requirement / Notes <span class="optional">Optional</span></label>
-                  <textarea id="employer-notes" name="notes" rows="4"></textarea>
-                </div>
-              </div>
-            </fieldset>
-
-            <label class="consent-field">
-              <input id="employer-consent" name="consent" type="checkbox" required>
-              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
-            </label>
-            <span class="field-error consent-error" id="employer-consent-error"></span>
-            <button class="button button-primary form-submit" type="submit">Review Requirement <span aria-hidden="true">→</span></button>
-          </form>
-
-          <section class="review-panel" id="employer-review" data-review="employer" aria-labelledby="employer-review-title" hidden>
-            <p class="eyebrow">Review Details</p>
-            <h3 id="employer-review-title">Employer Manpower Requirement</h3>
-            <p>Please check the information before choosing how to contact us.</p>
-            <dl class="review-list" data-review-list></dl>
-            <div class="database-submit">
-              <button class="button button-primary" type="button" data-database-submit="employer">Submit Requirement</button>
-              <div class="submission-status" data-submission-status="employer" role="status" aria-live="polite"></div>
-            </div>
-            <p class="fallback-heading">You can also send these details directly:</p>
-            <div class="review-actions">
-              <a class="button button-whatsapp" href="#contact" data-whatsapp="employer" target="_blank" rel="noopener">Continue to WhatsApp</a>
-              <a class="button button-secondary" href="#contact" data-email="employer">Send by Email</a>
-              <button class="button button-outline" type="button" data-edit="employer">Edit Details</button>
-            </div>
-            <div class="review-fallback">
-              <strong>Prefer direct contact?</strong>
-              <a href="tel:+919586785800">Call +91 95867 85800</a>
-              <a href="mailto:aadhyantmanpowerstaffing@gmail.com">Email Aadhyant</a>
-            </div>
-          </section>
-        </div>
-      </div>
+    <section class="public-compatibility-link" id="employer-form" aria-labelledby="employer-compatibility-title">
+      <div class="container"><p class="eyebrow">Hire Manpower</p><h2 id="employer-compatibility-title">The Employer form has a dedicated page.</h2><p>Continue to the canonical Quick Requirement form. No account is required.</p><a class="public-button public-button--primary" href="hire-manpower/requirement/">Submit Requirement</a></div>
     </section>
 
-    <section class="section form-section form-section-alt" id="candidate-form">
+    <section class="section form-section form-section-alt compatibility-section" id="candidate-form">
       <div class="container form-layout">
         <div class="form-intro">
           <p class="eyebrow">Candidate Registration</p>
@@ -464,7 +382,7 @@
       </div>
     </section>
 
-    <section class="section opportunities" id="jobs">
+    <section class="section opportunities" hidden aria-hidden="true">
       <div class="container">
         <div class="section-heading centered">
           <p class="eyebrow">Jobs Preview</p>
@@ -481,7 +399,7 @@
       </div>
     </section>
 
-    <section class="section section-dark" id="why-aadhyant">
+    <section class="section section-dark" hidden aria-hidden="true">
       <div class="container why-grid">
         <div class="section-heading">
           <p class="eyebrow light">Why Aadhyant</p>
@@ -497,7 +415,7 @@
       </div>
     </section>
 
-    <section class="section credentials" id="business">
+    <section class="section credentials" id="business" hidden aria-hidden="true">
       <div class="container">
         <div class="section-heading centered">
           <p class="eyebrow">Business Credentials</p>
@@ -517,7 +435,7 @@
       </div>
     </section>
 
-    <section class="section contact-section" id="contact">
+    <section class="section contact-section" hidden aria-hidden="true">
       <div class="container contact-grid">
         <div class="contact-intro">
           <p class="eyebrow">Contact Aadhyant</p>
@@ -545,7 +463,7 @@
     </section>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer public-footer">
     <div class="container footer-main">
       <div class="footer-brand">
         <a class="brand brand-light" href="#home" aria-label="Aadhyant Manpower & Staffing home">
@@ -555,12 +473,12 @@
         <p>Industrial manpower, recruitment support and staffing coordination for workforce requirements.</p>
       </div>
       <div class="footer-column">
-        <h2>Navigate</h2>
-        <a href="#about">About</a><a href="#services">Services</a><a href="#industries">Industries</a><a href="#business">Business Info</a>
+        <h2>Explore</h2>
+        <a href="#about">About</a><a href="#services">Services</a><a href="#industries">Industries</a><a href="#jobs">Jobs</a><a href="#contact">Contact</a>
       </div>
       <div class="footer-column">
-        <h2>For You</h2>
-        <a href="#employer-form">Hire Manpower</a><a href="#candidate-form">Find a Job</a><a href="company/login.html">Company Login</a><a href="company/register.html">Company Register</a><a href="contractor/login.html">Staffing Partner Login</a><a href="contractor/register.html">Partner Register</a><a href="#jobs">Current Opportunities</a><a href="#contact">Contact</a>
+        <h2>Work With Us</h2>
+        <a href="hire-manpower/">Hire Manpower</a><a href="#candidate-form">Candidate Registration</a><a href="contractor/register.html">Become a Staffing Partner</a><a href="company/login.html">Company Login</a><a href="contractor/login.html">Staffing Partner Login</a>
       </div>
       <div class="footer-column footer-contact">
         <h2>Contact</h2>
