@@ -137,9 +137,10 @@
             </fieldset>
 
             <label class="consent-field">
-              <input id="employer-consent" name="consent" type="checkbox" required>
-              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
+              <input id="employer-consent" name="consent" type="checkbox" required aria-describedby="employer-consent-legal">
+              <span>I voluntarily submit this business, contact and requirement information so Aadhyant may review the workforce need and contact me about it. Submission does not guarantee Candidate availability or fulfilment and does not create a Company Portal account.</span>
             </label>
+            <p class="consent-legal" id="employer-consent-legal">By continuing, I accept the <a href="../../privacy/">Privacy Policy</a> and <a href="../../terms/">Terms of Use</a>.</p>
             <span class="field-error consent-error" id="employer-consent-error"></span>
             <button class="button button-primary form-submit" type="submit">Review Requirement <span aria-hidden="true">→</span></button>
           </form>

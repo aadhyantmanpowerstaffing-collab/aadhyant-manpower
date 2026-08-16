@@ -255,6 +255,21 @@
 .public-site .public-partner-boundary p, .public-site .public-partner-boundary li { color: var(--public-text-muted); }
 .public-site .public-partner-boundary ul { display: grid; gap: .85rem; margin: 0; padding: 1.5rem 1.5rem 1.5rem 2.75rem; background: var(--public-background); border-radius: var(--public-radius-md); }
 
+/* R9 privacy, terms and consent foundation */
+.public-site .public-legal-hero { padding-bottom: clamp(3rem, 6vw, 5rem); }
+.public-site .public-legal-hero h1 { max-width: 42rem; }
+.public-site .public-legal-hero .public-legal-date { margin-top: 1.5rem; color: #aebbd0; font-size: .9rem; }
+.public-site .public-legal-content { width: min(calc(100% - 2.5rem), 52rem); margin-inline: auto; padding-block: clamp(3rem, 7vw, 6rem); }
+.public-site .public-legal-content section { padding-block: 1.5rem; border-bottom: 1px solid var(--public-border); }
+.public-site .public-legal-content section:first-child { padding-top: 0; }
+.public-site .public-legal-content section:last-child { padding-bottom: 0; border-bottom: 0; }
+.public-site .public-legal-content h2 { margin: 0 0 .75rem; color: var(--public-primary); font-size: clamp(1.15rem, 2vw, 1.4rem); line-height: 1.3; }
+.public-site .public-legal-content p { margin: .65rem 0 0; color: var(--public-text-muted); line-height: 1.75; }
+.public-site .public-legal-content a, .public-site .public-legal-links a, .public-site .consent-legal a { color: var(--public-accent-strong); text-underline-offset: .2em; }
+.public-site .public-legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1rem; }
+.public-site .public-footer .public-legal-links a { color: #d4ddeb; font-size: .82rem; }
+.public-site .consent-legal { margin: .5rem 0 0; color: var(--public-text-muted); font-size: .85rem; }
+
 @media (max-width: 1080px) {
   .public-site .public-header .menu-toggle { display: inline-flex; }
   .public-site .public-nav {
@@ -303,6 +318,8 @@
   .public-site .public-nav__actions, .public-site .public-footer .footer-main { grid-template-columns: 1fr; }
   .public-site .public-button { width: 100%; }
   .public-site .public-contact-pathways { grid-template-columns: 1fr; }
+  .public-site .public-footer .footer-bottom { align-items: flex-start; flex-direction: column; }
+  .public-site .public-legal-links { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {

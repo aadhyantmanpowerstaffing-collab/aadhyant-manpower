@@ -6,6 +6,22 @@
     const navigation = document.querySelector('[data-public-navigation]');
     const portalButton = document.querySelector('[data-public-portal-button]');
     const portalMenu = document.querySelector('[data-public-portal-menu]');
+    const footerBottom = document.querySelector('.public-footer .footer-bottom');
+
+    if (footerBottom && !footerBottom.querySelector('.public-legal-links')) {
+      const legalNavigation = document.createElement('nav');
+      legalNavigation.className = 'public-legal-links';
+      legalNavigation.setAttribute('aria-label', 'Legal');
+      const links = [['Privacy Policy', '/privacy/'], ['Terms of Use', '/terms/']];
+      links.forEach(([label, href]) => {
+        const link = document.createElement('a');
+        link.href = href;
+        link.textContent = label;
+        legalNavigation.append(link);
+      });
+      footerBottom.querySelector('p:last-child')?.before(legalNavigation);
+    }
+
     if (!menuButton || !navigation) return;
 
     const setPortal = (open) => {

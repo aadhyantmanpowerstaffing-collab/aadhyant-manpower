@@ -124,9 +124,10 @@
             </fieldset>
 
             <label class="consent-field">
-              <input id="candidate-consent" name="consent" type="checkbox" required>
-              <span>I agree to share the information entered above with Aadhyant Manpower &amp; Staffing for recruitment or manpower coordination purposes.</span>
+              <input id="candidate-consent" name="consent" type="checkbox" required aria-describedby="candidate-consent-legal">
+              <span>I voluntarily submit this profile for recruitment and workforce coordination. I agree that Aadhyant may contact me regarding suitable job and workforce opportunities using the contact details I provide. Registration does not guarantee a job, interview or placement.</span>
             </label>
+            <p class="consent-legal" id="candidate-consent-legal">By continuing, I accept the <a href="../../privacy/">Privacy Policy</a> and <a href="../../terms/">Terms of Use</a>.</p>
             <span class="field-error consent-error" id="candidate-consent-error"></span>
             <button class="button button-primary form-submit" type="submit">Review Registration <span aria-hidden="true">→</span></button>
           </form>
