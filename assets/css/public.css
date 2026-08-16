@@ -239,6 +239,22 @@
 .public-site .public-contact-pathways h3 { margin: 0; color: var(--public-primary); }
 .public-site .public-contact-pathways p { color: var(--public-text-muted); }
 
+/* R8 Staffing Partner public journey */
+.public-site .public-partner-hero .public-hero-note { margin-top: 1rem; color: #aebbd0; font-size: .9rem; }
+.public-site .public-partner-types { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.public-site .public-partner-types article { padding: 1.4rem; background: #fff; border: 1px solid var(--public-border); border-radius: var(--public-radius-md); box-shadow: var(--public-shadow-sm); }
+.public-site .public-partner-types h3 { margin: 0; color: var(--public-primary); font-size: 1.15rem; }
+.public-site .public-partner-types p { margin-bottom: 0; color: var(--public-text-muted); }
+.public-site .public-partner-process { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.public-site .public-partner-process li { padding: 1.25rem; border: 1px solid #40536e; border-radius: var(--public-radius-sm); }
+.public-site .public-partner-process span { color: var(--public-accent); font-size: .8rem; font-weight: 850; letter-spacing: .1em; }
+.public-site .public-partner-process h3 { margin: .75rem 0 .4rem; color: #fff; font-size: 1.05rem; }
+.public-site .public-partner-process p { margin: 0; color: #c5d0df; font-size: .9rem; }
+.public-site .public-partner-boundary { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(2rem, 7vw, 6rem); align-items: start; }
+.public-site .public-partner-boundary h2 { margin: 0; color: var(--public-primary); font-size: var(--public-heading-sm); }
+.public-site .public-partner-boundary p, .public-site .public-partner-boundary li { color: var(--public-text-muted); }
+.public-site .public-partner-boundary ul { display: grid; gap: .85rem; margin: 0; padding: 1.5rem 1.5rem 1.5rem 2.75rem; background: var(--public-background); border-radius: var(--public-radius-md); }
+
 @media (max-width: 1080px) {
   .public-site .public-header .menu-toggle { display: inline-flex; }
   .public-site .public-nav {
@@ -267,6 +283,8 @@
   .public-site .public-service-catalog, .public-site .public-industry-catalog { grid-template-columns: 1fr 1fr; }
   .public-site .public-contact-layout { grid-template-columns: 1fr; }
   .public-site .public-credential-panel { align-items: flex-start; flex-direction: column; }
+  .public-site .public-partner-types, .public-site .public-partner-process { grid-template-columns: 1fr 1fr; }
+  .public-site .public-partner-boundary { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -277,6 +295,7 @@
   .public-site .public-jobs-teaser { align-items: flex-start; flex-direction: column; }
   .public-site .public-job-filters, .public-site .public-job-grid { grid-template-columns: 1fr; }
   .public-site .public-service-catalog, .public-site .public-industry-catalog { grid-template-columns: 1fr; }
+  .public-site .public-partner-types, .public-site .public-partner-process { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
