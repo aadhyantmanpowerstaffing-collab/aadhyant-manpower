@@ -18,7 +18,7 @@ Only synthetic data may enter staging. Production project references/hosts remai
 Install only after separate approval:
 
 - Supabase CLI `2.111.0`, stable, project-scoped and exact-pinned.
-- PostgreSQL client binaries `18.4` for `psql` and `pg_isready`; extract the official Windows x64 binary archive without registering or starting a PostgreSQL server.
+- PostgreSQL client binaries `18.6` for `psql` and `pg_isready`; extract the official Windows x64 binary archive without registering or starting a PostgreSQL server.
 
 Reviewed future commands:
 
@@ -28,17 +28,17 @@ npm.cmd install --save-dev --save-exact supabase@2.111.0
 npm.cmd exec -- supabase --version
 ```
 
-Download the PostgreSQL 18.4 Windows x64 binary archive from the PostgreSQL-referenced EDB binaries page, verify the downloaded artifact and publisher, and save/rename the reviewed archive to the exact local filename below. Then extract it without installing a server service:
+Download the official PostgreSQL 18.6 Windows x64 binary archive from the PostgreSQL-referenced EDB binaries page and verify the downloaded artifact and publisher. The currently reviewed archive uses this exact filename and must not be renamed or modified:
 
 ```powershell
-$archive = "$env:USERPROFILE\Downloads\postgresql-18.4-windows-x64-binaries.zip"
-$destination = "$env:LOCALAPPDATA\AadhyantTools\PostgreSQL-18.4"
+$archive = "$env:USERPROFILE\Downloads\postgresql-18.6-1-windows-x64-binaries.zip"
+$destination = "$env:LOCALAPPDATA\AadhyantTools\PostgreSQL-18.6"
 Expand-Archive -LiteralPath $archive -DestinationPath $destination
 & "$destination\pgsql\bin\psql.exe" --version
 & "$destination\pgsql\bin\pg_isready.exe" --version
 ```
 
-Confirm the downloaded archive's actual filename/layout before running these commands. Do not add the PostgreSQL server binaries to Windows services or start a local database.
+Confirm exactly one matching archive and an absent destination before extraction. Do not add the PostgreSQL server binaries to Windows services or start a local database.
 
 ## Local environment
 

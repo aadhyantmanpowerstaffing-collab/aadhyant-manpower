@@ -5,3 +5,6 @@
 secrets.local
 local.secrets
 staging-secrets.*
+
+# Project-scoped JavaScript tooling dependencies
+node_modules/
