@@ -191,7 +191,6 @@
   };
 
   const requirementFields = ['department', 'jobRole', 'jobLocation', 'requiredHeadcount', 'qualification', 'experienceRequirement', 'genderPreference', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax', 'shiftDetails', 'workingHours', 'overtimeDetails', 'canteen', 'transport', 'accommodation', 'interviewLocation', 'interviewDate', 'additionalNotes'];
-  const requirementColumns = 'id,requirement_code,department,job_role,job_location,required_headcount,filled_positions,qualification,experience_requirement,gender_preference,age_min,age_max,salary_min,salary_max,shift_details,working_hours,overtime_details,canteen,transport,accommodation,interview_location,interview_date,additional_notes,requirement_stage,requirement_visibility,created_at,updated_at';
   const requirementMap = {
     department: 'department', jobRole: 'job_role', jobLocation: 'job_location', requiredHeadcount: 'required_headcount', qualification: 'qualification',
     experienceRequirement: 'experience_requirement', genderPreference: 'gender_preference', ageMin: 'age_min', ageMax: 'age_max', salaryMin: 'salary_min', salaryMax: 'salary_max',
@@ -239,7 +238,7 @@
     const body = document.querySelector('[data-requirements-body]'); const empty = document.querySelector('[data-requirements-empty]'); const dialog = document.querySelector('[data-requirement-dialog]'); const form = document.querySelector('[data-requirement-form]');
     let records = [];
     const load = async () => {
-      const { data, error } = await client.from('employer_requirements').select(requirementColumns).order('created_at', { ascending: false });
+      const { data, error } = await client.rpc('get_company_requirements');
       if (error) throw error; records = data || [];
       const filters = new FormData(document.querySelector('[data-requirement-filters]')); const search = String(filters.get('search') || '').trim().toLowerCase(); const stage = String(filters.get('stage') || '');
       const visible = records.filter((record) => (!stage || record.requirement_stage === stage) && (!search || [record.requirement_code, record.job_role, record.job_location].some((item) => String(item || '').toLowerCase().includes(search))));
@@ -265,14 +264,16 @@
     document.querySelector('[data-requirement-filters]').addEventListener('reset', () => setTimeout(load, 0));
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); if (!validateRequirement(form)) { showMessage('Please correct the highlighted requirement fields.', 'error'); form.querySelector('[aria-invalid="true"]')?.focus(); return; }
-      const button = form.querySelector('button[type="submit"]'); button.disabled = true; const id = form.elements.requirementId.value; const params = requirementParams(form); if (id) params.p_requirement_id = id;
-      const { data, error } = await client.rpc(id ? 'update_company_requirement' : 'create_company_requirement', params);
+      const button = form.querySelector('button[type="submit"]'); button.disabled = true; const id = form.elements.requirementId.value; const params = requirementParams(form); params.p_action = id ? 'update' : 'create'; params.p_requirement_id = id || null;
+      const { data, error } = await client.rpc('manage_company_requirement', params); const saved = Array.isArray(data) ? data[0] : data;
       button.disabled = false; if (error) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'The requirement could not be saved. No completion was recorded.'; message.className = 'company-message is-error'; return; }
-      dialog.close(); await load(); showMessage(`Requirement ${data.requirement_code} saved successfully.`, 'success');
+      if (!saved?.requirement_code) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'The requirement response could not be verified.'; message.className = 'company-message is-error'; return; }
+      dialog.close(); await load(); showMessage(`Requirement ${saved.requirement_code} saved successfully.`, 'success');
     });
     form.querySelector('[data-close-requirement]').addEventListener('click', async () => {
-      const button = form.querySelector('[data-close-requirement]'); button.disabled = true; const { error } = await client.rpc('close_company_requirement', { p_requirement_id: form.elements.requirementId.value }); button.disabled = false;
+      const button = form.querySelector('[data-close-requirement]'); button.disabled = true; const { data, error } = await client.rpc('manage_company_requirement', { p_action: 'close', p_requirement_id: form.elements.requirementId.value }); const saved = Array.isArray(data) ? data[0] : data; button.disabled = false;
       if (error) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'This requirement could not be closed. Its status was not changed.'; message.className = 'company-message is-error'; return; }
+      if (!saved?.requirement_code) { const message = document.querySelector('[data-requirement-message]'); message.textContent = 'The requirement response could not be verified.'; message.className = 'company-message is-error'; return; }
       dialog.close(); await load(); showMessage('Requirement lifecycle updated. History has been preserved.', 'success');
     });
     dialog.addEventListener('close', () => form.reset());
