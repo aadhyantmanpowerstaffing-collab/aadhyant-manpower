@@ -1,6 +1,10 @@
 # W2 Internal Staff Authentication and Role Authorization
 
-Status: implemented for review; migration 017 requires dedicated-staging runtime validation before release.
+Status: database and security runtime validation complete on dedicated staging; browser and session validation remains pending.
+
+## Staging runtime validation
+
+Migration 017, checkpoint 017, and the required migration 015/016 regressions passed on dedicated NONPROD staging. Runtime evidence, resolved defect history, fixture cleanup, and remaining browser-validation gaps are recorded in [W2_STAGING_RUNTIME_VALIDATION.md](W2_STAGING_RUNTIME_VALIDATION.md).
 
 ## Authority model
 
@@ -63,7 +67,7 @@ Authorized managers can list staff, attach an existing Auth user by email, edit 
 
 `017_internal_staff_auth_roles_test.sql` uses synthetic Auth identities inside one explicit transaction ending in `ROLLBACK`. It covers bootstrap compatibility; all five roles; inactive, revoked, non-member, company, contractor, and anonymous denial; direct staff/audit write denial; elevated-role escalation; last-super-admin protection; audit accuracy; and preservation of migration 015 tenant boundaries.
 
-Before release, dedicated staging must apply migration 017 only, run checkpoint 017, verify fixture cleanup, and run rollback-scoped regressions for checkpoints 015 and 016 plus existing application, interview, public-job, and candidate-interest RPC coverage.
+Dedicated staging applied migration 017 and passed checkpoint 017 plus rollback-scoped regressions 015 and 016. Live browser/session validation remains required before full W2 closure.
 
 ## Intentional limitations
 
