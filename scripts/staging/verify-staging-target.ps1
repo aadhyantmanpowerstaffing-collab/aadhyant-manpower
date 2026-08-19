@@ -57,11 +57,11 @@ function Get-MigrationManifestHash {
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
-            Where-Object { $_.Name -match '^(00[7-9]|01[0-6])_' } |
+            Where-Object { $_.Name -match '^(00[7-9]|01[0-7])_' } |
             Sort-Object Name |
             Select-Object -ExpandProperty FullName
     )
-    if ($files.Count -ne 11) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-016.' }
+    if ($files.Count -ne 12) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-017.' }
 
     $manifestLines = foreach ($file in $files) {
         if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
