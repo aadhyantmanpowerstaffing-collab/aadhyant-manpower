@@ -113,6 +113,21 @@ begin
     raise exception 'Direct staff profile write succeeded';
   exception when insufficient_privilege then null; end;
   begin
+    insert into public.staff_roles(user_id,role,status)
+    values('81000000-0000-0000-0000-000000000005','viewer','active');
+    raise exception 'Direct staff role insert succeeded';
+  exception when insufficient_privilege then null; end;
+  begin
+    update public.staff_roles set status='revoked'
+    where user_id='81000000-0000-0000-0000-000000000005' and role='recruiter';
+    raise exception 'Direct staff role update succeeded';
+  exception when insufficient_privilege then null; end;
+  begin
+    delete from public.staff_roles
+    where user_id='81000000-0000-0000-0000-000000000005' and role='recruiter';
+    raise exception 'Direct staff role delete succeeded';
+  exception when insufficient_privilege then null; end;
+  begin
     insert into public.audit_logs(actor_user_id,actor_type,action,entity_type,source)
     values('81000000-0000-0000-0000-000000000005','staff','forged','staff_profile','admin');
     raise exception 'Direct audit write succeeded';
@@ -152,6 +167,8 @@ do $$ declare session_record record; begin
   exception when raise_exception then if sqlerrm='Final Super Admin removal succeeded' then raise; end if; end;
   begin perform public.set_staff_active_state('81000000-0000-0000-0000-000000000002','suspended',null); raise exception 'Final Super Admin suspension succeeded';
   exception when raise_exception then if sqlerrm='Final Super Admin suspension succeeded' then raise; end if; end;
+  begin perform public.set_staff_active_state('81000000-0000-0000-0000-000000000002','inactive',null); raise exception 'Final Super Admin deactivation succeeded';
+  exception when raise_exception then if sqlerrm='Final Super Admin deactivation succeeded' then raise; end if; end;
 end $$;
 reset role;
 
@@ -164,6 +181,8 @@ do $$ declare session_record record; begin
   perform public.grant_staff_role('81000000-0000-0000-0000-000000000009','viewer',null);
   begin perform public.grant_staff_role('81000000-0000-0000-0000-000000000009','admin',null); raise exception 'Admin granted elevated role';
   exception when raise_exception then if sqlerrm='Admin granted elevated role' then raise; end if; end;
+  begin perform public.revoke_staff_role('81000000-0000-0000-0000-000000000002','super_admin',null); raise exception 'Admin revoked elevated role';
+  exception when raise_exception then if sqlerrm='Admin revoked elevated role' then raise; end if; end;
   begin perform public.set_staff_active_state('81000000-0000-0000-0000-000000000002','inactive',null); raise exception 'Admin disabled elevated staff';
   exception when raise_exception then if sqlerrm='Admin disabled elevated staff' then raise; end if; end;
 end $$;
@@ -235,17 +254,20 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000001',true);
 select public.set_staff_active_state('81000000-0000-0000-0000-000000000003','active',null);
 select public.revoke_staff_role('81000000-0000-0000-0000-000000000002','super_admin',null);
+reset role;
 do $$ begin
   if not exists(select 1 from public.staff_roles where user_id='81000000-0000-0000-0000-000000000002' and role='super_admin' and status='revoked') then
     raise exception 'Super Admin revocation with a replacement failed';
   end if;
 end $$;
-reset role;
 
 do $$
 begin
-  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000001' and action='internal_staff.profile_created' and entity_id='81000000-0000-0000-0000-000000000013') then raise exception 'Profile creation audit missing'; end if;
-  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000004' and action='internal_staff.role_revoked' and entity_id='81000000-0000-0000-0000-000000000009' and metadata->>'role'='viewer') then raise exception 'Role revocation audit missing'; end if;
+  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000001' and action='internal_staff.profile_created' and entity_type='staff_profile' and entity_id='81000000-0000-0000-0000-000000000013' and source='admin') then raise exception 'Profile creation audit missing'; end if;
+  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000001' and action='internal_staff.profile_updated' and entity_type='staff_profile' and entity_id='81000000-0000-0000-0000-000000000013' and source='admin') then raise exception 'Profile update audit missing'; end if;
+  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000001' and action='internal_staff.status_changed' and entity_type='staff_profile' and entity_id='81000000-0000-0000-0000-000000000013' and source='admin') then raise exception 'Profile status audit missing'; end if;
+  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000001' and action='internal_staff.role_granted' and entity_type='staff_profile' and entity_id='81000000-0000-0000-0000-000000000013' and source='admin' and metadata->>'role'='viewer') then raise exception 'Role grant audit missing'; end if;
+  if not exists(select 1 from public.audit_logs where actor_user_id='81000000-0000-0000-0000-000000000004' and action='internal_staff.role_revoked' and entity_type='staff_profile' and entity_id='81000000-0000-0000-0000-000000000009' and source='admin' and metadata->>'role'='viewer') then raise exception 'Role revocation audit missing'; end if;
   if exists(select 1 from public.staff_profiles sp join public.platform_users pu on pu.user_id=sp.user_id) then raise exception 'Tenant identity became internal staff'; end if;
   if exists(select 1 from pg_policies where schemaname='public' and tablename in ('staff_profiles','staff_roles')) then raise exception 'Direct staff-table policy remains'; end if;
   if exists(select 1 from pg_policies where schemaname='public' and policyname in ('M8B active company reads own requirements','M8C active contractor reads assigned requirements','M8C active contractor reads own assignments')) then raise exception 'Migration 015 tenant boundary regressed'; end if;
