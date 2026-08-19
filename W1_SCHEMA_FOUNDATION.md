@@ -78,4 +78,6 @@ W1 does not implement webhook ingestion, WhatsApp messaging, Team Inbox, chatbot
 
 ## Validation
 
+Staging runtime validation completed successfully; see `W1_STAGING_RUNTIME_VALIDATION.md`.
+
 `supabase/tests/016_web_platform_schema_foundation_test.sql` checks object presence, RLS, anonymous denial, append-only grants/policies, helper security configuration, controlled stages, absence of duplicate core entities, correlation columns, and migration 015 function/grant compatibility. It is transactional and intended only for a disposable database.
