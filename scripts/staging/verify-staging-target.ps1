@@ -53,6 +53,7 @@ function Split-IdentityList {
 function Get-MigrationManifestHash {
     param([Parameter(Mandatory)][string]$RepositoryRoot)
 
+    $rootPrefix = $RepositoryRoot.TrimEnd('\') + '\'
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
@@ -63,13 +64,16 @@ function Get-MigrationManifestHash {
     if ($files.Count -ne 11) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-016.' }
 
     $manifestLines = foreach ($file in $files) {
-        $relative = [IO.Path]::GetRelativePath($RepositoryRoot, $file).Replace('\', '/')
+        if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            Stop-Guard 'Migration manifest file is outside the repository root.'
+        }
+        $relative = $file.Substring($rootPrefix.Length).Replace('\', '/')
         $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
         "$relative=$hash"
     }
     $bytes = [Text.Encoding]::UTF8.GetBytes(($manifestLines -join "`n"))
     $sha = [Security.Cryptography.SHA256]::Create()
-    try { return ([Convert]::ToHexString($sha.ComputeHash($bytes))).ToLowerInvariant() }
+    try { return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant() }
     finally { $sha.Dispose() }
 }
 
@@ -82,6 +86,10 @@ $values = Read-GuardEnvironment -Path ([IO.Path]::GetFullPath($EnvFile))
 $branch = (& git -C $repositoryRoot branch --show-current).Trim()
 if ($LASTEXITCODE -ne 0 -or $branch -ne 'web-platform-development') {
     Stop-Guard "Wrong Git branch: $branch"
+}
+$trackedStatus = @(& git -C $repositoryRoot status --porcelain --untracked-files=no)
+if ($LASTEXITCODE -ne 0 -or $trackedStatus.Count -ne 0) {
+    Stop-Guard 'Tracked worktree or index is not clean.'
 }
 
 $head = (& git -C $repositoryRoot rev-parse HEAD).Trim().ToLowerInvariant()
