@@ -1,6 +1,7 @@
 # Web Platform Schema Blueprint
 
-Status: normalized target model and alignment plan only. No SQL was executed.
+Status: normalized target model and alignment plan. Repository migration 016 now
+implements the W1 foundation described below; no SQL was executed against production.
 
 ## 1. Existing Supabase inventory
 
@@ -54,6 +55,11 @@ Public controlled functions include:
 - interview schedule/reschedule/update functions.
 
 Migration 015 removes tenant base-table read policies for requirements/assignments and requires narrow projection functions. Preserve this security boundary.
+
+Migration 016 additively implements `staff_profiles`, `staff_roles`,
+`candidate_preferences`, `application_stages`, `application_stage_history`, and
+`audit_logs`, plus nullable application source/correlation metadata. It does not
+rewrite existing application statuses or authorize non-admin staff access.
 
 ## 2. Naming and identity decisions
 
