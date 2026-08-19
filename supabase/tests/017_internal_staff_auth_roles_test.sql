@@ -31,6 +31,7 @@ insert into public.staff_profiles(user_id,display_name,status) values
 ('81000000-0000-0000-0000-000000000009','W2 Revoked','active');
 insert into public.staff_roles(user_id,role,status,granted_by) values
 ('81000000-0000-0000-0000-000000000002','super_admin','active','81000000-0000-0000-0000-000000000001'),
+('81000000-0000-0000-0000-000000000002','viewer','active','81000000-0000-0000-0000-000000000001'),
 ('81000000-0000-0000-0000-000000000003','super_admin','active','81000000-0000-0000-0000-000000000001'),
 ('81000000-0000-0000-0000-000000000004','admin','active','81000000-0000-0000-0000-000000000001'),
 ('81000000-0000-0000-0000-000000000005','recruiter','active','81000000-0000-0000-0000-000000000001'),
@@ -41,6 +42,31 @@ insert into public.staff_roles(user_id,role,status,granted_by) values
 insert into public.platform_users(user_id,account_type,display_name,email,account_status) values
 ('81000000-0000-0000-0000-000000000011','company','W2 Company','w2-company@test.local','active'),
 ('81000000-0000-0000-0000-000000000012','contractor','W2 Contractor','w2-contractor@test.local','active');
+
+do $$
+begin
+  perform set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000002',true);
+  if not private.has_staff_role('super_admin') or not private.has_staff_role('viewer') then
+    raise exception 'Matching or multiple active role membership failed';
+  end if;
+  if private.has_staff_role('admin') then raise exception 'Different role matched'; end if;
+
+  perform set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000009',true);
+  if private.has_staff_role('viewer') then raise exception 'Revoked role matched'; end if;
+
+  perform set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000008',true);
+  if private.has_staff_role('viewer') then raise exception 'Suspended profile role matched'; end if;
+
+  perform set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000010',true);
+  if private.has_staff_role('viewer') then raise exception 'Identity without staff profile matched'; end if;
+
+  perform set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000011',true);
+  if private.has_staff_role('viewer') then raise exception 'Tenant identity role matched'; end if;
+
+  perform set_config('request.jwt.claim.sub','',true);
+  if private.has_staff_role('viewer') then raise exception 'Anonymous role matched'; end if;
+end;
+$$;
 
 do $$
 begin
@@ -118,7 +144,7 @@ select set_config('request.jwt.claim.sub','81000000-0000-0000-0000-000000000002'
 do $$ declare session_record record; begin
   select * into session_record from public.get_current_staff_session();
   if not session_record.authorized or session_record.bootstrap_admin
-     or not session_record.staff_management_access or session_record.roles <> array['super_admin']::text[] then
+     or not session_record.staff_management_access or session_record.roles <> array['super_admin','viewer']::text[] then
     raise exception 'Super Admin authorization failed';
   end if;
   if (select count(*) from public.list_internal_staff()) <> 9 then raise exception 'Super Admin staff listing failed'; end if;

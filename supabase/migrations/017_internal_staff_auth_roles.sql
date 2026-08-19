@@ -68,7 +68,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(p_role = any((select private.current_staff_roles())), false);
+  select coalesce(p_role = any(private.current_staff_roles()), false);
 $$;
 
 create function private.can_access_admin_shell()
