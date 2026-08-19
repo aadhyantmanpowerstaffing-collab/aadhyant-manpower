@@ -1,0 +1,7 @@
+# Local environment and secret material
+.env
+.env.*
+*.secrets.local
+secrets.local
+local.secrets
+staging-secrets.*
