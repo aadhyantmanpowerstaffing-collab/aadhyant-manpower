@@ -10,6 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="../config.js" defer></script>
   <script src="../supabase-client.js" defer></script>
+  <script src="admin-auth.js" defer></script>
+  <script src="staff-management.js" defer></script>
   <script src="admin.js" defer></script>
 </head>
 <body data-admin-page="dashboard">
@@ -30,6 +32,11 @@
 
       <div class="admin-message" data-dashboard-message role="status" aria-live="polite"></div>
 
+      <section class="record-panel shell-foundation" data-shell-foundation hidden>
+        <div class="panel-heading"><div><h2>Internal Staff Portal</h2><p>Your staff session is active. Operational modules will be assigned in later milestones according to role.</p></div></div>
+        <dl class="staff-session-summary"><div><dt>Staff member</dt><dd data-staff-session-name>—</dd></div><div><dt>Roles</dt><dd data-staff-session-roles>—</dd></div></dl>
+      </section>
+
       <section class="summary-grid" aria-label="Submission summary">
         <article><span>Total Employer Requirements</span><strong data-count="employer-total">—</strong></article>
         <article><span>New Employer Requirements</span><strong data-count="employer-new">—</strong></article>
@@ -46,7 +53,21 @@
         <button type="button" role="tab" aria-selected="false" aria-controls="company-panel" id="company-tab" data-tab="companies">Company Accounts</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="company-requirements-panel" id="company-requirements-tab" data-tab="companyRequirements">Company Requirements</button>
         <button type="button" role="tab" aria-selected="false" aria-controls="contractor-panel" id="contractor-tab" data-tab="contractors">Staffing Partners</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="staff-panel" id="staff-tab" data-tab="staff" hidden>Staff Management</button>
       </div>
+
+      <section class="record-panel staff-management-panel" id="staff-panel" role="tabpanel" aria-labelledby="staff-tab" data-panel="staff" hidden>
+        <div class="panel-heading"><div><h2>Internal Staff</h2><p>Create profiles for existing Supabase Auth users and manage least-privilege roles.</p></div><button class="admin-button admin-button-secondary" type="button" data-refresh-staff>Refresh Staff</button></div>
+        <form class="staff-create-form" data-create-staff-form>
+          <div class="admin-field"><label for="staff-email">Existing Auth email</label><input id="staff-email" name="email" type="email" required></div>
+          <div class="admin-field"><label for="staff-display-name">Display name</label><input id="staff-display-name" name="displayName" maxlength="160" required></div>
+          <div class="admin-field"><label for="staff-initial-role">Initial role</label><select id="staff-initial-role" name="initialRole" required><option value="viewer">Viewer</option><option value="recruiter">Recruiter</option><option value="operations">Operations</option><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select></div>
+          <button class="admin-button admin-button-primary" type="submit">Create Staff Profile</button>
+        </form>
+        <div class="admin-message" data-staff-message role="status" aria-live="polite"></div>
+        <div class="table-wrap" tabindex="0" aria-label="Internal staff accounts"><table class="staff-table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Roles</th><th>Dates</th><th>Action</th></tr></thead><tbody data-staff-list></tbody></table></div>
+        <div class="empty-records" data-staff-empty hidden>No internal staff profiles exist yet.</div>
+      </section>
 
       <section class="record-panel" id="employer-panel" role="tabpanel" aria-labelledby="employer-tab" data-panel="employers">
         <div class="panel-heading"><div><h2>Employer Requirements</h2><p>Newest submissions appear first.</p></div></div>

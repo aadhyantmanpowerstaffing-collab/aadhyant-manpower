@@ -38,6 +38,10 @@ Exit: no duplicate candidate/vacancy/application tables; RLS matrix approved.
 
 ## W2 — Authentication, staff roles, and route shell
 
+Implementation status: migration 017, rollback-scoped checkpoint 017, shared
+admin authorization guard, and Staff Management shell are implemented for
+review. Dedicated-staging runtime validation is required before W2 closure.
+
 Deliverables:
 
 - internal staff profiles and least-privilege roles while retaining `admin_users` bootstrap;

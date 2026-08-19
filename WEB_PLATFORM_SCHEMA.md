@@ -61,6 +61,13 @@ Migration 016 additively implements `staff_profiles`, `staff_roles`,
 `audit_logs`, plus nullable application source/correlation metadata. It does not
 rewrite existing application statuses or authorize non-admin staff access.
 
+Migration 017 implements W2 internal staff authorization over the W1 tables. It
+keeps `admin_users` as a bootstrap override, denies `platform_users` identities,
+uses the roles `super_admin`, `admin`, `recruiter`, `operations`, and `viewer`,
+and exposes only narrow authenticated session/staff-management RPCs. It removes
+browser direct access to `staff_profiles` and `staff_roles` and does not grant W2
+roles access to existing operational or tenant data.
+
 ## 2. Naming and identity decisions
 
 - Keep UUID primary keys for all web domain tables.
@@ -87,9 +94,13 @@ Keep `admin_users(user_id)` unchanged for bootstrap authorization. Add:
 | `status` | active/suspended |
 | `created_at`, `updated_at` | audit timestamps |
 
-#### `roles`, `staff_roles`
+#### `staff_roles`
 
-`roles(code, scope, description)` and `staff_roles(user_id, role_id, granted_by, granted_at, revoked_at)`. Initial roles: `admin`, `recruitment_manager`, `recruiter`, `inbox_agent`, `campaign_operator`, `report_viewer`, `auditor`. An admin grant must still require `admin_users` where administrative power is intended.
+W1 implements `staff_roles(user_id, role, status, granted_by, created_at, updated_at)`.
+W2 fixes the initial role vocabulary as `super_admin`, `admin`, `recruiter`,
+`operations`, and `viewer`. Bootstrap authority remains in `admin_users`; ordinary
+staff authority requires an active staff profile and active role. W2 role grants
+do not implicitly authorize existing operational tables or tenant contracts.
 
 ### `candidates`
 

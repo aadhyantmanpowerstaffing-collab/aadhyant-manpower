@@ -3,6 +3,7 @@
   const pageType = document.body.dataset.adminPage;
   const connection = window.aadhyantSupabase;
   const client = connection?.client;
+  const adminAuth = window.aadhyantAdminAuth;
 
   const employerStatuses = ['new', 'contacted', 'in_progress', 'fulfilled', 'closed'];
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
@@ -57,11 +58,6 @@
   };
   const safeFilterTerm = (value) => String(value || '').trim().slice(0, 100).replace(/[%_,().]/g, ' ');
 
-  const isApprovedAdmin = async (userId) => {
-    const { data, error } = await client.from('admin_users').select('user_id').eq('user_id', userId).maybeSingle();
-    return !error && Boolean(data);
-  };
-
   const initializeLogin = async () => {
     const form = document.querySelector('[data-login-form]');
     const message = document.querySelector('[data-auth-message]');
@@ -71,8 +67,8 @@
       return;
     }
 
-    const { data: sessionData } = await client.auth.getSession();
-    if (sessionData.session && await isApprovedAdmin(sessionData.session.user.id)) {
+    const existing = await adminAuth.getAuthorization();
+    if (existing.session && existing.authorization?.admin_shell_access) {
       window.location.replace('./index.html');
       return;
     }
@@ -98,7 +94,8 @@
         button.textContent = 'Sign In';
         return;
       }
-      if (!await isApprovedAdmin(data.user.id)) {
+      const access = await adminAuth.getAuthorization();
+      if (access.error || !access.authorization?.admin_shell_access) {
         await client.auth.signOut();
         showMessage(message, 'Your account is not authorized for Aadhyant administration.', 'error');
         button.disabled = false;
@@ -531,18 +528,34 @@
       loading.textContent = 'Supabase is not configured. Add the public project URL and anon key in config.js.';
       return;
     }
-    const { data, error } = await client.auth.getSession();
-    if (error || !data.session) {
-      window.location.replace('./login.html');
-      return;
-    }
-    if (!await isApprovedAdmin(data.session.user.id)) {
-      await client.auth.signOut();
-      window.location.replace('./login.html');
-      return;
-    }
-    document.querySelector('[data-admin-email]').textContent = data.session.user.email || 'Approved administrator';
+    const access = await adminAuth.requireAccess('./login.html');
+    if (!access) return;
+    const { session, authorization } = access;
+    document.querySelector('[data-admin-email]').textContent = session.user.email || authorization.display_name || 'Internal staff';
     loading.hidden = true; dashboard.hidden = false;
+
+    const operationalAccess = authorization.bootstrap_admin;
+    const foundation = document.querySelector('[data-shell-foundation]');
+    if (!operationalAccess) {
+      document.querySelector('.summary-grid').hidden = true;
+      document.querySelector('[data-refresh]').hidden = true;
+      foundation.hidden = false;
+      document.querySelector('[data-staff-session-name]').textContent = authorization.display_name || 'Internal staff';
+      document.querySelector('[data-staff-session-roles]').textContent = authorization.roles.map(readableStatus).join(', ') || 'No active roles';
+      document.querySelectorAll('[data-tab]:not([data-tab="staff"])').forEach((element) => { element.hidden = true; });
+      document.querySelectorAll('[data-panel]:not([data-panel="staff"])').forEach((element) => { element.hidden = true; });
+    }
+    if (authorization.staff_management_access) {
+      window.aadhyantStaffManagement?.initialize({ client, authorization });
+      const staffTab = document.querySelector('[data-tab="staff"]');
+      staffTab.hidden = false;
+      if (!operationalAccess) {
+        staffTab.setAttribute('aria-selected', 'true');
+        document.querySelector('[data-panel="staff"]').hidden = false;
+      }
+    } else if (!operationalAccess) {
+      document.querySelector('.admin-tabs').hidden = true;
+    }
 
     const loadDashboard = async () => {
       showMessage(dashboardMessage, 'Loading dashboard data…');
@@ -782,8 +795,12 @@
     });
     document.querySelector('[data-assignment-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,requirement=recordsById.get(`companyRequirements:${form.elements.requirementId.value}`),button=form.querySelector('button[type=submit]');button.disabled=true;showMessage(document.querySelector('[data-assignment-message]'),'');const {error}=await client.rpc('assign_requirement_contractor',{p_requirement_id:form.elements.requirementId.value,p_contractor_id:form.elements.contractorId.value,p_assigned_headcount:Number(form.elements.headcount.value),p_internal_notes:form.elements.notes.value.trim()||null});button.disabled=false;if(error){showMessage(document.querySelector('[data-assignment-message]'),'Assignment could not be saved. Check partner status and remaining allocation.','error');return}form.reset();showMessage(document.querySelector('[data-assignment-message]'),'Staffing partner assigned.','success');await loadRequirementAssignments(requirement)});
 
-    client.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') window.location.replace('./login.html'); });
-    await loadDashboard();
+    const authorizationSignature = JSON.stringify(authorization);
+    adminAuth.monitorAccess(({ authorization: current }) => {
+      if (JSON.stringify(current) !== authorizationSignature) window.location.reload();
+    }, './login.html');
+    if (operationalAccess) await loadDashboard();
+    else showMessage(dashboardMessage, authorization.staff_management_access ? 'Staff management access is active.' : 'Your internal staff session is active.');
   };
 
   if (pageType === 'login') initializeLogin();
