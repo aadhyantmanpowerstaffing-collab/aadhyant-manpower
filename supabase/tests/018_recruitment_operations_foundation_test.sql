@@ -46,14 +46,22 @@ do $$
 begin
   if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
       where n.nspname='private' and p.proname like 'can_%recruitment%' and p.prosecdef
-        and exists(select 1 from unnest(p.proconfig) c where c='search_path=')) <> 1 then
+        and exists (
+          select 1 from unnest(p.proconfig) config
+          where split_part(config,'=',1)='search_path'
+            and btrim(split_part(config,'=',2),'"')=''
+        )) <> 1 then
     -- The remaining helpers use domain-specific names; validate all six explicitly below.
     null;
   end if;
   if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
       where n.nspname='private' and p.proname in ('is_bootstrap_recruitment_admin','can_view_recruitment',
         'can_manage_candidates','can_manage_applications','can_manage_interviews','can_manage_joinings')
-        and p.prosecdef and exists(select 1 from unnest(p.proconfig) c where c='search_path=')) <> 6 then
+        and p.prosecdef and exists (
+          select 1 from unnest(p.proconfig) config
+          where split_part(config,'=',1)='search_path'
+            and btrim(split_part(config,'=',2),'"')=''
+        )) <> 6 then
     raise exception 'W3 private helper security configuration is invalid';
   end if;
   if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -63,7 +71,11 @@ begin
         'get_recruitment_application','transition_recruitment_application','list_recruitment_interviews',
         'schedule_recruitment_interview','update_recruitment_interview','reschedule_recruitment_interview',
         'list_recruitment_joinings','upsert_recruitment_joining')
-        and p.prosecdef and exists(select 1 from unnest(p.proconfig) c where c='search_path=')) <> 16 then
+        and p.prosecdef and exists (
+          select 1 from unnest(p.proconfig) config
+          where split_part(config,'=',1)='search_path'
+            and btrim(split_part(config,'=',2),'"')=''
+        )) <> 16 then
     raise exception 'W3 RPC security configuration is invalid';
   end if;
   if has_function_privilege('anon','public.get_recruitment_dashboard()','EXECUTE')
