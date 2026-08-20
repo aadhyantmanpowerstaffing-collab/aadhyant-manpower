@@ -6,6 +6,7 @@ secrets.local
 local.secrets
 staging-secrets.*
 .w2-browser-fixtures.local.json
+.w3-browser-fixtures.local.json
 
 # Project-scoped JavaScript tooling dependencies
 node_modules/
