@@ -134,3 +134,56 @@ test('transition dialog maps stale, authorization, missing, validation, and serv
   assert.match(moduleApi.friendlyTransitionError({message:'Application note is too long'}),/too long/i);
   assert.match(moduleApi.friendlyTransitionError({message:'Failed to fetch'}),/connection/i);
 });
+
+test('interview scheduling uses date and time controls without ISO or mode prompts', () => {
+  assert.doesNotMatch(source,/Interview date\/time \(ISO 8601\)|prompt\([^)]*(?:Interview date|Mode: onsite)/i);
+  assert.match(source,/date\.type='date'/);
+  assert.match(source,/time\.type='time'/);
+  assert.match(source,/mode\.name='interviewMode'/);
+  ['onsite','phone','video','other'].forEach((mode)=>assert.match(source,new RegExp(`\\['${mode}'`)));
+});
+
+test('local interview date and time are converted internally to an RPC timestamp', () => {
+  const timestamp=moduleApi.localInterviewTimestamp('2030-06-15','14:30');
+  assert.equal(new Date(timestamp).getTime(),new Date('2030-06-15T14:30').getTime());
+  assert.equal(moduleApi.localInterviewTimestamp('','14:30'),null);
+  assert.equal(moduleApi.localInterviewTimestamp('2030-06-15',''),null);
+  assert.equal(moduleApi.localInterviewTimestamp('invalid','14:30'),null);
+  assert.match(source,/new Date\(timestamp\)\.getTime\(\)<=Date\.now\(\)/);
+});
+
+test('schedule action follows interview permission and application eligibility', () => {
+  const recruiter={interview_mutation:true};const viewer={interview_mutation:false};
+  ['interested','applied','screening','shortlisted','interview'].forEach((stage)=>assert.equal(moduleApi.canScheduleInterview({application_status:stage},recruiter),true));
+  ['selected','rejected','joining_pending','joined','left'].forEach((stage)=>assert.equal(moduleApi.canScheduleInterview({application_status:stage},recruiter),false));
+  assert.equal(moduleApi.canScheduleInterview({application_status:'screening'},viewer),false);
+  assert.match(source,/canScheduleInterview\(row,permissions\)/);
+});
+
+test('schedule modal validates fields, checks current interview, and requires confirmation', () => {
+  assert.match(source,/A current interview is already scheduled/);
+  assert.match(source,/interview\.status==='scheduled'/);
+  assert.match(source,/mode\.value==='onsite'&&!location\.value\.trim\(\)/);
+  assert.match(source,/Confirm Schedule/);
+  assert.match(source,/Review interview schedule/);
+  assert.match(source,/cancel\.addEventListener\('click',\(\)=>finish\(false\)\)/);
+});
+
+test('schedule confirmation calls the existing RPC and refreshes related modules', () => {
+  assert.match(source,/schedule_recruitment_interview/);
+  assert.match(source,/p_scheduled_at:timestamp/);
+  assert.match(source,/p_mode:mode\.value/);
+  assert.match(source,/p_location:location\.value\.trim\(\)\|\|null/);
+  assert.match(source,/p_instructions:instructions\.value\.trim\(\)\|\|null/);
+  assert.match(source,/if\(scheduled\)\{await load\(\)/);
+  assert.match(source,/Interviews and Dashboard will refresh when opened/);
+});
+
+test('schedule errors are business-friendly', () => {
+  assert.match(moduleApi.friendlyScheduleError({message:'A current interview is already scheduled'}),/already scheduled/i);
+  assert.match(moduleApi.friendlyScheduleError({message:'Application is not eligible for interview scheduling'}),/no longer eligible/i);
+  assert.match(moduleApi.friendlyScheduleError({message:'Interview management access is required'}),/not authorized/i);
+  assert.match(moduleApi.friendlyScheduleError({message:'Valid future interview details are required'}),/valid future/i);
+  assert.match(moduleApi.friendlyScheduleError({message:'Application was not found'}),/no longer available/i);
+  assert.match(moduleApi.friendlyScheduleError({message:'Failed to fetch'}),/connection/i);
+});
