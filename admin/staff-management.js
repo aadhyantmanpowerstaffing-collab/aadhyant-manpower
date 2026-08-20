@@ -1,5 +1,6 @@
 (function initializeStaffManagementModule() {
   const roles = ['super_admin', 'admin', 'recruiter', 'operations', 'viewer'];
+  const elevatedRoles = new Set(['super_admin', 'admin']);
   const readable = (value) => String(value || '').replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   const correlationId = () => window.crypto?.randomUUID?.() || null;
   const setMessage = (element, text, type = '') => { element.textContent = text; element.classList.toggle('is-error', type === 'error'); element.classList.toggle('is-success', type === 'success'); };
@@ -20,25 +21,28 @@
       const staff = data || []; body.replaceChildren(); empty.hidden = staff.length > 0;
       staff.forEach((record) => {
         const row = document.createElement('tr');
+        const targetIsElevated = (record.roles || []).some((role) => elevatedRoles.has(role));
+        const elevatedTargetLocked = targetIsElevated && !canManageElevated;
         const nameCell = document.createElement('td'); const nameInput = document.createElement('input');
         nameInput.value = record.display_name || ''; nameInput.maxLength = 160; nameInput.setAttribute('aria-label', `Display name for ${record.email}`); nameCell.append(nameInput);
+        nameInput.disabled = elevatedTargetLocked;
         const emailCell = document.createElement('td'); emailCell.textContent = record.email || '—';
         const statusCell = document.createElement('td'); const statusSelect = document.createElement('select');
         ['active', 'suspended', 'inactive'].forEach((status) => { const option = document.createElement('option'); option.value = status; option.textContent = readable(status); option.selected = record.status === status; statusSelect.append(option); });
-        const targetIsElevated = (record.roles || []).some((role) => role === 'super_admin' || role === 'admin'); statusSelect.disabled = targetIsElevated && !canManageElevated; statusCell.append(statusSelect);
+        statusSelect.disabled = elevatedTargetLocked; statusCell.append(statusSelect);
         const roleCell = document.createElement('td'); const roleList = document.createElement('div'); roleList.className = 'staff-role-list';
         roles.forEach((role) => {
-          const label = document.createElement('label'); const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = (record.roles || []).includes(role); checkbox.disabled = (role === 'super_admin' || role === 'admin') && !canManageElevated;
+          const label = document.createElement('label'); const checkbox = document.createElement('input'); const elevatedControlLocked = !canManageElevated && (elevatedRoles.has(role) || targetIsElevated); checkbox.type = 'checkbox'; checkbox.checked = (record.roles || []).includes(role); checkbox.disabled = elevatedControlLocked; label.classList.toggle('is-disabled', elevatedControlLocked);
           checkbox.addEventListener('change', async () => {
             checkbox.disabled = true; setMessage(message, 'Updating staff role…');
             try { await call(checkbox.checked ? 'grant_staff_role' : 'revoke_staff_role', { p_user_id: record.user_id, p_role: role, p_correlation_id: correlationId() }); setMessage(message, `${readable(role)} role ${checkbox.checked ? 'granted' : 'revoked'}.`, 'success'); await load(); }
             catch (_error) { checkbox.checked = !checkbox.checked; setMessage(message, 'The role change was denied or could not be saved.', 'error'); }
-            finally { checkbox.disabled = false; }
+            finally { checkbox.disabled = elevatedControlLocked; }
           });
           label.append(checkbox, document.createTextNode(readable(role))); roleList.append(label);
         }); roleCell.append(roleList);
         const datesCell = document.createElement('td'); datesCell.textContent = `Created ${new Date(record.created_at).toLocaleDateString()} · Updated ${new Date(record.updated_at).toLocaleDateString()}`;
-        const actionsCell = document.createElement('td'); const save = document.createElement('button'); save.type = 'button'; save.className = 'admin-button admin-button-secondary'; save.textContent = 'Save Profile'; save.disabled = targetIsElevated && !canManageElevated;
+        const actionsCell = document.createElement('td'); const save = document.createElement('button'); save.type = 'button'; save.className = 'admin-button admin-button-secondary'; save.textContent = 'Save Profile'; save.disabled = elevatedTargetLocked;
         save.addEventListener('click', async () => {
           save.disabled = true; setMessage(message, 'Saving staff profile…');
           try {
@@ -46,7 +50,7 @@
             if (statusSelect.value !== record.status) await call('set_staff_active_state', { p_user_id: record.user_id, p_status: statusSelect.value, p_correlation_id: correlationId() });
             setMessage(message, 'Staff profile saved.', 'success'); await load();
           } catch (_error) { setMessage(message, 'The profile change was denied or could not be saved.', 'error'); }
-          finally { save.disabled = false; }
+          finally { save.disabled = elevatedTargetLocked; }
         }); actionsCell.append(save);
         [nameCell, emailCell, statusCell, roleCell, datesCell, actionsCell].forEach((cell) => row.append(cell)); body.append(row);
       });
