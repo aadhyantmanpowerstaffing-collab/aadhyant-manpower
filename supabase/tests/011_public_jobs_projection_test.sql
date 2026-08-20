@@ -125,10 +125,19 @@ begin
   ) then
     raise exception 'anonymous base-table SELECT policy must remain absent';
   end if;
-  if not exists (select 1 from pg_policies where schemaname='public' and tablename='employer_requirements' and policyname='M8B active company reads own requirements')
-     or not exists (select 1 from pg_policies where schemaname='public' and tablename='employer_requirements' and policyname='M8C active contractor reads assigned requirements')
-     or not exists (select 1 from pg_policies where schemaname='public' and tablename='employer_requirements' and policyname='Admins can read employer requirements') then
-    raise exception 'one or more existing operational policies are missing';
+  if exists (select 1 from pg_policies where schemaname='public' and tablename='employer_requirements'
+       and policyname in ('M8B active company reads own requirements','M8C active contractor reads assigned requirements'))
+     or exists (select 1 from pg_policies where schemaname='public' and tablename='requirement_contractors'
+       and policyname='M8C active contractor reads own assignments') then
+    raise exception 'migration 015 tenant base-read policy was reintroduced';
+  end if;
+  if to_regprocedure('public.get_company_requirements()') is null
+     or to_regprocedure('public.get_staffing_partner_assignments()') is null then
+    raise exception 'migration 015 tenant projection RPC is missing';
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='employer_requirements'
+       and policyname='Admins can read employer requirements') then
+    raise exception 'compatible Admin requirement-read policy is missing';
   end if;
 end;
 $$;
