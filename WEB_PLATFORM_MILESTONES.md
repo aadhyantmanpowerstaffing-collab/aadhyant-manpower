@@ -57,15 +57,19 @@ Exit: direct URL and API tests prove unauthorized roles cannot read/write protec
 
 ## W3 — Candidate and Requirement CRM
 
+Implementation status: recruitment operations foundation implemented locally
+for review as migration 018 and a role-aware admin module. It reuses all
+canonical recruitment entities and awaits separate staging-runtime validation.
+
 Deliverables:
 
-- `/admin/candidates`, companies, contractors, and `/admin/vacancies` using existing canonical tables;
+- role-aware Candidate CRM, requirements, applications, interviews, and joining/placement using existing canonical tables;
 - normalized search/filter/pagination;
 - candidate preferences, tags, notes, assignment;
 - requirement structured fields and safe public projection;
-- optimistic concurrency and audit entries.
+- server-validated application stages/history, interview and joining workflows, and audit entries.
 
-Exit: CRUD/business rules pass without changing public registration or job pages.
+Exit: static review is followed by separately authorized rollback-scoped staging validation; public registration, jobs, tenant boundaries, and W2 authorization must remain unchanged.
 
 ## W4 — Applications and auditable recruitment pipeline
 

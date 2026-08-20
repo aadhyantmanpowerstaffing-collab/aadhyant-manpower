@@ -68,6 +68,14 @@ and exposes only narrow authenticated session/staff-management RPCs. It removes
 browser direct access to `staff_profiles` and `staff_roles` and does not grant W2
 roles access to existing operational or tenant data.
 
+Migration 018 implements W3 internal recruitment operations without adding
+replacement domain tables. Active W2 staff use projected RPCs for recruitment
+permissions/metrics, Candidate CRM, requirements, applications and history,
+interviews, and joining/placement. Candidate contact PII is limited to approved
+candidate managers; operations is restricted to selected/joining context and
+viewer is read-only. No W3 direct table grant or tenant policy is added, so the
+migration 015 projections and W2 staff-management boundary remain unchanged.
+
 ## 2. Naming and identity decisions
 
 - Keep UUID primary keys for all web domain tables.
