@@ -187,3 +187,66 @@ test('schedule errors are business-friendly', () => {
   assert.match(moduleApi.friendlyScheduleError({message:'Application was not found'}),/no longer available/i);
   assert.match(moduleApi.friendlyScheduleError({message:'Failed to fetch'}),/connection/i);
 });
+
+test('interview management replaces raw status, result, and reschedule prompts', () => {
+  assert.doesNotMatch(source,/prompt\([^)]*(?:Interview status|Result: pending|reschedul|ISO 8601)/i);
+  assert.match(source,/interview-management-dialog/);
+  assert.match(source,/Manage Interview/);
+  assert.match(source,/Reschedule Interview/);
+  assert.match(source,/Record Completed Outcome/);
+  assert.match(source,/Cancel Interview/);
+});
+
+test('scheduled and attended interviews expose only supported management states', () => {
+  const manager={interview_mutation:true};const viewer={interview_mutation:false};
+  assert.equal(moduleApi.canManageInterview({status:'scheduled'},manager),true);
+  assert.equal(moduleApi.canManageInterview({status:'attended'},manager),true);
+  ['completed','absent','cancelled','rescheduled'].forEach((status)=>assert.equal(moduleApi.canManageInterview({status},manager),false));
+  assert.equal(moduleApi.canManageInterview({status:'scheduled'},viewer),false);
+  assert.deepEqual(Array.from(moduleApi.interviewFinalStatuses),['completed','absent','cancelled','rescheduled']);
+});
+
+test('interview outcome choices exactly match the W3 backend vocabulary', () => {
+  assert.deepEqual(JSON.parse(JSON.stringify(moduleApi.interviewResultChoices)),[
+    {value:'pending',label:'Pending Decision'},{value:'selected',label:'Selected'},
+    {value:'rejected',label:'Rejected'},{value:'on_hold',label:'On Hold'}
+  ]);
+  assert.match(source,/submitUpdate\('completed',result\.value/);
+  assert.match(source,/renderSimpleConfirmation\('cancelled','Cancel Interview'\)/);
+  assert.doesNotMatch(source,/submitUpdate\('(?:scheduled|rescheduled)'/);
+});
+
+test('reschedule uses business controls, internal timestamp conversion, and confirmation', () => {
+  assert.match(source,/date\.type='date'/);
+  assert.match(source,/time\.type='time'/);
+  assert.match(source,/Confirm Reschedule/);
+  assert.match(source,/Old schedule:/);
+  assert.match(source,/New schedule:/);
+  assert.match(source,/reschedule_recruitment_interview/);
+  assert.match(source,/p_scheduled_at:timestamp/);
+  assert.match(source,/p_mode:mode\.value/);
+});
+
+test('cancellation and completion require explicit confirmation without internal identifiers', () => {
+  assert.match(source,/`Confirm \$\{label\}`/);
+  assert.match(source,/renderSimpleConfirmation\('cancelled','Cancel Interview'\)/);
+  assert.match(source,/Confirm Completed Outcome/);
+  assert.match(source,/cancel\.addEventListener\('click',back\)/);
+  assert.doesNotMatch(source,/Interview UUID|Application UUID|name=['"]interviewId/i);
+});
+
+test('finalized interviews are non-actionable and refresh messages cover related modules', () => {
+  assert.match(source,/Interview finalized\. No further changes are available/);
+  assert.match(source,/if\(changed\)\{await load\(\)/);
+  assert.match(source,/Applications and Dashboard will refresh when opened/);
+  assert.match(source,/canManageInterview\(row,permissions\)/);
+});
+
+test('interview management maps stale, finalized, conflict, authorization, validation, and network errors', () => {
+  assert.match(moduleApi.friendlyInterviewError({message:'Interview outcome is already final'}),/already finalized/i);
+  assert.match(moduleApi.friendlyInterviewError({message:'A scheduled interview was not found'}),/changed elsewhere/i);
+  assert.match(moduleApi.friendlyInterviewError({message:'Interview rescheduling conflicted with another update'}),/conflicted/i);
+  assert.match(moduleApi.friendlyInterviewError({message:'Interview management access is required'}),/not authorized/i);
+  assert.match(moduleApi.friendlyInterviewError({message:'Completed interview requires a result'}),/not valid/i);
+  assert.match(moduleApi.friendlyInterviewError({message:'Failed to fetch'}),/connection/i);
+});
