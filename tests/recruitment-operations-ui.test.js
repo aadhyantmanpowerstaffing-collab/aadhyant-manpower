@@ -93,3 +93,44 @@ test('candidate picker maps duplicate, eligibility, requirement, authorization, 
   assert.match(moduleApi.friendlyMatchError({ message: 'Application management access is required' }), /not authorized/i);
   assert.match(moduleApi.friendlyMatchError({ message: 'Failed to fetch' }), /connection/i);
 });
+
+test('application stages use a controlled transition dialog without free-text stage entry', () => {
+  assert.doesNotMatch(source, /Enter validated next stage|prompt\([^)]*(?:stage|Current:)/i);
+  assert.match(source, /application-transition-dialog/);
+  assert.match(source, /Current stage/);
+  assert.match(source, /Confirm Change/);
+});
+
+test('application transition graph exactly mirrors migration 018 generic transitions', () => {
+  const graph=JSON.parse(JSON.stringify(moduleApi.applicationTransitionGraph));
+  assert.deepEqual(Object.fromEntries(Object.entries(graph).map(([stage,items])=>[stage,items.map((item)=>item.value)])), {
+    interested:['applied'],applied:['screening'],screening:['shortlisted'],shortlisted:['interview'],interview:['selected','rejected'],selected:['rejected']
+  });
+  ['rejected','joining_pending','joined','left'].forEach((stage)=>assert.deepEqual(Array.from(moduleApi.getApplicationTransitions(stage)),[]));
+});
+
+test('transition action follows application permission and terminal-stage rules', () => {
+  const recruiter={application_mutation:true};const viewer={application_mutation:false};
+  assert.equal(moduleApi.canTransitionApplication({application_status:'applied'},recruiter),true);
+  assert.equal(moduleApi.canTransitionApplication({application_status:'applied'},viewer),false);
+  assert.equal(moduleApi.canTransitionApplication({application_status:'rejected'},recruiter),false);
+  assert.equal(moduleApi.canTransitionApplication({application_status:'joining_pending'},recruiter),false);
+  assert.match(source,/No further stage changes are available/);
+});
+
+test('transition confirmation uses only the existing W3 RPC and refreshes applications', () => {
+  assert.match(source,/transition_recruitment_application/);
+  assert.match(source,/p_to_stage:select\.value/);
+  assert.match(source,/transitions\.some\(\(item\)=>item\.value===select\.value\)/);
+  assert.match(source,/if\(changed\)\{await load\(\)/);
+  assert.match(source,/Dashboard will refresh when opened/);
+  assert.match(source,/cancel\.addEventListener\('click',\(\)=>finish\(false\)\)/);
+});
+
+test('transition dialog maps stale, authorization, missing, validation, and server errors', () => {
+  assert.match(moduleApi.friendlyTransitionError({message:'Unsupported application stage transition'}),/changed elsewhere/i);
+  assert.match(moduleApi.friendlyTransitionError({message:'Application management access is required'}),/not authorized/i);
+  assert.match(moduleApi.friendlyTransitionError({message:'Application was not found'}),/no longer available/i);
+  assert.match(moduleApi.friendlyTransitionError({message:'Application note is too long'}),/too long/i);
+  assert.match(moduleApi.friendlyTransitionError({message:'Failed to fetch'}),/connection/i);
+});
