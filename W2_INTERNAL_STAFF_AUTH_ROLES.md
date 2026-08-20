@@ -1,10 +1,10 @@
 # W2 Internal Staff Authentication and Role Authorization
 
-Status: database and security runtime validation complete on dedicated staging; browser and session validation remains pending.
+Status: W2 database/security runtime validation, browser/session validation, and synthetic-fixture cleanup are complete on dedicated NONPROD staging.
 
 ## Staging runtime validation
 
-Migration 017, checkpoint 017, and the required migration 015/016 regressions passed on dedicated NONPROD staging. Runtime evidence, resolved defect history, fixture cleanup, and remaining browser-validation gaps are recorded in [W2_STAGING_RUNTIME_VALIDATION.md](W2_STAGING_RUNTIME_VALIDATION.md).
+Migration 017, checkpoint 017, and the required migration 015/016 regressions passed on dedicated NONPROD staging. Runtime evidence, resolved defect history, browser/session results, and fixture cleanup are recorded in [W2_STAGING_RUNTIME_VALIDATION.md](W2_STAGING_RUNTIME_VALIDATION.md).
 
 ## Authority model
 
@@ -67,7 +67,7 @@ Authorized managers can list staff, attach an existing Auth user by email, edit 
 
 `017_internal_staff_auth_roles_test.sql` uses synthetic Auth identities inside one explicit transaction ending in `ROLLBACK`. It covers bootstrap compatibility; all five roles; inactive, revoked, non-member, company, contractor, and anonymous denial; direct staff/audit write denial; elevated-role escalation; last-super-admin protection; audit accuracy; and preservation of migration 015 tenant boundaries.
 
-Dedicated staging applied migration 017 and passed checkpoint 017 plus rollback-scoped regressions 015 and 016. Live browser/session validation remains required before full W2 closure.
+Dedicated staging applied migration 017 and passed checkpoint 017 plus rollback-scoped regressions 015 and 016. The complete browser/session matrix, permission-boundary retest, unauthorized browser mutation checks, expiry-boundary test, and final fixture cleanup also passed. W2 is complete locally and ready for closure after the evidence commit is pushed under separate authorization.
 
 ## Intentional limitations
 

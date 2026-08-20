@@ -38,9 +38,12 @@ Exit: no duplicate candidate/vacancy/application tables; RLS matrix approved.
 
 ## W2 — Authentication, staff roles, and route shell
 
-Implementation status: W2 database/security runtime validation is complete on
-dedicated staging, including checkpoint 017 and regressions 015/016. Browser and
-session validation remains pending; W2 is not yet fully closed.
+Implementation status: W2 database/security runtime validation, browser/session
+validation, and synthetic-fixture cleanup are complete on dedicated NONPROD
+staging. Checkpoint 017, regressions 015/016, the full browser security matrix,
+and final zero-residue verification passed. W2 is fully complete locally and
+ready for closure after the final evidence commit is pushed under separate
+authorization.
 
 Deliverables:
 

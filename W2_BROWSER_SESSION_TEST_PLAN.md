@@ -1,6 +1,6 @@
 # W2 Live Staging Browser and Session Validation Plan
 
-Status: preparation complete; fixture creation and live browser execution require separate authorization.
+Status: execution complete on dedicated NONPROD staging; the browser/session matrix and fixture cleanup passed.
 
 ## Safety boundary
 
@@ -130,4 +130,23 @@ PASS requires every expected-access case to succeed, every denial case to fail s
 
 Immediately stop and mark FAIL if any tenant identity enters the staff shell, any unauthorized user invokes a staff RPC, any browser role writes staff/audit tables directly, a revoked/inactive identity retains access after recheck, the recovery admin becomes unavailable, staging identity becomes uncertain, or any fixture cannot be safely cleaned up.
 
-W2 remains open until this browser/session matrix and cleanup both pass on staging.
+## Execution record
+
+The following manual localhost staging checks passed:
+
+- unauthenticated direct-access redirect;
+- authorized access for `bootstrap_admin`, `super_admin`, `admin`, `recruiter`, `operations`, and `viewer`;
+- denial for inactive staff, revoked-role staff, non-members, company users, and contractor users;
+- logout/back protection, refresh/session restoration, and multi-tab logout propagation;
+- live role-revocation and inactive-state access loss, followed by fixture restoration;
+- Staff Management permission-boundary retest after commit `e51cb422ed65391ef5bc23527f4c606dea66d068`;
+- unauthorized browser RPC/direct-table denial, nine of nine checks; and
+- deterministic session invalidation across the recorded access-token expiry boundary.
+
+An ordinary-admin presentation defect made elevated controls appear actionable even though server authorization denied elevated mutations. Commit `e51cb422ed65391ef5bc23527f4c606dea66d068` made those controls visibly and semantically disabled and added focused passing regression coverage.
+
+The recruiter fixture temporarily drifted to Active + Viewer with Recruiter revoked. It was corrected through the W2 role RPCs and verified as Active + Recruiter before cleanup.
+
+Manifest-bound application cleanup passed. During Dashboard Auth cleanup, an incorrect bulk selection deleted `bootstrap_admin` instead of `non_member`, and its `admin_users` row cascaded automatically. No recovery identity was recreated. The remaining `non_member` was subsequently deleted individually. Final read-only checks proved zero fixture residue across Auth, application, tenant, dependency, and audit records while preserving unrelated staging baseline counts. No real data was affected and production was not contacted.
+
+W2 browser/session validation and fixture cleanup are complete. W2 is fully complete locally and ready for closure after the final evidence commit is pushed under separate authorization.
