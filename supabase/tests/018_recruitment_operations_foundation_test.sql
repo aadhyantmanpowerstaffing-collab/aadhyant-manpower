@@ -125,7 +125,11 @@ do $$ declare p record; app uuid; joining uuid; begin
   select * into p from public.get_recruitment_permissions();
   if not p.view_access or p.candidate_mutation or p.application_mutation or p.interview_mutation or not p.joining_mutation then
     raise exception 'Operations permission matrix failed'; end if;
-  select id into app from public.candidate_applications where candidate_id='82000000-0000-0000-0001-000000000001';
+  if exists(select 1 from public.candidate_applications where candidate_id='82000000-0000-0000-0001-000000000001') then
+    raise exception 'Operations direct application table read was not denied'; end if;
+  select a.id into app from public.list_recruitment_applications('selected',null,25,0) a
+    where a.candidate_id='82000000-0000-0000-0001-000000000001';
+  if app is null then raise exception 'Operations projected application context failed'; end if;
   if (select count(*) from public.list_recruitment_candidates())<>1 then raise exception 'Operations selected scope failed'; end if;
   joining:=public.upsert_recruitment_joining(app,current_date+7,null,'confirmed',null,'Confirmed',null);
   if joining is null then raise exception 'Operations joining create failed'; end if;
@@ -148,13 +152,18 @@ end $$;
 -- Viewer: projected reads, no mutation and no candidate PII.
 set local role authenticated;
 select set_config('request.jwt.claim.sub','82000000-0000-0000-0000-000000000006',true);
-do $$ declare p record; detail jsonb; begin
+do $$ declare p record; detail jsonb; app uuid; begin
   select * into p from public.get_recruitment_permissions();
   if not p.view_access or p.candidate_mutation or p.application_mutation or p.interview_mutation or p.joining_mutation or p.pii_detail_access then
     raise exception 'Viewer permission matrix failed'; end if;
   detail:=public.get_recruitment_candidate('82000000-0000-0000-0001-000000000001');
   if detail->'mobile' <> 'null'::jsonb or detail->'whatsapp_number' <> 'null'::jsonb then raise exception 'Viewer received candidate contact PII'; end if;
-  begin perform public.transition_recruitment_application((select id from public.candidate_applications limit 1),'joining_pending',null,null,null); raise exception 'Viewer transitioned application';
+  if exists(select 1 from public.candidate_applications where candidate_id='82000000-0000-0000-0001-000000000001') then
+    raise exception 'Viewer direct application table read was not denied'; end if;
+  select a.id into app from public.list_recruitment_applications('selected',null,25,0) a
+    where a.candidate_id='82000000-0000-0000-0001-000000000001';
+  if app is null then raise exception 'Viewer projected application context failed'; end if;
+  begin perform public.transition_recruitment_application(app,'joining_pending',null,null,null); raise exception 'Viewer transitioned application';
   exception when raise_exception then if sqlerrm='Viewer transitioned application' then raise; end if; end;
 end $$;
 reset role;
