@@ -57,9 +57,11 @@ Exit: direct URL and API tests prove unauthorized roles cannot read/write protec
 
 ## W3 — Candidate and Requirement CRM
 
-Implementation status: recruitment operations foundation implemented locally
-for review as migration 018 and a role-aware admin module. It reuses all
-canonical recruitment entities and awaits separate staging-runtime validation.
+Implementation status: recruitment operations foundation implemented as
+migration 018 and a role-aware admin module. Dedicated NONPROD database/security
+runtime validation is COMPLETE, including checkpoint 018, regressions 015–017,
+legacy checkpoints 011–014, rollback cleanup, and zero-residue verification.
+Live browser validation is PENDING; W3 is not yet fully closed.
 
 Deliverables:
 

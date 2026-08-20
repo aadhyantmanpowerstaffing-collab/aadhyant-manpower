@@ -1,6 +1,6 @@
 # W3 Recruitment Operations Foundation
 
-Status: implemented locally for review; migration 018 has not been applied to staging or production.
+Status: database/security runtime validation complete on dedicated NONPROD staging; live browser validation pending. Migration 018 has not been applied to production.
 
 ## Reused canonical model
 
@@ -49,5 +49,7 @@ The guarded `/admin/` shell adds Dashboard, Candidates, Requirements, Applicatio
 ## Tests and limitations
 
 The rollback-scoped SQL checkpoint covers bootstrap, super-admin, admin, recruiter, operations, viewer, inactive staff, non-member, company, contractor, and anonymous callers; projected reads; PII suppression; candidate mutation; application duplicate/invalid transition protection; automatic history; interviews; joining; grants/search paths; and preservation of W2/migration-015 contracts. Focused frontend tests cover navigation, role-aware controls, read-only viewer behavior, and RPC-only browser data access.
+
+Dedicated NONPROD staging runtime validation is complete: checkpoint 018, required regressions 015–017, legacy checkpoints 011–014, rollback cleanup, and final zero-residue verification passed. Detailed evidence is recorded in `W3_STAGING_RUNTIME_VALIDATION.md`. Live browser validation remains pending under `W3_BROWSER_VALIDATION_PLAN.md`, so W3 is not yet fully closed.
 
 W3 deliberately does not add advanced matching/scoring, assignment ownership, standalone note feeds, documents/OCR, WhatsApp, campaigns, chatbot/Flows, Meta templates, payroll, attendance, PF/ESIC, billing, or mobile applications. The first UI uses bounded lists and simple operator dialogs; richer accessible editors, saved filters, bulk workflows, and optimistic concurrency remain future enhancements.
