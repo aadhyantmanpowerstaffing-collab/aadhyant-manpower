@@ -160,7 +160,7 @@ do $$ declare p record; detail jsonb; app uuid; begin
   if detail->'mobile' <> 'null'::jsonb or detail->'whatsapp_number' <> 'null'::jsonb then raise exception 'Viewer received candidate contact PII'; end if;
   if exists(select 1 from public.candidate_applications where candidate_id='82000000-0000-0000-0001-000000000001') then
     raise exception 'Viewer direct application table read was not denied'; end if;
-  select a.id into app from public.list_recruitment_applications('selected',null,25,0) a
+  select a.id into app from public.list_recruitment_applications('joined',null,25,0) a
     where a.candidate_id='82000000-0000-0000-0001-000000000001';
   if app is null then raise exception 'Viewer projected application context failed'; end if;
   begin perform public.transition_recruitment_application(app,'joining_pending',null,null,null); raise exception 'Viewer transitioned application';
