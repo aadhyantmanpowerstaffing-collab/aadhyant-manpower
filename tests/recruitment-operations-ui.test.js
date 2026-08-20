@@ -5,6 +5,8 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'admin', 'recruitment-operations.js'), 'utf8');
+const adminSource = fs.readFileSync(path.join(__dirname, '..', 'admin', 'admin.js'), 'utf8');
+const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'admin', 'index.html'), 'utf8');
 const window = {};
 vm.runInNewContext(source, { window, document: {}, crypto: { randomUUID: () => 'correlation' }, Date, String, Array, Object });
 const moduleApi = window.aadhyantRecruitmentOperations;
@@ -312,4 +314,73 @@ test('joining UI does not present UUIDs or candidate contact PII', () => {
   const joiningSection=source.slice(source.indexOf('const joiningActionGraph'),source.indexOf('const renderDashboard'));
   assert.doesNotMatch(joiningSection,/mobile|phone|whatsapp|email/i);
   assert.match(joiningSection,/Candidate.*Requirement.*Company/);
+});
+
+test('candidate update uses constrained business controls instead of prompts', () => {
+  assert.doesNotMatch(source,/prompt\(['"]Candidate status|prompt\(['"]Interview available/i);
+  assert.equal(JSON.stringify(moduleApi.candidateStatusChoices),JSON.stringify(['new','contacted','shortlisted','interview','selected','joined','inactive']));
+  assert.equal(JSON.stringify(moduleApi.candidateAvailabilityChoices),JSON.stringify(['Yes','No']));
+  assert.match(source,/candidate-update-dialog/);
+  assert.match(source,/Internal operational note/);
+  assert.match(source,/Confirm Update/);
+  assert.match(source,/cancel\.addEventListener\('click',\(\)=>finish\(false\)\)/);
+});
+
+test('candidate update reuses the projected detail and mutation RPCs with permission-gated controls', () => {
+  const updateSection=source.slice(source.indexOf('const openCandidateUpdate'),source.indexOf('const formatDateTime'));
+  assert.match(source,/get_recruitment_candidate'.*p_candidate_id:candidate\.id/);
+  assert.match(source,/update_recruitment_candidate'.*p_status:status\.value.*p_interview_available:availability\.value.*p_internal_notes:notes\.value/);
+  assert.match(source,/key==='recruitmentCandidates'&&canMutate\(key,permissions\)/);
+  assert.doesNotMatch(source,/\.from\s*\(/);
+  assert.doesNotMatch(updateSection,/Auth|auth_user|whatsapp_number|mobile|phone/i);
+});
+
+test('candidate update errors are business-facing', () => {
+  assert.match(moduleApi.friendlyCandidateUpdateError({message:'Unsupported candidate workflow value'}),/changed elsewhere/i);
+  assert.match(moduleApi.friendlyCandidateUpdateError({message:'Candidate note is too long'}),/too long/i);
+  assert.match(moduleApi.friendlyCandidateUpdateError({message:'Candidate management access is required'}),/not authorized/i);
+  assert.match(moduleApi.friendlyCandidateUpdateError({message:'Candidate was not found'}),/no longer available/i);
+  assert.match(moduleApi.friendlyCandidateUpdateError({message:'Failed to fetch'}),/connection/i);
+});
+
+test('application view uses a projected read-only modal instead of an alert summary', () => {
+  assert.match(source,/application-detail-dialog/);
+  assert.match(source,/get_recruitment_application'.*p_application_id:application\.id/);
+  assert.match(source,/Application Detail/);
+  assert.match(source,/Current stage/);
+  assert.match(source,/Stage History/);
+  assert.match(source,/Interview History/);
+  assert.match(source,/detail\.stage_history\|\|\[\]/);
+  assert.doesNotMatch(source,/History: \$\{detail\.stage_history|if \(key === 'recruitmentApplications'\).*window\.alert/);
+});
+
+test('application detail remains read-only and excludes internal identifiers', () => {
+  const detailSection=source.slice(source.indexOf('const openApplicationDetail'),source.indexOf('const viewRecord'));
+  assert.doesNotMatch(detailSection,/Confirm|Save|p_to_stage|transition_recruitment_application|update_recruitment/);
+  assert.doesNotMatch(detailSection,/make\(['"][^'"]+['"],[^\n]*['"](?:Application|Candidate|Requirement) (?:UUID|ID)['"]|detail\.(?:id|candidate_id|requirement_id)/i);
+  assert.match(detailSection,/Close application detail/);
+  assert.match(detailSection,/Applied.*Last updated/);
+});
+
+test('W3 tab activation hides every unrelated legacy and W3 panel', () => {
+  assert.match(source,/querySelectorAll\('\[data-panel\]'\).*panel\.hidden=panel!==item\.panel/);
+  assert.match(source,/querySelectorAll\('\[data-tab\],\[data-w3-tab\]'\)/);
+  for (const key of ['recruitmentCandidates','recruitmentApplications','recruitmentInterviews','recruitmentJoinings']) assert.match(source,new RegExp(key));
+  assert.match(adminHtml,/data-panel="employers"/);
+  assert.match(adminHtml,/data-panel="candidates"/);
+});
+
+test('legacy tab activation clears W3 selection and shows only its own legacy panel', () => {
+  assert.match(adminSource,/querySelectorAll\('\[data-tab\],\[data-w3-tab\]'\)/);
+  assert.match(adminSource,/panel\.hidden = panel\.dataset\.panel !== tab\.dataset\.tab/);
+  for (const label of ['Employer Requirements','Candidate Interests','Company Accounts','Company Requirements','Staffing Partners']) assert.match(adminHtml,new RegExp(label));
+});
+
+test('W3 missing values use a UTF-8-safe em dash without mojibake', () => {
+  assert.equal(moduleApi.displayValue(null),'—');
+  assert.equal(moduleApi.displayValue(undefined),'—');
+  assert.equal(moduleApi.displayValue(''),'—');
+  assert.equal(moduleApi.displayValue('Joined'),'Joined');
+  assert.doesNotMatch(source,/â€“|â€”|â€¦|Ã—/);
+  assert.match(source,/displayValue\(value\)/);
 });

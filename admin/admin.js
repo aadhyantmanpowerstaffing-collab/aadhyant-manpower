@@ -724,7 +724,7 @@
 
     document.querySelectorAll('[data-tab]').forEach((tab) => {
       tab.addEventListener('click', () => {
-        document.querySelectorAll('[data-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+        document.querySelectorAll('[data-tab],[data-w3-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
         document.querySelectorAll('[data-panel]').forEach((panel) => { panel.hidden = panel.dataset.panel !== tab.dataset.tab; });
       });
     });
