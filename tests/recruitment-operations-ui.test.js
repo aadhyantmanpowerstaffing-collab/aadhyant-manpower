@@ -250,3 +250,66 @@ test('interview management maps stale, finalized, conflict, authorization, valid
   assert.match(moduleApi.friendlyInterviewError({message:'Completed interview requires a result'}),/not valid/i);
   assert.match(moduleApi.friendlyInterviewError({message:'Failed to fetch'}),/connection/i);
 });
+
+test('joining workflow removes raw prompts and uses date controls with confirmation', () => {
+  assert.doesNotMatch(source,/Expected joining date \(YYYY-MM-DD\)|Joining status: pending/);
+  assert.match(source,/expected\.type='date'/);
+  assert.match(source,/input\.name='actualJoiningDate'/);
+  assert.match(source,/input\.type='date'/);
+  assert.match(source,/Confirm Start Joining/);
+  assert.match(source,/Review joining setup/);
+  assert.match(source,/Resulting state: Joining Pending/);
+  assert.match(source,/cancel\.addEventListener\('click',\(\)=>finish\(false\)\)/);
+});
+
+test('joining actions are constrained by the backend state machine', () => {
+  assert.equal(JSON.stringify(moduleApi.getJoiningActions('pending').map(({value})=>value)),JSON.stringify(['update_expected','confirmed','joined','no_show','deferred','cancelled']));
+  assert.equal(JSON.stringify(moduleApi.getJoiningActions('confirmed').map(({value})=>value)),JSON.stringify(['update_expected','joined','no_show','deferred','cancelled']));
+  assert.equal(JSON.stringify(moduleApi.getJoiningActions('deferred').map(({value})=>value)),JSON.stringify(['update_expected','confirmed','joined','no_show','cancelled']));
+  assert.equal(JSON.stringify(moduleApi.getJoiningActions('joined').map(({value})=>value)),JSON.stringify(['left']));
+  for (const status of ['left','no_show','cancelled']) assert.equal(moduleApi.getJoiningActions(status).length,0);
+  assert.match(source,/Joining workflow finalized\. No further changes are available/);
+});
+
+test('joining permissions expose management only to approved roles', () => {
+  const manager={joining_mutation:true};
+  const readOnly={joining_mutation:false};
+  assert.equal(moduleApi.canStartJoining({application_status:'selected'},manager),true);
+  assert.equal(moduleApi.canStartJoining({application_status:'interview'},manager),false);
+  assert.equal(moduleApi.canStartJoining({application_status:'selected'},readOnly),false);
+  assert.equal(moduleApi.canManageJoining({joining_status:'confirmed'},manager),true);
+  assert.equal(moduleApi.canManageJoining({joining_status:'confirmed'},readOnly),false);
+  assert.equal(moduleApi.canManageJoining({joining_status:'left'},manager),false);
+});
+
+test('joining dialogs use only the existing RPC and preserve server synchronization', () => {
+  assert.match(source,/call\(client,'upsert_recruitment_joining',joiningRpcArgs/);
+  assert.doesNotMatch(source,/client\.from\(['"]candidate_joinings|client\.from\(['"]candidate_applications/);
+  assert.match(source,/p_application_id:row\.application_id\|\|row\.id/);
+  assert.match(source,/const nextStatus=action\.value==='update_expected'\?joining\.joining_status:action\.value/);
+  assert.doesNotMatch(source,/joining_pending.*transition_recruitment_application|transition_recruitment_application.*joining_pending/);
+});
+
+test('mark joined requires an actual date and joined can only move to left', () => {
+  assert.match(source,/action\.value==='joined'&&!actualDate/);
+  assert.match(source,/Enter the candidate\\'s actual joining date/);
+  assert.equal(JSON.stringify(moduleApi.getJoiningActions('joined')),JSON.stringify([{value:'left',label:'Mark Left'}]));
+  assert.match(source,/joiningRpcArgs\(joining,status,expectedDate,actualDate\)/);
+});
+
+test('joining errors are business-facing and success refreshes related workspaces', () => {
+  assert.match(moduleApi.friendlyJoiningError({message:'new joining requires a selected application'}),/no longer selected|already exists/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'joined status requires an actual joining date'}),/actual joining date/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'terminal joining status cannot change'}),/already final/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'joining management access is required'}),/not authorized/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'Failed to fetch'}),/connection/i);
+  assert.match(source,/Joining \/ Placement refreshed; Applications, Dashboard, and Candidate context will refresh when opened/);
+  assert.match(source,/Joining started\. Applications refreshed; Joining \/ Placement, Dashboard, and Candidate context will refresh when opened/);
+});
+
+test('joining UI does not present UUIDs or candidate contact PII', () => {
+  assert.doesNotMatch(source,/Application UUID|Candidate UUID|name=['"]applicationId/i);
+  const joiningSection=source.slice(source.indexOf('const joiningActionGraph'),source.indexOf('const renderDashboard'));
+  assert.doesNotMatch(joiningSection,/mobile|phone|whatsapp|email/i);
+  assert.match(joiningSection,/Candidate.*Requirement.*Company/);
+});
