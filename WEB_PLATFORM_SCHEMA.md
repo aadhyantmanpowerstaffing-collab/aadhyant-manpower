@@ -334,6 +334,12 @@ Actor, role/scope, action, entity type/id, before/after safe diffs, IP/user-agen
 
 Every service-role write should call an audited domain function or supply actor/correlation context. RLS is still required for browser reads even when backend services exist.
 
+## W5 contractor vacancy review extension
+
+Contractor submissions reuse `employer_requirements` and are linked through `requirement_contractors`. Migration 021 adds contractor-origin metadata and a review lifecycle to the link rather than introducing a second vacancy table. New submissions remain canonical Draft/Private records until an authorized internal review approves the same row as Open/Assigned for W3 matching. Contractor tenant scope is derived from `auth.uid()` and exact active membership; no browser-supplied contractor or company ownership is trusted.
+
+Contractor-safe application, interview, and joining projections are read-only and exclude contact PII, internal identifiers, and internal notes. Profile mutation is allowlisted; legal, registration, verification, email, and account fields remain protected.
+
 ### W4 Company Portal projection
 
 Migration 019 adds no business table. It resolves exactly one company membership from `auth.uid()` and projects the tenant's canonical requirements, associated applications, interviews, and joinings through narrow RPCs. Company owners/HR admins may update allowlisted profile fields; company recruiters may manage permitted requirement lifecycle actions; company viewers are read-only. Legal/verification fields and all internal recruitment mutations remain server-controlled.

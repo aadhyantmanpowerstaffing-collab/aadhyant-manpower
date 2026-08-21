@@ -1,1 +1,27 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Assigned Requirements | Aadhyant Staffing Partner</title><link rel="stylesheet" href="contractor.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script><script src="../config.js" defer></script><script src="../supabase-client.js" defer></script><script src="contractor.js" defer></script></head><body data-contractor-page="assignments"><div class="loading" data-loading>Verifying partner access…</div><div data-portal hidden><header class="portal-header"><a class="brand" href="../index.html"><span>A</span><strong>AADHYANT<small>STAFFING PARTNER</small></strong></a><div><span data-user-email></span><button class="button quiet" data-logout>Log Out</button></div></header><nav class="portal-nav"><a href="index.html">Dashboard</a><a href="assignments.html" aria-current="page">Assigned Requirements</a><a href="index.html#profile">Contractor Profile</a></nav><main class="portal-main"><div class="message" data-page-message role="status"></div><section class="page-heading"><div><p class="eyebrow">Sourcing workspace</p><h1>Assigned Requirements</h1></div><select data-status-filter aria-label="Filter assignment status"><option value="">All statuses</option><option value="assigned">Awaiting response</option><option value="accepted">Accepted</option><option value="active">In progress</option><option value="completed">Completed</option><option value="declined">Declined</option><option value="cancelled">Cancelled</option></select></section><div class="table-wrap"><table><thead><tr><th>Requirement</th><th>Company</th><th>Role / Location</th><th>Target</th><th>Salary</th><th>Stage</th><th>Assignment</th><th>Assigned</th><th>Action</th></tr></thead><tbody data-assignment-body></tbody></table></div><div class="empty" data-empty hidden>No assigned requirements.</div></main></div><dialog data-assignment-dialog><form method="dialog" class="dialog-close"><button aria-label="Close">×</button></form><h2 data-dialog-title>Assignment</h2><dl class="details" data-details></dl><div class="message" data-dialog-message></div><form data-response-form><input type="hidden" name="assignmentId"><label data-decline-field hidden>Decline reason<textarea name="reason" maxlength="1000"></textarea></label><div class="actions"><button class="button primary" type="button" data-accept>Accept Assignment</button><button class="button danger" type="button" data-decline>Decline Assignment</button><button class="button danger" type="submit" data-confirm-decline hidden>Confirm Decline</button></div></form></dialog></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Assigned Requirements | Aadhyant Contractor Portal</title>
+  <link rel="stylesheet" href="contractor.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../config.js" defer></script>
+  <script src="../supabase-client.js" defer></script>
+  <script src="contractor.js" defer></script>
+</head>
+<body data-contractor-page="assignments">
+  <div class="loading" data-loading>Verifying contractor access…</div>
+  <div data-portal hidden>
+    <header class="portal-header"><a class="brand" href="index.html"><span>A</span><strong>AADHYANT<small>CONTRACTOR PORTAL</small></strong></a><div><span data-user-email></span><button class="button quiet" data-logout>Log Out</button></div></header>
+    <nav class="portal-nav" aria-label="Contractor portal"><a href="index.html">Dashboard</a><a href="vacancies.html">My Vacancies</a><a href="applications.html">Candidates / Applications</a><a href="interviews.html">Interviews</a><a href="joinings.html">Joining Status</a><a href="profile.html">Contractor Profile</a><a href="assignments.html" aria-current="page">Assigned Requirements</a></nav>
+    <main class="portal-main">
+      <div class="message" data-page-message role="status"></div>
+      <section class="page-heading"><div><p class="eyebrow">Aadhyant assignments</p><h1>Assigned Requirements</h1><p>Respond to requirements assigned to your contractor team.</p></div></section>
+      <div class="table-wrap"><table><thead><tr><th>Requirement / Role</th><th>Company</th><th>Location</th><th>Assigned openings</th><th>Assignment status</th><th>Assigned date</th><th>Action</th></tr></thead><tbody data-assignment-body></tbody></table></div>
+      <div class="empty" data-empty hidden>No assigned requirements.</div>
+    </main>
+  </div>
+</body>
+</html>

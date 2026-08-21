@@ -88,7 +88,13 @@ Deliverables:
 
 Exit: checkpoint 019 and live browser validation prove Company A/B isolation, unauthorized-role denial, candidate privacy, canonical W3 integration, and zero fixture residue.
 
-## W5 — Permanent WhatsApp webhook ingestion
+## W5 — Contractor Portal Foundation
+
+Implementation status: canonical review-gated contractor vacancies, safe progress projections, and the internal W3 bridge are implemented locally. Migration 021 remains unapplied pending separate static review and staging authorization.
+
+Contractor deliverables include a separate tenant portal, Draft-to-review-to-approval vacancy lifecycle, correction/resubmission, safe recruitment progress, profile allowlists, admin-only approval, and rollback-scoped tests. Exit requires staging and browser proof of cross-contractor isolation, self-approval denial, the canonical W3 bridge, privacy, and zero fixture residue.
+
+### Deferred communications foundation
 
 Deliverables:
 
