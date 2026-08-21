@@ -38,12 +38,12 @@ insert into public.employer_requirements(id,company_name,contact_person,mobile,c
 values
 ('83000000-0000-0000-0003-000000000001','W4 Company A','Company A HR','9876543210','Chennai','Fitter',5,'ITI',true,'in_progress','W4-A-001','83000000-0000-0000-0001-000000000001','83000000-0000-0000-0000-000000000001','Production','Chennai',0,'private','open'),
 ('83000000-0000-0000-0003-000000000002','W4 Company B','Company B HR','9876543211','Pune','Operator',3,'12th',true,'in_progress','W4-B-001','83000000-0000-0000-0001-000000000002','83000000-0000-0000-0000-000000000002','Operations','Pune',0,'private','open');
-insert into public.candidates(id,full_name,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,
+insert into public.candidates(id,full_name,age,gender,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,
   candidate_type,total_experience,interview_available,internal_notes,consent,status)
 values
-('83000000-0000-0000-0004-000000000001','W4 Candidate A','9876500001','9876500001','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Experienced','2 years','Yes','Internal secret A',true,'active'),
-('83000000-0000-0000-0004-000000000002','W4 Candidate B','9876500002','9876500002','Pune','Pune','Maharashtra','12th','Operator','Fresher',null,'Yes','Internal secret B',true,'active'),
-('83000000-0000-0000-0004-000000000003','W4 Candidate A2','9876500003','9876500003','Chennai','Chennai','Tamil Nadu','Diploma','Quality','Experienced','1 year','Yes','Internal secret A2',true,'active');
+('83000000-0000-0000-0004-000000000001','W4 Candidate A',28,'Male','9876500001','9876500001','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Experienced','2 years','Yes','Internal secret A',true,'active'),
+('83000000-0000-0000-0004-000000000002','W4 Candidate B',26,'Female','9876500002','9876500002','Pune','Pune','Maharashtra','12th','Operator','Fresher',null,'Yes','Internal secret B',true,'active'),
+('83000000-0000-0000-0004-000000000003','W4 Candidate A2',31,'Other / Prefer not to say','9876500003','9876500003','Chennai','Chennai','Tamil Nadu','Diploma','Quality','Experienced','1 year','Yes','Internal secret A2',true,'active');
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status,created_by) values
 ('83000000-0000-0000-0005-000000000001','83000000-0000-0000-0004-000000000001','83000000-0000-0000-0003-000000000001','admin','selected','83000000-0000-0000-0000-000000000006'),
 ('83000000-0000-0000-0005-000000000002','83000000-0000-0000-0004-000000000002','83000000-0000-0000-0003-000000000002','admin','interview','83000000-0000-0000-0000-000000000006'),
