@@ -20,15 +20,26 @@ select set_config('request.jwt.claim.sub','87000000-0000-0000-0000-000000000001'
 do $$ declare created record;begin
   select * into created from public.manage_contractor_portal_vacancy(p_action=>'create',p_client_name=>'Synthetic Client',p_job_role=>'Fitter',p_job_location=>'Chennai',p_required_headcount=>3,p_qualification=>'ITI');
   if created.submission_status<>'draft' or created.requirement_stage<>'draft' then raise exception 'Corrected vacancy creation failed';end if;
-  if (select count(*) from public.employer_requirements r where r.id=created.id and r.created_by_user_id=(select auth.uid()) and r.company_id is null and r.requirement_visibility='private')<>1 then raise exception 'Canonical requirement ownership failed';end if;
-  if (select count(*) from public.requirement_contractors link where link.requirement_id=created.id and link.contractor_id='87000000-0000-0000-0001-000000000001' and link.origin_type='contractor_submission' and link.submission_status='draft')<>1 then raise exception 'Contractor linkage failed';end if;
-  perform public.manage_contractor_portal_vacancy(p_action=>'submit',p_requirement_id=>created.id);
-  begin perform public.review_contractor_vacancy(created.id,'approve',null);raise exception 'Contractor self-approved';exception when raise_exception then if sqlerrm='Contractor self-approved' then raise;end if;end;
+  perform set_config('w5.checkpoint_requirement_id',created.id::text,true);
+  if exists(select 1 from public.employer_requirements r where r.id=created.id) then raise exception 'Contractor bypassed requirement RLS';end if;
+  if exists(select 1 from public.requirement_contractors link where link.requirement_id=created.id) then raise exception 'Contractor bypassed linkage RLS';end if;
+end $$;
+
+reset role;
+do $$ declare target uuid:=current_setting('w5.checkpoint_requirement_id')::uuid;begin
+  if (select count(*) from public.employer_requirements r where r.id=target and r.created_by_user_id='87000000-0000-0000-0000-000000000001' and r.company_id is null and r.requirement_visibility='private' and r.requirement_stage='draft')<>1 then raise exception 'Canonical requirement ownership failed';end if;
+  if (select count(*) from public.requirement_contractors link where link.requirement_id=target and link.contractor_id='87000000-0000-0000-0001-000000000001' and link.origin_type='contractor_submission' and link.submission_status='draft')<>1 then raise exception 'Contractor linkage failed';end if;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','87000000-0000-0000-0000-000000000001',true);
+do $$ declare target uuid:=current_setting('w5.checkpoint_requirement_id')::uuid;begin
+  perform public.manage_contractor_portal_vacancy(p_action=>'submit',p_requirement_id=>target);
+  begin perform public.review_contractor_vacancy(target,'approve',null);raise exception 'Contractor self-approved';exception when raise_exception then if sqlerrm='Contractor self-approved' then raise;end if;end;
 end $$;
 
 select set_config('request.jwt.claim.sub','87000000-0000-0000-0000-000000000002',true);
-do $$ declare target uuid;begin
-  select r.id into target from public.employer_requirements r where r.created_by_user_id='87000000-0000-0000-0000-000000000001';
+do $$ declare target uuid:=current_setting('w5.checkpoint_requirement_id')::uuid;begin
   begin perform public.manage_contractor_portal_vacancy(p_action=>'update',p_requirement_id=>target,p_client_name=>'Spoof',p_job_role=>'Fitter',p_job_location=>'Pune',p_required_headcount=>1);raise exception 'Contractor B mutated Contractor A';exception when raise_exception then if sqlerrm='Contractor B mutated Contractor A' then raise;end if;end;
 end $$;
 
