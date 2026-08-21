@@ -1,6 +1,6 @@
 # W4 Company / Employer Portal Foundation
 
-Status: implemented locally for static review. Migration 019 has not been applied to staging or production.
+Status: database/security runtime validation COMPLETE on dedicated NONPROD staging. Live Company Portal browser validation PENDING. W4 is not formally closed.
 
 ## Architecture and canonical data
 
@@ -46,6 +46,8 @@ The canonical state changes already provide future notification triggers for req
 
 ## Testing and limitations
 
-Checkpoint 019 is rollback-scoped and covers Company A/B isolation, company viewer restrictions, inactive membership, contractor/internal/non-member/anonymous denial, derived requirement ownership, safe candidate projection, interview/joining scope, grants/search paths, and W2/W3/public contract presence. Frontend tests cover navigation, metrics, structured requirement UX, privacy, read-only coordination pages, route gating, responsive behavior, and absence of prompt/alert/UUID/raw-state entry.
+Migration 019 and corrective migration 020 are installed on dedicated NONPROD staging. Checkpoints 019 and 020, focused runtime coverage checkpoint 021, current checkpoints 015–018, and legacy checkpoints 011–014 pass with zero persistent synthetic residue. Runtime coverage verifies Company A/B isolation, Owner/HR Admin/Recruiter/Viewer boundaries, inactive/contractor/internal/non-member/anonymous denial, derived requirement ownership, lifecycle protection, zero-data metrics, safe candidate projection, read-only interview/joining scope, grants/search paths, and W2/W3/public contracts. Sanitized evidence is in `W4_STAGING_RUNTIME_VALIDATION.md`; the pending live browser phase is defined in `W4_BROWSER_VALIDATION_PLAN.md`.
+
+The backend suite is representative rather than every possible permutation: all search/filter/pagination combinations, invalid field combinations, state/action orderings, and the multiple-active-membership fixture are not individually exhaustive. These are non-blocking coverage limitations, not established defects.
 
 Profile legal/verification changes, employer interview feedback, candidate contact release, notification delivery, saved filters, bulk operations, and optimistic concurrency are not part of W4. Contractor Portal, Candidate Portal, WhatsApp, AI matching, payroll, attendance, PF/ESIC, billing, OCR/documents, and mobile applications remain deferred.

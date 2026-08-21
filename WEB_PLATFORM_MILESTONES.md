@@ -77,7 +77,7 @@ Exit: static review is followed by separately authorized rollback-scoped staging
 
 ## W4 — Company / Employer Portal Foundation
 
-Implementation status: implemented locally for static review as migration 019 and a purpose-built responsive Company Portal. Staging runtime and browser validation remain separately authorized and pending.
+Implementation status: database/security runtime validation COMPLETE on dedicated NONPROD staging. Migration 019, corrective migration 020, checkpoints 019–021, checkpoints 015–018, and legacy checkpoints 011–014 pass with zero persistent synthetic residue. Live Company Portal browser validation remains PENDING; W4 is not formally closed.
 
 Deliverables:
 
