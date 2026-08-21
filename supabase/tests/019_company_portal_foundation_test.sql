@@ -101,7 +101,15 @@ do $$ declare ctx record; metrics record; profile record; own_requirement jsonb;
   exception when raise_exception then if sqlerrm='Company user scheduled an internal interview' then raise;end if;end;
   begin perform public.upsert_recruitment_joining('83000000-0000-0000-0005-000000000001',current_date+10,null,'pending');raise exception 'Company user mutated internal joining';
   exception when raise_exception then if sqlerrm='Company user mutated internal joining' then raise;end if;end;
-  perform public.update_company_profile('W4 Trade','Manufacturing',null,'9876543210','Address','Chennai','Chennai','Tamil Nadu','600001','Company A HR','51-200');
+  if not public.update_company_profile('W4 Trade','Manufacturing',null,'9876543210','Address','Chennai','Chennai','Tamil Nadu','600001','Company A HR Updated','51-200') then
+    raise exception 'Company A profile update reported no changed row';
+  end if;
+  select * into profile from public.get_company_profile();
+  if profile.contact_person<>'Company A HR Updated' or profile.trade_name<>'W4 Trade'
+     or profile.legal_name<>'W4 Company A' or profile.main_email<>'company-a@test.local'
+     or profile.verification_status<>'verified' or profile.account_status<>'active' then
+    raise exception 'Company A profile persistence or protected-field integrity failed';
+  end if;
   select * into created from public.manage_company_portal_requirement('create',null,'Quality','Inspector','Chennai',2,'Diploma','Both','Any',18,50,15000,22000,null,null,null,'Yes','Yes','No',null,null,'Synthetic test');
   if created.requirement_stage<>'draft' then raise exception 'Company requirement create lifecycle failed';end if;
   begin perform public.manage_company_portal_requirement('create',null,'Quality','Inspector','Chennai',2,'Diploma','Both','Any',15,50,15000,22000,null,null,null,'Yes','Yes','No',null,null,'Synthetic test');raise exception 'Invalid age criteria succeeded';
@@ -121,13 +129,23 @@ do $$ declare ctx record; begin
   exception when raise_exception then if sqlerrm='Company viewer mutated requirement' then raise;end if;end;
   begin perform public.manage_company_requirement('close','83000000-0000-0000-0003-000000000001');raise exception 'Company viewer bypassed W4 through legacy mutation';
   exception when raise_exception then if sqlerrm='Company viewer bypassed W4 through legacy mutation' then raise;end if;end;
+  begin perform public.update_company_profile(null,null,null,null,null,null,null,null,null,'Viewer Change',null);raise exception 'Company viewer mutated profile';
+  exception when raise_exception then if sqlerrm='Company viewer mutated profile' then raise;end if;end;
 end $$;
 
 select set_config('request.jwt.claim.sub','83000000-0000-0000-0000-000000000002',true);
-do $$ begin
+do $$ declare profile record; begin
   if (select count(*) from public.list_company_portal_requirements())<>1 then raise exception 'Company B own scope failed';end if;
   begin perform public.get_company_portal_requirement('83000000-0000-0000-0003-000000000001');raise exception 'Company B read Company A';
   exception when raise_exception then if sqlerrm='Company B read Company A' then raise;end if;end;
+  if not public.update_company_profile(null,'Logistics',null,'9876543211',null,'Pune',null,'Maharashtra',null,'Company B HR Updated',null) then
+    raise exception 'Company B own profile update failed';
+  end if;
+  select * into profile from public.get_company_profile();
+  if profile.legal_name<>'W4 Company B' or profile.contact_person<>'Company B HR Updated' then raise exception 'Company B profile scope failed';end if;
+  perform set_config('request.jwt.claim.sub','83000000-0000-0000-0000-000000000001',true);
+  select * into profile from public.get_company_profile();
+  if profile.legal_name<>'W4 Company A' or profile.contact_person<>'Company A HR Updated' then raise exception 'Company B affected Company A profile';end if;
 end $$;
 
 do $$ declare actor text; begin
