@@ -226,8 +226,12 @@ begin
     insert into public.requirement_contractors(requirement_id,contractor_id,assigned_headcount,assignment_status,origin_type,submission_status)
       values(req.id,cid,p_required_headcount,'assigned','contractor_submission','draft') returning * into rc;
   else
-    select r,link into req,rc from public.employer_requirements r join public.requirement_contractors link on link.requirement_id=r.id
-      where r.id=p_requirement_id and link.contractor_id=cid and link.origin_type='contractor_submission' for update;
+    select r.* into req from public.employer_requirements r
+      where r.id=p_requirement_id and exists(select 1 from public.requirement_contractors link
+        where link.requirement_id=r.id and link.contractor_id=cid and link.origin_type='contractor_submission') for update;
+    if not found then raise exception 'Contractor vacancy was not found'; end if;
+    select link.* into rc from public.requirement_contractors link
+      where link.requirement_id=req.id and link.contractor_id=cid and link.origin_type='contractor_submission' for update;
     if not found then raise exception 'Contractor vacancy was not found'; end if;
     if p_action='update' then
       if rc.submission_status not in ('draft','correction_required') then raise exception 'Only draft or correction-required vacancies can be edited'; end if;
@@ -334,8 +338,12 @@ begin
   if not ((select private.is_admin()) or (select private.has_staff_role('super_admin')) or (select private.has_staff_role('admin'))) then
     raise exception 'Contractor vacancy review access is required'; end if;
   if length(coalesce(feedback,''))>2000 then raise exception 'Review feedback is too long'; end if;
-  select r,link into req,rc from public.employer_requirements r join public.requirement_contractors link on link.requirement_id=r.id
-    where r.id=p_requirement_id and link.origin_type='contractor_submission' for update;
+  select r.* into req from public.employer_requirements r
+    where r.id=p_requirement_id and exists(select 1 from public.requirement_contractors link
+      where link.requirement_id=r.id and link.origin_type='contractor_submission') for update;
+  if not found then raise exception 'Contractor vacancy was not found'; end if;
+  select link.* into rc from public.requirement_contractors link
+    where link.requirement_id=req.id and link.origin_type='contractor_submission' for update;
   if not found then raise exception 'Contractor vacancy was not found'; end if;
   if action='start_review' and rc.submission_status='submitted' then
     update public.requirement_contractors set submission_status='under_review',reviewed_by=(select auth.uid()),reviewed_at=now() where id=rc.id returning * into rc;
