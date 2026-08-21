@@ -1,10 +1,10 @@
 # W4 Staging Runtime Validation Evidence
 
-Status: W4 database/security runtime validation and live localhost Company Portal browser validation COMPLETE. Browser-fixture cleanup remains PENDING; W4 is not formally closed.
+Status: W4 database/security runtime validation, live localhost Company Portal browser validation, and manifest-bound fixture cleanup COMPLETE. W4 is ready for formal closure after commit review, authorized push, and remote HEAD verification.
 
 ## Scope and results
 
-Validation ran only against dedicated NONPROD staging over TLS. Production was not contacted, no deployment or outbound integration ran, and all synthetic transaction-scoped fixtures were rolled back with zero residue. This record omits project identifiers, hosts, URLs, credentials, keys, tokens, and fixture UUIDs.
+Validation ran only against dedicated NONPROD staging over TLS. Production was not contacted, no deployment or outbound integration ran, and W5 was not started. Transaction-scoped checkpoint fixtures rolled back with zero residue; persistent browser fixtures were subsequently removed through their ignored manifest with zero residue. This record omits project identifiers, hosts, URLs, credentials, keys, tokens, and fixture UUIDs.
 
 - Migration 019 applied successfully (`02b99268283e2de56b3c67d4b951ec145b5073f982e578753b824e8c7cc5efd3`).
 - Corrective migration 020 applied successfully (`0af32da842d969d615ef70ebd9951557060444e575f6d98b3f69f8abe653e7e2`).
@@ -41,8 +41,14 @@ One production RPC defect was established: migration 019's `list_company_portal_
 
 Manual validation on dedicated NONPROD staging passed for anonymous access; Company A HR Admin, Recruiter, Viewer, and suspended member; Company B Owner; contractor; internal staff; and non-member identities. Company A requirement creation, draft editing, persisted headcount `12`, safe application projection, read-only interview/joining views, allowlisted profile updates, and logout/session boundaries passed. Company B saw only its tenant and correct zero-data metrics. Candidate contact details, Auth linkage, UUIDs, internal notes, other-company data, Candidate Master, Staff Management, and the internal Admin shell remained unavailable.
 
-The browser-created draft requirement `AAD-2026-000060` is bound to the ignored fixture manifest for deterministic cleanup. The profile false-success defect was corrected and retested through a hard refresh; the Contact person persisted as `W4 Synthetic HR Updated` while legal, verification, and account fields remained protected. Suspended-member wording now distinguishes account, company, membership, and effective access states.
+The browser-created draft requirement `AAD-2026-000060` was bound to the ignored fixture manifest for deterministic cleanup. The profile false-success defect was corrected and retested through a hard refresh; the Contact person persisted as `W4 Synthetic HR Updated` while legal, verification, and account fields remained protected. Suspended-member wording now distinguishes account, company, membership, and effective access states.
+
+## Final fixture cleanup
+
+Manifest-bound cleanup removed nine Auth users, six platform users, one bootstrap linkage, two companies, five company memberships, one contractor and membership, one staff profile and role, four requirements, one candidate, one application and history row, one interview, and one joining. `AAD-2026-000060` was removed. Recovery was verified before its linkage and Auth identity were removed last.
+
+Post-cleanup verification found zero manifest-bound residue, no orphan histories/interviews/joinings/memberships/dependencies, and no change to the unrelated staging baseline. Migration 019 objects and the migration 020 correction remained intact; all 15 reviewed functions retained SECURITY DEFINER and empty `search_path`, all 11 W4 RPCs remained authenticated-only, and anonymous/private execution remained revoked. Frontend regressions passed 71/71. The ignored manifest and temporary browser copy were removed, and loopback port 4174 was stopped.
 
 ## Non-blocking limitations
 
-The suite is not every permutation of search/filter/pagination, invalid field combinations, lifecycle ordering, or multiple active memberships. Employer feedback, contact release, notifications, concurrency UX, and bulk operations are deferred. Manifest-bound browser-fixture cleanup and final zero-residue verification remain required for W4 closure.
+The suite is not every permutation of search/filter/pagination, invalid field combinations, lifecycle ordering, or multiple active memberships. Employer feedback, contact release, notifications, concurrency UX, and bulk operations are deferred. These are non-blocking future-scope limitations, not W4 closure blockers.

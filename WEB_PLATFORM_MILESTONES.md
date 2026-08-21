@@ -77,7 +77,7 @@ Exit: static review is followed by separately authorized rollback-scoped staging
 
 ## W4 — Company / Employer Portal Foundation
 
-Implementation status: database/security runtime validation and live localhost Company Portal browser validation COMPLETE on dedicated NONPROD staging. Migration 019, corrective migration 020, checkpoints 019–021, checkpoints 015–018, and legacy checkpoints 011–014 pass. The Company A/B role, tenant, privacy, requirement, profile, interview, joining, and denial matrix passed manual browser validation. Manifest-bound browser-fixture cleanup and final zero-residue verification remain PENDING; W4 is not formally closed.
+Implementation status: database/security runtime validation, live localhost Company Portal browser validation, manifest-bound fixture cleanup, and final zero-residue verification COMPLETE on dedicated NONPROD staging. Migration 019, corrective migration 020, checkpoints 019–021, checkpoints 015–018, and legacy checkpoints 011–014 pass. The Company A/B role, tenant, privacy, requirement, profile, interview, joining, and denial matrix passed manual browser validation. Post-cleanup catalog/security checks and 71/71 frontend regressions passed with no unrelated staging impact. Production was not contacted, no deployment occurred, and W5 was not started. W4 is ready for formal closure after the evidence commit is reviewed, pushed under separate authorization, and verified at the remote HEAD.
 
 Deliverables:
 

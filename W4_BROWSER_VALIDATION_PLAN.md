@@ -1,6 +1,6 @@
 # W4 Company Portal Browser Validation Plan
 
-Status: manual localhost browser validation COMPLETE on dedicated NONPROD staging. Manifest-bound fixture cleanup remains PENDING; W4 is not formally closed.
+Status: manual localhost browser validation and manifest-bound fixture cleanup COMPLETE on dedicated NONPROD staging. W4 is ready for formal closure after commit review, authorized push, and remote HEAD verification.
 
 ## Safety and recovery
 
@@ -66,7 +66,7 @@ An ignored local manifest may contain labels, synthetic emails, entity/Auth IDs,
 9. Verify only intended bootstrap/recovery remains; remove a manifest-created recovery identity last only when another recovery path is proven.
 10. Verify zero residue/orphans across all fixture tables, remove local artifacts, and stop the loopback server.
 
-Fixture creation and browser execution completed under separate authorization. Cleanup still requires separate authorization.
+Fixture creation, browser execution, and cleanup completed under separate authorization. Zero residue and unchanged unrelated staging baseline were verified.
 
 ## Accepted browser evidence
 
@@ -76,3 +76,7 @@ Fixture creation and browser execution completed under separate authorization. C
 - Company B Owner saw Company B only, zero-data metrics, and no Company A requirement, candidate/application, interview, joining, or profile data.
 - Candidate PII/internal notes, Candidate Master, internal Admin/Staff Management, UUID entry, raw status entry, and prompt/alert operational flows were absent.
 - The Company Profile persistence verification and suspended-member status wording fixes passed focused manual retests.
+
+## Cleanup result
+
+The authoritative ignored manifest governed exact-ID cleanup, including browser-created draft `AAD-2026-000060`. Dependent recruitment records were removed before their parents, recovery was verified and removed last, and final checks found zero W4 browser-fixture residue or orphan references. The manifest and temporary localhost copy were removed and `127.0.0.1:4174` was stopped. Production was not contacted, no deployment occurred, and W5 was not started.
