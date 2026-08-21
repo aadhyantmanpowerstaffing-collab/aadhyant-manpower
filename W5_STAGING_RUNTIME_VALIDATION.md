@@ -1,6 +1,6 @@
 # W5 Staging Runtime Validation Evidence
 
-Status: W5 backend and security runtime validation is COMPLETE on dedicated NONPROD staging. Live Contractor Portal browser validation and browser-fixture cleanup remain PENDING; W5 is not formally closed.
+Status: W5 backend/security runtime validation, live localhost Contractor Portal browser validation, and manifest-bound fixture cleanup are COMPLETE on dedicated NONPROD staging. Validated implementation HEAD: `ce5200a4bfc9d9f20824d3fb250ef3802628a440`. W5 is ready for formal closure after this evidence commit is reviewed, pushed under separate authorization, and verified at the remote HEAD.
 
 ## Scope and validation results
 
@@ -62,6 +62,24 @@ Checkpoint-only defects:
 - Full checkpoint 022 attempted to rediscover an RPC-created fixture ID through an RLS-hidden base table. It now captures and reuses the RPC-returned ID transaction-locally.
 - Focused checkpoint 024 closed the remaining elevated-role, lifecycle, isolation, profile, anonymous-denial, and aggregate combinations.
 
+## Manual localhost browser validation
+
+Manual validation passed anonymous containment; Owner, Recruiter, Coordinator, inactive-member, Contractor B, Company-only, internal-staff, non-member, bootstrap, and internal-admin boundaries; Contractor/Company portal separation; responsive desktop/tablet/mobile layouts; modal and keyboard behavior; and safe candidate, interview, joining, and profile projections. The browser-created vacancy `AAD-2026-000086` passed Draft -> Submitted -> Under Review -> Correction Required -> Draft after correction -> Resubmitted -> Approved/Open with ten openings. Internal review and W3 displayed the same canonical requirement without duplication.
+
+The Owner profile allowlist persisted its synthetic contact-person update after a hard refresh while legal, registration, verification, email, account, and ownership fields remained protected. Candidate phone, WhatsApp, email, Auth/candidate identifiers, and internal/recruiter notes remained absent. No email, SMS, WhatsApp, invitation, or other outbound integration ran.
+
+## Browser defect and focused retest
+
+Validation found a frontend privacy defect: logout cleared the live Supabase session, but browser Back could restore previously rendered protected Contractor tenant DOM from history/BFCache. Backend RPC, RLS, and session authorization remained correct. Commit `ce5200a4bfc9d9f20824d3fb250ef3802628a440` (`W5: protect contractor portal history cache`) conceals protected content before logout, conceals pages before BFCache storage, detects `pageshow` persistence and `back_forward` restoration, and reloads restored protected pages for authorization revalidation.
+
+The focused manual sequence Login -> Dashboard -> Logout -> Login -> Back passed: Contractor identity, metrics, vacancies, and other protected content did not reappear. JavaScript syntax, static/security checks, `git diff --check`, and the complete frontend suite passed 94/94.
+
+## Final fixture cleanup
+
+The authoritative ignored manifest bound ten Auth users, six platform users, one bootstrap linkage, two staff profiles and roles, two contractors, five contractor memberships, one Company and membership, four requirements and contractor-origin links, one candidate, one application and history, one interview, one joining, and eleven audit rows. Exact-ID cleanup removed all dependencies and `AAD-2026-000086`; nine non-recovery Auth users were removed first, recovery/bootstrap authorization was verified, and its linkage and Auth identity were removed last.
+
+Final read-only verification found zero W5 Auth users, identities, sessions, database fixtures, or attributable audit rows; zero orphan or cross-tenant residue; and no change to the unrelated staging baseline. The ignored manifest and temporary browser copy were removed, the loopback server was stopped, and port 4175 was closed. No real data was touched, production was not contacted, no deployment occurred, and W6 was not started.
+
 ## Remaining boundary
 
-Backend/security runtime validation is complete, but live localhost browser validation is pending. Browser fixtures, manual browser execution, cleanup, and final zero-residue evidence require separate authorization. No statement in this record authorizes production contact, deployment, or W6 work.
+Search/filter/pagination permutations, candidate contact release, contractor interview feedback, notifications, concurrency UX, and bulk operations remain deferred future scope. They are not W5 closure blockers. Push, deployment, production contact, and W6 work require separate authorization.

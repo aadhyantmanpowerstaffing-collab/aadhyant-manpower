@@ -1,6 +1,6 @@
 # W5 Contractor Portal Foundation
 
-Status: static review and dedicated NONPROD backend/security runtime validation are COMPLETE. Migrations 021 and corrective 022 are installed on staging; checkpoints 022-024 and required regressions pass with zero synthetic residue. Live browser validation remains PENDING, so W5 is not formally closed.
+Status: static review, dedicated NONPROD backend/security runtime validation, live localhost browser validation, focused defect retest, and manifest-bound fixture cleanup are COMPLETE. Validated implementation HEAD: `ce5200a4bfc9d9f20824d3fb250ef3802628a440`. W5 is ready for formal closure after evidence review, authorized push, and remote HEAD verification.
 
 ## Architecture and canonical bridge
 
@@ -38,4 +38,6 @@ Candidate contact release, contractor interview feedback, saved filters, bulk op
 
 ## Validation
 
-Checkpoint `022_contractor_portal_foundation_test.sql`, corrective checkpoint 023, and focused coverage checkpoint 024 are rollback-scoped. Together they cover tenant resolution, roles, denied identities, the complete reviewed lifecycle, elevated approval roles, cross-contractor isolation, profile persistence/protection, canonical W3 visibility, privacy, distinct dashboard aggregates, read-only interview/joining boundaries, grants, and zero residue. Required W4/W3/W2, migration-015, and legacy/public regressions pass; frontend tests pass 92/92. Sanitized runtime evidence is recorded in `W5_STAGING_RUNTIME_VALIDATION.md`. Live browser validation and manifest-bound browser-fixture cleanup remain pending under `W5_BROWSER_VALIDATION_PLAN.md`.
+Checkpoint `022_contractor_portal_foundation_test.sql`, corrective checkpoint 023, and focused coverage checkpoint 024 are rollback-scoped. Together they cover tenant resolution, roles, denied identities, the complete reviewed lifecycle, elevated approval roles, cross-contractor isolation, profile persistence/protection, canonical W3 visibility, privacy, distinct dashboard aggregates, read-only interview/joining boundaries, grants, and zero residue. Required W4/W3/W2, migration-015, and legacy/public regressions pass.
+
+Manual browser validation subsequently passed the full role, tenant, lifecycle, privacy, W3 bridge, profile, responsive, keyboard, and portal-separation matrix. A history/BFCache defect that restored stale protected DOM after logout was fixed centrally and passed its focused manual Back-navigation retest. The complete frontend suite passes 94/94. Manifest-bound cleanup removed every W5 browser fixture, including `AAD-2026-000086`, with zero Auth/database residue, zero orphans or cross-tenant links, and no unrelated staging impact. Sanitized evidence is recorded in `W5_STAGING_RUNTIME_VALIDATION.md` and `W5_BROWSER_VALIDATION_PLAN.md`.

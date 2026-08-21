@@ -1,6 +1,6 @@
 # W5 Contractor Portal Browser Validation Plan
 
-Status: planned for localhost against dedicated NONPROD staging. Fixtures have not been created and browser tests have not started.
+Status: manual localhost Contractor Portal validation and manifest-bound fixture cleanup are COMPLETE on dedicated NONPROD staging. Validated implementation HEAD: `ce5200a4bfc9d9f20824d3fb250ef3802628a440`. W5 is ready for formal closure after evidence review, authorized push, and remote HEAD verification.
 
 ## Safety and recovery boundary
 
@@ -128,4 +128,18 @@ Use only synthetic data. An ignored local manifest may hold labels, synthetic em
 19. Remove the ignored local fixture manifest and temporary browser copy.
 20. Stop the loopback-only localhost server and verify the port is no longer listening.
 
-Fixture creation, browser execution, evidence recording, and cleanup each require separate authorization. This plan does not authorize any fixture or database mutation.
+Fixture creation, browser execution, evidence recording, and cleanup completed under separate authorization. Final verification found zero W5 residue, zero orphans or cross-tenant links, and an unchanged unrelated staging baseline.
+
+## Completed browser evidence
+
+The full identity matrix passed. Owner exercised the canonical vacancy flow through correction, resubmission, and approval; Recruiter retained vacancy management with read-only profile; Coordinator remained read-only; inactive and non-contractor identities were denied; and Contractor B saw only its own tenant. Contractor authentication did not grant Company Portal access, and Company-only authentication did not grant Contractor Portal access.
+
+`AAD-2026-000086` persisted its structured fields, correction from maximum wage 35000 to 32000, Approved/Open state, and ten openings. Internal review and W3 consumed that same canonical requirement without cloning it. Candidate/application, interview, and joining pages exposed only their safe read-only projections. Owner profile persistence and protected-field immutability passed. Desktop, 768px tablet, approximately 386-400px mobile, responsive modal, keyboard navigation, and Escape-to-close behavior passed.
+
+## History-cache defect resolution
+
+The initial logout test found that browser Back could restore stale protected DOM from history/BFCache after the live session had been cleared. The centralized fix at `ce5200a4bfc9d9f20824d3fb250ef3802628a440` conceals protected content during logout and `pagehide`, then reloads persisted or `back_forward` restorations through the normal authorization gate. The focused Login -> Dashboard -> Logout -> Login -> Back retest passed with no tenant identity, metrics, or protected content restored.
+
+## Completed cleanup
+
+The authoritative ignored manifest governed exact-ID cleanup of all browser fixtures, including `AAD-2026-000086` and eleven audit rows. Dependent recruitment records were removed before requirements and tenant parents. Nine non-recovery Auth users were removed before recovery; recovery/bootstrap was verified and removed last. Final checks found zero W5 Auth/database residue and zero orphan/cross-tenant references. The manifest and temporary copy were removed, and `127.0.0.1:4175` was stopped. Production was not contacted and no deployment occurred.
