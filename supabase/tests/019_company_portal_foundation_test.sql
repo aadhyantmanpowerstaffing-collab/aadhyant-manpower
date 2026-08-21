@@ -37,7 +37,7 @@ insert into public.employer_requirements(id,company_name,contact_person,mobile,c
   requirement_visibility,requirement_stage)
 values
 ('83000000-0000-0000-0003-000000000001','W4 Company A','Company A HR','9876543210','Chennai','Fitter',5,'ITI',true,'in_progress','W4-A-001','83000000-0000-0000-0001-000000000001','83000000-0000-0000-0000-000000000001','Production','Chennai',0,'private','open'),
-('83000000-0000-0000-0003-000000000002','W4 Company B','Company B HR','9876543211','Pune','Operator',3,'12th',true,'in_progress','W4-B-001','83000000-0000-0000-0001-000000000002','Operations','Pune',0,'private','open');
+('83000000-0000-0000-0003-000000000002','W4 Company B','Company B HR','9876543211','Pune','Operator',3,'12th',true,'in_progress','W4-B-001','83000000-0000-0000-0001-000000000002','83000000-0000-0000-0000-000000000002','Operations','Pune',0,'private','open');
 insert into public.candidates(id,full_name,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,
   candidate_type,total_experience,interview_available,internal_notes,consent,status)
 values
