@@ -384,3 +384,42 @@ test('W3 missing values use a UTF-8-safe em dash without mojibake', () => {
   assert.doesNotMatch(source,/â€“|â€”|â€¦|Ã—/);
   assert.match(source,/displayValue\(value\)/);
 });
+
+test('candidate view uses an accessible projected detail modal instead of alert', () => {
+  assert.doesNotMatch(source,/window\.alert|alert\s*\(/);
+  assert.match(source,/candidate-detail-dialog/);
+  assert.match(source,/aria-labelledby','candidate-detail-title/);
+  assert.match(source,/get_recruitment_candidate'.*p_candidate_id:candidate\.id/);
+  assert.match(source,/if \(key === 'recruitmentCandidates'\) await openCandidateDetail/);
+  assert.match(source,/Close candidate detail/);
+});
+
+test('candidate detail renders projected core fields and related histories', () => {
+  const detailSection=source.slice(source.indexOf('const openCandidateDetail'),source.indexOf('const openApplicationDetail'));
+  for (const label of ['Candidate','Location','District','State','Qualification','Trade / specialization','Candidate type','Status','Interview availability']) assert.match(detailSection,new RegExp(label));
+  assert.match(detailSection,/Application History/);
+  assert.match(detailSection,/Interview History/);
+  assert.match(detailSection,/detail\.applications\|\|\[\]/);
+  assert.match(detailSection,/detail\.interviews\|\|\[\]/);
+  assert.match(detailSection,/Requirement.*Company.*Role.*Stage.*Applied/);
+  assert.match(detailSection,/Scheduled.*Mode.*Status.*Result/);
+});
+
+test('candidate detail preserves projected PII and internal-note suppression', () => {
+  const detailSection=source.slice(source.indexOf('const openCandidateDetail'),source.indexOf('const openApplicationDetail'));
+  assert.match(detailSection,/if\(detail\.mobile\|\|detail\.whatsapp_number\)/);
+  assert.match(detailSection,/if\(detail\.mobile\)/);
+  assert.match(detailSection,/if\(detail\.whatsapp_number\)/);
+  assert.match(detailSection,/detail\.internal_notes!==null&&detail\.internal_notes!==undefined/);
+  assert.match(detailSection,/Contact details are not available for this view/);
+  assert.doesNotMatch(detailSection,/email|auth_user|Auth linkage/i);
+});
+
+test('candidate detail has safe empty states and no identifier presentation', () => {
+  const detailSection=source.slice(source.indexOf('const openCandidateDetail'),source.indexOf('const openApplicationDetail'));
+  assert.match(detailSection,/No applications yet\./);
+  assert.match(detailSection,/No interviews yet\./);
+  assert.doesNotMatch(detailSection,/make\(['"][^'"]+['"],[^\n]*['"](?:Candidate|Application|Requirement) (?:UUID|ID)['"]|detail\.(?:id|candidate_id|application_id|requirement_id)/i);
+  assert.doesNotMatch(detailSection,/\.from\s*\(/);
+  assert.match(detailSection,/returnFocus\?\.focus\?\.\(\)/);
+});
