@@ -1,6 +1,6 @@
 # W4 Company Portal Browser Validation Plan
 
-Status: ready for separately authorized synthetic fixture creation. No fixtures or browser tests are created by this plan.
+Status: manual localhost browser validation COMPLETE on dedicated NONPROD staging. Manifest-bound fixture cleanup remains PENDING; W4 is not formally closed.
 
 ## Safety and recovery
 
@@ -66,4 +66,13 @@ An ignored local manifest may contain labels, synthetic emails, entity/Auth IDs,
 9. Verify only intended bootstrap/recovery remains; remove a manifest-created recovery identity last only when another recovery path is proven.
 10. Verify zero residue/orphans across all fixture tables, remove local artifacts, and stop the loopback server.
 
-Fixture creation, browser execution, and cleanup each require separate authorization.
+Fixture creation and browser execution completed under separate authorization. Cleanup still requires separate authorization.
+
+## Accepted browser evidence
+
+- Anonymous, suspended-member, contractor, internal-staff, and non-member access boundaries passed without protected-data exposure.
+- Company A HR Admin completed dashboard, requirement creation/detail/edit, safe recruitment-progress views, allowlisted profile update, and logout checks. Draft `AAD-2026-000060` persisted with headcount `12` and is recorded in the ignored fixture manifest.
+- Company A Recruiter retained approved requirement-management access but no protected profile administration. Company A Viewer remained read-only.
+- Company B Owner saw Company B only, zero-data metrics, and no Company A requirement, candidate/application, interview, joining, or profile data.
+- Candidate PII/internal notes, Candidate Master, internal Admin/Staff Management, UUID entry, raw status entry, and prompt/alert operational flows were absent.
+- The Company Profile persistence verification and suspended-member status wording fixes passed focused manual retests.

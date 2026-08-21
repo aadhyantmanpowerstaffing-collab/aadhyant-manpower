@@ -1,6 +1,6 @@
 # W4 Company / Employer Portal Foundation
 
-Status: database/security runtime validation COMPLETE on dedicated NONPROD staging. Live Company Portal browser validation PENDING. W4 is not formally closed.
+Status: database/security runtime validation and live localhost Company Portal browser validation COMPLETE on dedicated NONPROD staging. Browser-fixture cleanup remains PENDING. W4 is not formally closed.
 
 ## Architecture and canonical data
 
@@ -46,7 +46,9 @@ The canonical state changes already provide future notification triggers for req
 
 ## Testing and limitations
 
-Migration 019 and corrective migration 020 are installed on dedicated NONPROD staging. Checkpoints 019 and 020, focused runtime coverage checkpoint 021, current checkpoints 015–018, and legacy checkpoints 011–014 pass with zero persistent synthetic residue. Runtime coverage verifies Company A/B isolation, Owner/HR Admin/Recruiter/Viewer boundaries, inactive/contractor/internal/non-member/anonymous denial, derived requirement ownership, lifecycle protection, zero-data metrics, safe candidate projection, read-only interview/joining scope, grants/search paths, and W2/W3/public contracts. Sanitized evidence is in `W4_STAGING_RUNTIME_VALIDATION.md`; the pending live browser phase is defined in `W4_BROWSER_VALIDATION_PLAN.md`.
+Migration 019 and corrective migration 020 are installed on dedicated NONPROD staging. Checkpoints 019 and 020, focused runtime coverage checkpoint 021, current checkpoints 015–018, and legacy checkpoints 011–014 pass with zero persistent synthetic residue. Runtime coverage verifies Company A/B isolation, Owner/HR Admin/Recruiter/Viewer boundaries, inactive/contractor/internal/non-member/anonymous denial, derived requirement ownership, lifecycle protection, zero-data metrics, safe candidate projection, read-only interview/joining scope, grants/search paths, and W2/W3/public contracts. Manual localhost validation subsequently passed the same role, tenant, privacy, requirement, profile, interview, joining, and denial boundaries. Sanitized evidence is in `W4_STAGING_RUNTIME_VALIDATION.md`; the completed browser matrix and pending cleanup are recorded in `W4_BROWSER_VALIDATION_PLAN.md`.
+
+The browser-created Company A draft `AAD-2026-000060` persisted its edited headcount of `12`. The corrected profile flow verified a fresh server read before success and retained `W4 Synthetic HR Updated` after hard refresh, without altering protected legal, verification, or account fields. The suspended-member denial view now labels account, company, membership, and access states independently. Browser fixtures remain manifest-bound and await separately authorized cleanup and zero-residue verification.
 
 The backend suite is representative rather than every possible permutation: all search/filter/pagination combinations, invalid field combinations, state/action orderings, and the multiple-active-membership fixture are not individually exhaustive. These are non-blocking coverage limitations, not established defects.
 

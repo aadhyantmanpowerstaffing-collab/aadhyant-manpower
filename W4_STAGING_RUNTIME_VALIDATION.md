@@ -1,6 +1,6 @@
 # W4 Staging Runtime Validation Evidence
 
-Status: W4 database/security runtime validation COMPLETE. Live Company Portal browser validation PENDING; W4 is not formally closed.
+Status: W4 database/security runtime validation and live localhost Company Portal browser validation COMPLETE. Browser-fixture cleanup remains PENDING; W4 is not formally closed.
 
 ## Scope and results
 
@@ -37,6 +37,12 @@ Checkpoint-only defects corrected: missing Company B `created_by_user_id`; candi
 
 One production RPC defect was established: migration 019's `list_company_portal_applications` had an ambiguous PL/pgSQL `stage` reference. Corrective migration 020 qualified the variables without changing tenant scope, projection, privacy, or ACLs. Focused checkpoint 020 and full checkpoint 019 subsequently passed. Focused checkpoint 021 closed the remaining explicit runtime combinations.
 
+## Manual localhost browser validation
+
+Manual validation on dedicated NONPROD staging passed for anonymous access; Company A HR Admin, Recruiter, Viewer, and suspended member; Company B Owner; contractor; internal staff; and non-member identities. Company A requirement creation, draft editing, persisted headcount `12`, safe application projection, read-only interview/joining views, allowlisted profile updates, and logout/session boundaries passed. Company B saw only its tenant and correct zero-data metrics. Candidate contact details, Auth linkage, UUIDs, internal notes, other-company data, Candidate Master, Staff Management, and the internal Admin shell remained unavailable.
+
+The browser-created draft requirement `AAD-2026-000060` is bound to the ignored fixture manifest for deterministic cleanup. The profile false-success defect was corrected and retested through a hard refresh; the Contact person persisted as `W4 Synthetic HR Updated` while legal, verification, and account fields remained protected. Suspended-member wording now distinguishes account, company, membership, and effective access states.
+
 ## Non-blocking limitations
 
-The suite is not every permutation of search/filter/pagination, invalid field combinations, lifecycle ordering, or multiple active memberships. Employer feedback, contact release, notifications, concurrency UX, and bulk operations are deferred. Live browser validation remains required for W4 closure.
+The suite is not every permutation of search/filter/pagination, invalid field combinations, lifecycle ordering, or multiple active memberships. Employer feedback, contact release, notifications, concurrency UX, and bulk operations are deferred. Manifest-bound browser-fixture cleanup and final zero-residue verification remain required for W4 closure.
