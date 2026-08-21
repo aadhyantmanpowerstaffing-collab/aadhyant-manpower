@@ -340,6 +340,14 @@ Contractor submissions reuse `employer_requirements` and are linked through `req
 
 Contractor-safe application, interview, and joining projections are read-only and exclude contact PII, internal identifiers, and internal notes. Profile mutation is allowlisted; legal, registration, verification, email, and account fields remain protected.
 
+## W6 Candidate Portal and document onboarding extension
+
+Migration 023 reuses canonical Candidate and recruitment records. Candidate ownership resolves from `auth.uid()` through one active Candidate platform/linkage row. New normalized `candidate_documents` and `candidate_onboarding_details` entities hold private document metadata and restricted joining details without adding a parallel recruitment workflow. The private `candidate-private` Storage bucket accepts PDF/JPEG/PNG up to 10 MB under an authenticated-user path boundary.
+
+Mobile and Aadhaar are required for completed portal profiles. Full Aadhaar is not retained: only a deterministic SHA-256 equality fingerprint and last four digits are stored and the portal receives a masked value. This fingerprint is not encryption. Bank account display is similarly masked; UAN/ESIC are captured only as existing identifiers and are never generated. Company and Contractor projections remain unchanged and receive no Aadhaar, bank, or Candidate document access.
+
+Candidate Portal RPCs project own profile/preferences, Open/Public opportunities, canonical applications, interviews, joinings, documents, and server-derived checklist state. Bootstrap Admin, Super Admin, and Admin alone may verify documents or approve an auditable documentation override; Recruiter and Operations are excluded in W6. Base-table grants/RLS remain closed to portal browsers.
+
 ### W4 Company Portal projection
 
 Migration 019 adds no business table. It resolves exactly one company membership from `auth.uid()` and projects the tenant's canonical requirements, associated applications, interviews, and joinings through narrow RPCs. Company owners/HR admins may update allowlisted profile fields; company recruiters may manage permitted requirement lifecycle actions; company viewers are read-only. Legal/verification fields and all internal recruitment mutations remain server-controlled.

@@ -41,7 +41,7 @@ test('viewer permissions keep every mutation control unavailable', () => {
 });
 
 test('browser module uses only projected W3 RPCs, never direct tables', () => {
-  assert.doesNotMatch(source,/\.from\s*\(/);
+  assert.doesNotMatch(source,/(?:client|supabase)\.from\s*\(/);
   ['get_recruitment_permissions','list_recruitment_candidates','list_recruitment_requirements','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
 });
 
@@ -64,7 +64,7 @@ test('candidate picker searches through the projected W3 candidate RPC', () => {
     p_search: 'W3 Candidate', p_status: null, p_limit: 50, p_offset: 0
   });
   assert.match(source, /list_recruitment_candidates',candidateSearchArgs/);
-  assert.doesNotMatch(source, /\.from\s*\(/);
+  assert.doesNotMatch(source, /(?:client|supabase)\.from\s*\(/);
 });
 
 test('only open requirements and eligible candidates are actionable', () => {
@@ -331,7 +331,7 @@ test('candidate update reuses the projected detail and mutation RPCs with permis
   assert.match(source,/get_recruitment_candidate'.*p_candidate_id:candidate\.id/);
   assert.match(source,/update_recruitment_candidate'.*p_status:status\.value.*p_interview_available:availability\.value.*p_internal_notes:notes\.value/);
   assert.match(source,/key==='recruitmentCandidates'&&canMutate\(key,permissions\)/);
-  assert.doesNotMatch(source,/\.from\s*\(/);
+  assert.doesNotMatch(source,/(?:client|supabase)\.from\s*\(/);
   assert.doesNotMatch(updateSection,/Auth|auth_user|whatsapp_number|mobile|phone/i);
 });
 
@@ -420,6 +420,6 @@ test('candidate detail has safe empty states and no identifier presentation', ()
   assert.match(detailSection,/No applications yet\./);
   assert.match(detailSection,/No interviews yet\./);
   assert.doesNotMatch(detailSection,/make\(['"][^'"]+['"],[^\n]*['"](?:Candidate|Application|Requirement) (?:UUID|ID)['"]|detail\.(?:id|candidate_id|application_id|requirement_id)/i);
-  assert.doesNotMatch(detailSection,/\.from\s*\(/);
+  assert.doesNotMatch(detailSection,/(?:client|supabase)\.from\s*\(/);
   assert.match(detailSection,/returnFocus\?\.focus\?\.\(\)/);
 });

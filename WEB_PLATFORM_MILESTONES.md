@@ -107,7 +107,26 @@ Deliverables:
 
 Exit: replayed Meta fixtures create one event; invalid signatures never enqueue; acknowledgement latency meets target.
 
-## W6 — WhatsApp Team Inbox
+## W6 — Candidate Portal and Document Onboarding Foundation
+
+Implementation status: local implementation and static validation PASS. Migration 023 is proposed but not applied; dedicated NONPROD runtime/browser validation remains pending separate authorization. No staging or production database contact is authorized by this implementation phase.
+
+Deliverables:
+
+- authenticated Candidate Portal over canonical Candidate/recruitment records;
+- compulsory normalized Mobile and masked/fingerprinted Aadhaar onboarding;
+- own-profile/preferences, approved opportunities, canonical Apply, applications, interviews, and joining progress;
+- normalized private Candidate document metadata and private Storage bucket boundary;
+- candidate-owned document upload/view/replace and joining-document checklist;
+- restricted Admin document verification/re-upload and auditable documentation override;
+- masked bank/PF/ESIC onboarding foundation without filing or external verification;
+- Candidate/Company/Contractor/Admin portal separation, BFCache protection, responsive/accessibility tests.
+
+Exit: dedicated NONPROD runtime and browser validation prove own-candidate isolation, no Aadhaar/document leakage, canonical application flow, Admin-only document review, private Storage access, zero-residue fixtures, and W2-W5 regressions.
+
+WhatsApp Team Inbox is deferred and must be renumbered/replanned before implementation; W6 does not authorize messaging work.
+
+## Deferred roadmap — WhatsApp Team Inbox
 
 Deliverables:
 
