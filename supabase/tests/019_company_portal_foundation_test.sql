@@ -144,7 +144,7 @@ do $$
 begin
   if to_regprocedure('public.get_recruitment_dashboard()') is null
      or to_regprocedure('public.list_internal_staff()') is null
-     or to_regprocedure('public.get_public_job_requirements()') is null
+     or to_regprocedure('public.get_public_job_requirements(integer,integer)') is null
      or to_regprocedure('public.register_candidate_requirement_interest(text,jsonb)') is null then
     raise exception 'W2/W3/public regression contract disappeared';
   end if;
