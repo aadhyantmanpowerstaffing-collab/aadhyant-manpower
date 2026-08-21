@@ -75,17 +75,18 @@ Deliverables:
 
 Exit: static review is followed by separately authorized rollback-scoped staging validation; public registration, jobs, tenant boundaries, and W2 authorization must remain unchanged.
 
-## W4 — Applications and auditable recruitment pipeline
+## W4 — Company / Employer Portal Foundation
+
+Implementation status: implemented locally for static review as migration 019 and a purpose-built responsive Company Portal. Staging runtime and browser validation remain separately authorized and pending.
 
 Deliverables:
 
-- align application status vocabulary;
-- `application_stage_history` and controlled transition RPC/service;
-- pipeline board/list/detail;
-- source attribution and duplicate candidate/requirement guard;
-- company/contractor/candidate projections only after privacy review.
+- company-only dashboard, profile, requirement creation/lifecycle, and bounded requirement list/detail;
+- safe associated candidate/application, interview, selection, and joining projections over W3 canonical data;
+- server-derived tenant scope, role-aware company mutations, and explicit no-contact-PII policy;
+- separate employer navigation with no Admin shell or direct operational-table access.
 
-Exit: every transition has actor, reason, timestamp, and correlation ID; invalid transitions rejected.
+Exit: checkpoint 019 and live browser validation prove Company A/B isolation, unauthorized-role denial, candidate privacy, canonical W3 integration, and zero fixture residue.
 
 ## W5 — Permanent WhatsApp webhook ingestion
 

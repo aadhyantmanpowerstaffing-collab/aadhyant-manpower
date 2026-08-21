@@ -334,6 +334,12 @@ Actor, role/scope, action, entity type/id, before/after safe diffs, IP/user-agen
 
 Every service-role write should call an audited domain function or supply actor/correlation context. RLS is still required for browser reads even when backend services exist.
 
+### W4 Company Portal projection
+
+Migration 019 adds no business table. It resolves exactly one company membership from `auth.uid()` and projects the tenant's canonical requirements, associated applications, interviews, and joinings through narrow RPCs. Company owners/HR admins may update allowlisted profile fields; company recruiters may manage permitted requirement lifecycle actions; company viewers are read-only. Legal/verification fields and all internal recruitment mutations remain server-controlled.
+
+The company candidate projection deliberately omits contact details, Auth/candidate identifiers, internal notes, staff identities, unrelated history, and other tenant data. Migration 015 base-table isolation remains unchanged, and W3 remains authoritative for candidate, application-stage, interview, and joining mutations.
+
 ## 10. Matching model (design only)
 
 Deterministic scoring inputs can include qualification, specialization/trade, experience, current/preferred location, salary range, shift/hours, accommodation/transport, joining availability, and only legally approved age/gender requirements.

@@ -13,19 +13,19 @@
   <div class="portal-loading" data-portal-loading role="status">Verifying company access…</div>
   <div data-portal hidden>
     <header class="company-header portal-header"><a class="company-brand" href="../index.html"><span aria-hidden="true">A</span><strong>AADHYANT <small>COMPANY PORTAL</small></strong></a><div class="portal-account"><span data-user-email></span><button class="company-button company-button-quiet" type="button" data-logout>Log Out</button></div></header>
-    <nav class="portal-nav" aria-label="Company portal"><a href="index.html">Dashboard</a><a href="requirements.html" aria-current="page">Manpower Requirements</a><a href="index.html#profile-title">Company Profile</a></nav>
+    <nav class="portal-nav" aria-label="Employer portal"><a href="index.html">Dashboard</a><a href="requirements.html" aria-current="page">My Requirements</a><a href="applications.html">Candidates / Applications</a><a href="interviews.html">Interviews</a><a href="joinings.html">Joining Status</a><a href="profile.html">Company Profile</a></nav>
     <main class="portal-main requirements-main">
       <div class="company-message" data-page-message role="status" aria-live="polite"></div>
       <div class="requirements-heading"><div><p class="eyebrow">Company workspace</p><h1>Manpower Requirements</h1><p>Create and monitor requirements owned by <strong data-company-name>your company</strong>.</p></div><button class="company-button company-button-primary" type="button" data-new-requirement>Create Requirement</button></div>
       <form class="requirement-filters" data-requirement-filters><div class="field"><label for="requirement-search">Search</label><input id="requirement-search" name="search" type="search" placeholder="Code, role or location"></div><div class="field"><label for="requirement-stage-filter">Stage</label><select id="requirement-stage-filter" name="stage"><option value="">All stages</option><option value="draft">Draft</option><option value="open">Open</option><option value="on_hold">On hold</option><option value="filled">Filled</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><button class="company-button company-button-quiet" type="submit">Apply Filters</button><button class="text-button" type="reset">Clear</button></form>
-      <div class="requirement-table-wrap"><table class="requirement-table"><thead><tr><th>Code / Role</th><th>Location</th><th>Headcount</th><th>Progress</th><th>Salary</th><th>Stage</th><th>Created</th><th>Action</th></tr></thead><tbody data-requirements-body></tbody></table></div>
+      <div class="requirement-table-wrap"><table class="requirement-table"><thead><tr><th>Code / Role</th><th>Location</th><th>Openings</th><th>Applications</th><th>Interviews</th><th>Selected</th><th>Joined</th><th>Stage</th><th>Created</th><th>Action</th></tr></thead><tbody data-requirements-body></tbody></table></div>
       <div class="requirements-empty" data-requirements-empty hidden><h2>No requirements found</h2><p>Create your first structured manpower requirement or adjust the filters.</p></div>
     </main>
   </div>
 
   <dialog class="requirement-dialog" data-requirement-dialog aria-labelledby="requirement-dialog-title">
-    <form method="dialog" class="dialog-close-form"><button type="submit" aria-label="Close requirement dialog">×</button></form>
-    <div class="dialog-heading"><p class="eyebrow">Company requirement</p><h2 id="requirement-dialog-title" data-requirement-dialog-title>Create Requirement</h2><p data-requirement-code hidden></p></div>
+    <button class="dialog-x" type="button" data-close-dialog aria-label="Close requirement dialog">×</button>
+    <div class="dialog-heading"><p class="eyebrow">Company requirement</p><h2 id="requirement-dialog-title" data-requirement-dialog-title>Create Requirement</h2><p data-requirement-code></p><p class="pipeline-summary" data-requirement-pipeline></p></div>
     <div class="company-message" data-requirement-message role="status" aria-live="polite"></div>
     <form class="requirement-form" data-requirement-form novalidate>
       <input type="hidden" name="requirementId">
