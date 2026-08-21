@@ -1,6 +1,6 @@
 # W3 Staging Runtime Validation
 
-Status: database and security runtime validation complete on dedicated NONPROD staging; live browser validation pending.
+Status: database/security runtime validation, live localhost browser validation, and synthetic-fixture cleanup complete on dedicated NONPROD staging. W3 technical audit: PASS.
 
 ## Scope and safety
 
@@ -37,6 +37,18 @@ Runtime validation passed for the Candidate CRM core workflow and recruiter cand
 
 Migration 015 tenant isolation remained authoritative. Migration 016 foundation objects and migration 017 staff-security boundaries passed regression. Public jobs, candidate requirement-interest registration, admin application management, and legacy interview scheduling/rescheduling/results passed their rollback-scoped checkpoints.
 
+## Live browser validation
+
+Manual validation used a loopback-only localhost copy with a visible `NONPROD / STAGING` banner and synthetic staging data. Bootstrap/admin completed the candidate-to-requirement workflow through application transitions, interview scheduling/rescheduling and selected outcome, joining pending, and joined. Recruiter retained Candidate CRM, matching, application, and interview operations while Joining / Placement remained read-only and Staff Management remained unavailable. Operations received selected/application context and joining management while candidate, generic application-transition, and interview mutations remained unavailable. Viewer received projected read-only views with contact PII and internal notes suppressed.
+
+The live workflow verified constrained candidate editing, structured candidate/application detail dialogs, valid-stage-only application transitions, server-controlled interview and joining synchronization, read-only finalized states, W3/legacy section isolation, and safe missing-value rendering. No browser operation used direct operational-table access or user-entered UUIDs.
+
+## Fixture cleanup
+
+The ignored exact-ID W3 browser fixture manifest was used for dependency-ordered cleanup. Application-side rows, audit rows, tenant/staff fixtures, and nine non-bootstrap Auth fixtures were removed first. Bootstrap recovery remained intact until that cleanup and the bootstrap-only intermediate verification passed; the synthetic bootstrap Auth user was removed last and its `admin_users` row cascaded as designed.
+
+Final read-only verification found zero manifest residue across Auth users/dependencies, staff, tenant memberships/entities, candidates/preferences, requirements/assignments, applications/stage history, interviews, joinings, and audit logs. No orphan references were found, no non-W3 staging rows were removed, no real data was affected, and production was not contacted.
+
 ## Resolved checkpoint defects
 
 Four test-only defects were corrected during validation:
@@ -52,6 +64,6 @@ No production migration defect was established by these failures. Each corrected
 
 Backend runtime validation is complete, but it was not exhaustive across every candidate filter combination, every invalid requirement state, every invalid or arbitrary application transition, every interview result/status combination, operations-detail PII, approved-role contact PII, or every joining date/left-state variant.
 
-Representative candidate search/filter behavior, role-dependent PII, application and interview validation, and joining date/status validation are blocking browser-validation items because the current UI depends on them. Exhaustively enumerating every equivalent combination is a non-blocking coverage limitation once representative boundary cases pass.
+Representative candidate search/filter behavior, role-dependent PII, application and interview validation, and joining date/status validation passed live browser validation. Exhaustively enumerating every equivalent combination remains a non-blocking coverage limitation.
 
-W3 is not closed until live localhost browser validation, fixture cleanup, evidence review, and separately authorized push are complete.
+W3 is technically complete and ready for an evidence-only closure commit, review, and separately authorized push.

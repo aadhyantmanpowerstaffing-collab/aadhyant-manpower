@@ -1,6 +1,15 @@
 # W3 Browser Validation Plan
 
-Status: planned only. No browser fixtures have been created and no live browser test has started.
+Status: completed on dedicated NONPROD staging. Manual browser validation passed, manifest-bound fixtures were removed, and final zero-residue verification passed.
+
+## Completion evidence
+
+- Bootstrap/admin: full candidate matching, application pipeline, interview, joining, candidate detail/update, and dashboard workflow passed through `Joined`.
+- Recruiter: approved Candidate CRM, requirement matching, application, and interview controls passed; Joining / Placement remained read-only and Staff Management unavailable.
+- Operations: selected/application context and joining management passed; candidate, generic application-transition, and interview mutations remained unavailable; contact PII stayed suppressed.
+- Viewer: projected read-only candidates, requirements, applications, interviews, and joining passed; mutation controls were unavailable and contact PII/internal notes stayed suppressed.
+- Inactive, non-member, company, contractor, anonymous, and unauthenticated boundaries remained denied as designed.
+- The technical audit passed, production was not contacted, and exact-ID cleanup left zero Auth, staff, tenant, recruitment, history, joining, interview, or audit fixture residue.
 
 ## Safety gates
 
@@ -72,4 +81,4 @@ Prepare synthetic identities for bootstrap, super-admin, admin, recruiter, opera
 
 Before creation, record exact expected IDs, links, roles, statuses, and baseline counts in the ignored manifest. After validation, remove manifest-bound application/business rows in foreign-key-safe order, remove fixture audit rows by exact actor/entity IDs, delete non-bootstrap Auth users, verify only bootstrap recovery remains, then remove bootstrap last. Finish with zero-residue queries across Auth dependencies, staff, recruitment, tenant, history, and audit tables. Stop the localhost server and remove the temporary browser copy and ignored fixture manifest only after evidence is recorded.
 
-Fixture creation, browser execution, cleanup, and push each require separate authorization.
+Fixture creation, browser execution, and cleanup were separately authorized and completed. Push remains separately authorized.
