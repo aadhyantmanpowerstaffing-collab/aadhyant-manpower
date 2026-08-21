@@ -90,7 +90,7 @@ Exit: checkpoint 019 and live browser validation prove Company A/B isolation, un
 
 ## W5 — Contractor Portal Foundation
 
-Implementation status: canonical review-gated contractor vacancies, safe progress projections, and the internal W3 bridge are implemented locally. Migration 021 remains unapplied pending separate static review and staging authorization.
+Implementation status: static review and dedicated NONPROD backend/security runtime validation are COMPLETE. Migrations 021 and corrective 022 are installed on staging; focused checkpoint 023, full checkpoint 022, focused coverage checkpoint 024, required W4/W3/W2 and migration-015 regressions, legacy/public regressions, and 92/92 frontend tests pass with zero synthetic residue. Production was not contacted, no deployment occurred, and W6 was not started. Live Contractor Portal browser validation and manifest-bound fixture cleanup remain PENDING; W5 is not formally closed.
 
 Contractor deliverables include a separate tenant portal, Draft-to-review-to-approval vacancy lifecycle, correction/resubmission, safe recruitment progress, profile allowlists, admin-only approval, and rollback-scoped tests. Exit requires staging and browser proof of cross-contractor isolation, self-approval denial, the canonical W3 bridge, privacy, and zero fixture residue.
 

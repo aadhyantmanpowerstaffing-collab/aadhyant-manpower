@@ -1,6 +1,6 @@
 # W5 Contractor Portal Foundation
 
-Status: implemented locally for static review. Migration 021 is not applied and staging runtime/browser validation is pending.
+Status: static review and dedicated NONPROD backend/security runtime validation are COMPLETE. Migrations 021 and corrective 022 are installed on staging; checkpoints 022-024 and required regressions pass with zero synthetic residue. Live browser validation remains PENDING, so W5 is not formally closed.
 
 ## Architecture and canonical bridge
 
@@ -38,4 +38,4 @@ Candidate contact release, contractor interview feedback, saved filters, bulk op
 
 ## Validation
 
-Checkpoint `022_contractor_portal_foundation_test.sql` is rollback-scoped and covers tenant resolution, roles, denied identities, submission review gating, cross-contractor isolation, internal approval, canonical W3 visibility, privacy, dashboard progress, read-only interview/joining boundaries, grants, and rollback. Focused frontend tests cover navigation, forms, access, privacy, responsive behavior, and prohibited UI patterns. Migration/runtime validation requires separate staging authorization.
+Checkpoint `022_contractor_portal_foundation_test.sql`, corrective checkpoint 023, and focused coverage checkpoint 024 are rollback-scoped. Together they cover tenant resolution, roles, denied identities, the complete reviewed lifecycle, elevated approval roles, cross-contractor isolation, profile persistence/protection, canonical W3 visibility, privacy, distinct dashboard aggregates, read-only interview/joining boundaries, grants, and zero residue. Required W4/W3/W2, migration-015, and legacy/public regressions pass; frontend tests pass 92/92. Sanitized runtime evidence is recorded in `W5_STAGING_RUNTIME_VALIDATION.md`. Live browser validation and manifest-bound browser-fixture cleanup remain pending under `W5_BROWSER_VALIDATION_PLAN.md`.
