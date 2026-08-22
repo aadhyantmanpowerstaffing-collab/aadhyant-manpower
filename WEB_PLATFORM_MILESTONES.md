@@ -109,7 +109,7 @@ Exit: replayed Meta fixtures create one event; invalid signatures never enqueue;
 
 ## W6 — Candidate Portal and Document Onboarding Foundation
 
-Implementation status: local implementation and static validation PASS. Migration 023 is proposed but not applied; dedicated NONPROD runtime/browser validation remains pending separate authorization. No staging or production database contact is authorized by this implementation phase.
+Implementation status: COMPLETE locally. Migrations 023-025 are installed and validated on dedicated NONPROD staging. Checkpoints 025-028, required W2-W5/migration-015/legacy regressions, 116/116 frontend tests, Candidate/Admin live-browser validation, private Storage upload/replace, responsive and BFCache checks, and manifest-bound zero-residue cleanup pass. The generic authenticated first-time Candidate onboarding path is intentional and grants no protected existing Candidate scope before successful onboarding. All six Auth fixtures, database fixtures, and browser Storage artifacts were removed with zero Auth identity/session, database, Storage, orphan, or cross-tenant residue; the unrelated staging baseline and private bucket/policies remain intact. Validated implementation HEAD: `fa2d2595d38bbc1edc3174ec975e413de51e0fe9`. Production was not contacted, no deployment occurred, and W7 was not started. Remote closure remains pending separate ahead-range review, authorized normal non-force push, and remote HEAD verification.
 
 Deliverables:
 
