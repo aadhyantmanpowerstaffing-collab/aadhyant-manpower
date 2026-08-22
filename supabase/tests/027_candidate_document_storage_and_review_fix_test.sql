@@ -50,6 +50,22 @@ begin
         'Candidate document verifiers read registered uploads'))<>5 then
     raise exception 'Corrected Candidate Storage policy set is incomplete';
   end if;
+  if not exists(select 1 from pg_policies p where p.schemaname='storage' and p.tablename='objects'
+      and p.policyname='Candidate deletes own unregistered private uploads' and p.cmd='DELETE'
+      and p.roles='{authenticated}'::name[] and p.qual ilike '%bucket_id = ''candidate-private''%'
+      and p.qual ilike '%private.can_delete_candidate_storage_object%')
+     or (select count(*) from pg_policies p where p.schemaname='storage' and p.tablename='objects'
+       and p.cmd='DELETE' and (coalesce(p.qual,'')||coalesce(p.with_check,'')) ilike '%candidate-private%')<>1 then
+    raise exception 'Candidate Storage DELETE policy is not narrowly authenticated and helper-bound';
+  end if;
+  if pg_get_functiondef('private.can_delete_candidate_storage_object(text)'::regprocedure)
+       not ilike '%private.is_current_candidate_storage_path(p_object_name)%'
+     or pg_get_functiondef('private.can_delete_candidate_storage_object(text)'::regprocedure)
+       not ilike '%not exists(select 1 from public.candidate_documents%'
+     or pg_get_functiondef('private.can_delete_candidate_storage_object(text)'::regprocedure)
+       not ilike '%d.storage_object_name=p_object_name and d.active%' then
+    raise exception 'Candidate Storage DELETE helper does not enforce Candidate path and registration protection';
+  end if;
   if not has_function_privilege('authenticated','private.is_current_candidate_storage_path(text)','execute')
      or not has_function_privilege('authenticated','private.can_read_candidate_storage_object(text)','execute')
      or not has_function_privilege('authenticated','private.can_delete_candidate_storage_object(text)','execute')
@@ -83,9 +99,12 @@ do $$ declare affected integer; begin
     where id='89200000-0000-0000-0007-000000000004';
   get diagnostics affected=row_count;
   if affected<>1 then raise exception 'Candidate A could not update own private object'; end if;
-  delete from storage.objects where id='89200000-0000-0000-0007-000000000004';
-  get diagnostics affected=row_count;
-  if affected<>1 then raise exception 'Candidate A could not delete own unregistered private object'; end if;
+  -- Supabase requires object deletion through the Storage API; direct storage.objects DELETE
+  -- is rejected by storage.protect_delete() before policy semantics can be observed.
+  if not private.can_delete_candidate_storage_object(
+      '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000004/delete-me.pdf') then
+    raise exception 'Candidate A unregistered-object DELETE predicate was denied';
+  end if;
 end $$;
 select set_config('w6.doc.resume',public.register_candidate_document('resume',
   '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000001/resume.pdf',
@@ -96,10 +115,11 @@ select set_config('w6.doc.pan',public.register_candidate_document('pan',
 select set_config('w6.doc.other',public.register_candidate_document('other',
   '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000003/other.pdf',
   'other.pdf','application/pdf',1024)::text,true);
-do $$ declare affected integer; begin
-  delete from storage.objects where id='89200000-0000-0000-0007-000000000001';
-  get diagnostics affected=row_count;
-  if affected<>0 then raise exception 'Candidate deleted a registered active document object'; end if;
+do $$ begin
+  if private.can_delete_candidate_storage_object(
+      '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000001/resume.pdf') then
+    raise exception 'Candidate DELETE predicate allowed a registered active document object';
+  end if;
   begin
     perform public.admin_review_candidate_document(current_setting('w6.doc.other')::uuid,'under_verification',null);
     raise exception 'Candidate started own document review';
@@ -126,9 +146,10 @@ do $$ declare affected integer; begin
   update storage.objects set metadata=metadata where id='89200000-0000-0000-0007-000000000001';
   get diagnostics affected=row_count;
   if affected<>0 then raise exception 'Candidate B updated Candidate A private object'; end if;
-  delete from storage.objects where id='89200000-0000-0000-0007-000000000001';
-  get diagnostics affected=row_count;
-  if affected<>0 then raise exception 'Candidate B deleted Candidate A private object'; end if;
+  if private.can_delete_candidate_storage_object(
+      '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000001/resume.pdf') then
+    raise exception 'Candidate B received Candidate A DELETE capability';
+  end if;
 end $$;
 
 -- Non-Candidate authenticated identities cannot create or read Candidate-private objects.
@@ -188,9 +209,10 @@ do $$ declare affected integer; begin
   update storage.objects set metadata=metadata where id='89200000-0000-0000-0007-000000000001';
   get diagnostics affected=row_count;
   if affected<>0 then raise exception 'Verifier updated Candidate object'; end if;
-  delete from storage.objects where id='89200000-0000-0000-0007-000000000001';
-  get diagnostics affected=row_count;
-  if affected<>0 then raise exception 'Verifier deleted Candidate object'; end if;
+  if private.can_delete_candidate_storage_object(
+      '89200000-0000-0000-0000-000000000001/89200000-0000-0000-0008-000000000001/resume.pdf') then
+    raise exception 'Verifier received Candidate object DELETE capability';
+  end if;
 end $$;
 
 -- Exact review state machine and attribution.
