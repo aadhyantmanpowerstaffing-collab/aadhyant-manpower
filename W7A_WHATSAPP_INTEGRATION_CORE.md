@@ -1,8 +1,8 @@
 # W7A WhatsApp Integration Core
 
-Status: migration 026 is installed only on dedicated NONPROD staging; corrective migration 027 is static and not applied. The Edge Function is not deployed, Meta was not contacted, and no message was sent.
+Status: database/runtime-core validation is COMPLETE on dedicated NONPROD staging. Immutable migration 026 and upgrade-safe corrective migration 027 are installed, checkpoints 029 and 030 pass, required checkpoints 011–028 pass 18/18, W7A unit tests pass 12/12, and the frontend baseline passes 121/121. All checkpoint fixtures rolled back with zero synthetic, orphan, or cross-tenant residue. The Edge Function is not deployed or runtime-validated in Deno/Supabase Edge, Meta live validation has not occurred, production was not contacted, and no message was sent. W7A is not yet Meta-production-ready.
 
-NONPROD runtime validation subsequently installed immutable migration 026 and exposed PostgreSQL special expressions that had been incorrectly qualified as ordinary `pg_catalog` functions. Corrective migration 027 replaces only the affected W7A function definitions with PostgreSQL-compatible unqualified `coalesce`, `greatest`, `least`, and `nullif` expressions. It does not change W7A authorization, privacy, idempotency, queue, consent, or delivery contracts. Migration 027 and its focused checkpoint remain subject to separate static review and NONPROD authorization.
+NONPROD runtime validation of immutable migration 026 exposed PostgreSQL special expressions that had been incorrectly qualified as ordinary `pg_catalog` functions. Upgrade-safe migration 027 replaces only the affected W7A function definitions with PostgreSQL-compatible unqualified `coalesce`, `greatest`, `least`, and `nullif` expressions. Migration 026 remained unchanged, and migration 027 changes no W7A authorization, privacy, idempotency, queue, consent, or delivery semantics.
 
 ## Scope
 
@@ -101,18 +101,26 @@ The shared provider interface defines template send, safe error classification, 
 
 W7A stores only flat, bounded JSON metadata with scalar values, limits key count and lengths, and rejects normalized recognized Aadhaar, bank-account, UAN, ESIC, document URL/path/content, signed-URL, token, and secret keys. Arbitrary inbound free text is discarded rather than exposed through Admin projections. Flow responses use an explicit basic-profile allowlist and Admin projections mask phone numbers. This is deliberate minimization, not perfect DLP: arbitrary text classification, payload/message retention, redaction policy, and deletion periods still require approval before production.
 
-## Validation and deployment prerequisites
+## Final NONPROD validation evidence
 
-Before applying migration 026 or deploying the Edge Function:
+Migration 026 installed the five-table WhatsApp integration foundation on dedicated NONPROD. Migration 027 then applied the upgrade-safe PostgreSQL compatibility correction while keeping migration 026 immutable and preserving all business and security semantics.
 
-- extend the staging guard separately through migration 026;
-- authorize and apply migration 026 only to dedicated NONPROD staging;
-- run checkpoint 029 and the W2-W6 regression chain;
+Focused checkpoint 030 passed after executing all 11 corrected function definitions. Its transaction rolled back and left zero residue. Checkpoint 029 passed the complete W7A schema/catalog, phone/contact, Candidate-detach, consent, webhook/inbound, outbound idempotency, claim/lease, retry/failure, delivery monotonicity, privacy, authorization, audit, and cleanup matrix with client exit code 0, rollback success, and zero residue. The unchanged rollback-scoped checkpoint 029 was repeated only to capture an explicit final client exit status after the first client status was lost during an output-window handoff; both executions used the same checkpoint version.
+
+Required legacy and W2–W6 checkpoints 011–028 pass 18/18. Checkpoint 025 specifically proves direct Uploaded-to-Verified denial, valid Uploaded-to-Under Verification-to-Verified and Uploaded-to-Under Verification-to-Re-upload Required paths, and correct review-start/final attribution. W7A local unit tests pass 12/12 and the complete frontend baseline passes 121/121.
+
+The installed runtime posture contains exactly five W7A tables and 21 W7A functions. Twenty functions are `SECURITY DEFINER`, all 20 use an empty `search_path`, all five tables have RLS enabled, browser base-table grants are zero, server mutations remain browser-denied, and the five Admin read projections remain narrow. Runtime tests validate strict phone normalization, Candidate detach behavior, consent/suppression, webhook and inbound deduplication, structured sensitive-key rejection, outbound idempotency, bounded claims, safe lease/retry behavior, provider-call ambiguity quarantine, final-attempt terminalization, worker ownership, monotonic delivery, immutable message events, safe audit metadata, and omission of arbitrary inbound text from Admin projections. Final verification found zero synthetic residue and no orphan or cross-tenant residue.
+
+## Remaining validation and deployment prerequisites
+
+Before deploying the Edge Function or enabling production communication:
+
+- perform Deno type-checking, Supabase Edge bundling/local serving, and controlled deployed NONPROD Edge runtime validation;
 - configure Edge Function project files and secrets through reviewed deployment controls;
 - select and approve the permanent worker host;
 - approve Meta app, number, templates, consent/STOP policy, retention, monitoring, rate limits, and operational runbooks;
 - perform controlled NONPROD provider testing before any production enablement.
 
-Local Node tests exercise the Web-compatible modules, but a Deno type-check, Supabase Edge bundle, and local Edge serve have not yet been performed. Runtime compatibility remains a NONPROD prerequisite.
+Local Node tests exercise the Web-compatible modules, but a Deno type-check, Supabase Edge bundle, local Edge serve, and deployed Edge runtime validation have not yet been performed. Meta live validation has not been performed, no real messages have been sent, and no production deployment has occurred. Retention, legal, provider, operational, and production approvals remain deferred.
 
 W7B may add approved-vacancy campaigns and deterministic audience snapshots. W7C may add staged intake and an idempotent canonical application bridge. Neither is part of W7A.
