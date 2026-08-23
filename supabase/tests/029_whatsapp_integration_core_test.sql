@@ -149,6 +149,7 @@ select set_config('w7a.inbound',public.record_whatsapp_inbound_message(current_s
   'wamid.w7a.1',now(),'text','Synthetic hello',null,null,null)::text,true);
 select set_config('w7a.inbound.duplicate',public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
   'wamid.w7a.1',now(),'text','Synthetic hello',null,null,null)::text,true);
+reset role;
 do $$ begin
   if current_setting('w7a.contact')<>current_setting('w7a.contact.duplicate') then raise exception 'Contact dedupe failed'; end if;
   if current_setting('w7a.webhook.message')<>current_setting('w7a.webhook.message.duplicate') then raise exception 'Webhook dedupe failed'; end if;
@@ -161,6 +162,9 @@ do $$ begin
     raise exception 'Ambiguous Candidate phone did not fail closed'; end if;
   if (select safe_text from public.whatsapp_inbound_messages where id=current_setting('w7a.inbound')::uuid) is not null then
     raise exception 'Inbound free text was persisted'; end if;
+end $$;
+set local role service_role;
+do $$ begin
   begin perform public.accept_whatsapp_webhook_event('privacy',repeat('f',64),'unknown','{"aadhaar":"000000000000"}'::jsonb);
     raise exception 'Sensitive webhook metadata accepted';
   exception when raise_exception then if sqlerrm='Sensitive webhook metadata accepted' then raise; end if; end;
@@ -238,11 +242,15 @@ begin
   perform public.mark_whatsapp_provider_call_started(r.message_id,'worker-w7a');
   begin perform public.mark_whatsapp_outbound_sent(r.message_id,'wrong-worker','wamid.outbound.1',now()); raise exception 'Wrong lease owner finalized send';
   exception when raise_exception then if sqlerrm='Wrong lease owner finalized send' then raise; end if; end;
-  if not exists(select 1 from public.whatsapp_outbound_messages o where o.id=r.message_id
+end $$;
+reset role;
+do $$ begin
+  if not exists(select 1 from public.whatsapp_outbound_messages o where o.id=current_setting('w7a.outbound')::uuid
       and o.state='sending' and o.send_phase='provider_call_started' and o.lease_owner='worker-w7a'
       and o.provider_message_id is null) then raise exception 'Wrong-worker attempt changed outbound state'; end if;
-  perform public.mark_whatsapp_outbound_sent(r.message_id,'worker-w7a','wamid.outbound.1',now());
 end $$;
+set local role service_role;
+select public.mark_whatsapp_outbound_sent(current_setting('w7a.outbound')::uuid,'worker-w7a','wamid.outbound.1',now());
 
 select set_config('w7a.webhook.read',public.accept_whatsapp_webhook_event('status:wamid.outbound.1:read:1',repeat('b',64),'message_status','{"status":"read"}'::jsonb)::text,true);
 select set_config('w7a.event.read',public.record_whatsapp_message_event(current_setting('w7a.outbound')::uuid,current_setting('w7a.webhook.read')::uuid,
@@ -255,6 +263,7 @@ select public.record_whatsapp_message_event(current_setting('w7a.outbound')::uui
 select set_config('w7a.webhook.failed',public.accept_whatsapp_webhook_event('status:wamid.outbound.1:failed:2',repeat('d',64),'message_status','{"status":"failed"}'::jsonb)::text,true);
 select public.record_whatsapp_message_event(current_setting('w7a.outbound')::uuid,current_setting('w7a.webhook.failed')::uuid,
   'status:wamid.outbound.1:failed:2','wamid.outbound.1','failed',now()+interval '1 minute',repeat('d',64),'provider','safe_code');
+reset role;
 do $$ begin
   if current_setting('w7a.event.read')<>current_setting('w7a.event.read.duplicate') then raise exception 'Status event dedupe failed'; end if;
   if (select state from public.whatsapp_outbound_messages where id=current_setting('w7a.outbound')::uuid)<>'read' then
@@ -262,6 +271,7 @@ do $$ begin
   if (select count(*) from public.whatsapp_message_events where outbound_message_id=current_setting('w7a.outbound')::uuid)<>3 then
     raise exception 'Immutable status ledger count is incorrect'; end if;
 end $$;
+set local role service_role;
 
 -- Retry, lease expiry/reclaim and exhaustion.
 select set_config('w7a.retry',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
@@ -270,18 +280,24 @@ do $$ declare r record;
 begin
   select * into r from public.claim_whatsapp_outbound_batch('worker-retry',25,15) where message_id=current_setting('w7a.retry')::uuid;
   perform public.mark_whatsapp_outbound_failure(r.message_id,'worker-retry','network','timeout','transient',now()+interval '1 minute');
-  if (select state from public.whatsapp_outbound_messages where id=r.message_id)<>'queued' then raise exception 'Transient retry was not scheduled'; end if;
 end $$;
 reset role;
+do $$ begin
+  if (select state from public.whatsapp_outbound_messages where id=current_setting('w7a.retry')::uuid)<>'queued' then raise exception 'Transient retry was not scheduled'; end if;
+end $$;
 update public.whatsapp_outbound_messages set next_attempt_at=now()-interval '1 minute' where id=current_setting('w7a.retry')::uuid;
 set local role service_role;
 do $$ declare r record;
 begin
   select * into r from public.claim_whatsapp_outbound_batch('worker-retry-2',25,15) where message_id=current_setting('w7a.retry')::uuid;
   perform public.mark_whatsapp_outbound_failure(r.message_id,'worker-retry-2','network','timeout','transient',now()+interval '1 minute');
-  if (select state from public.whatsapp_outbound_messages where id=r.message_id)<>'failed' then raise exception 'Retry exhaustion did not finalize failure'; end if;
+end $$;
+reset role;
+do $$ begin
+  if (select state from public.whatsapp_outbound_messages where id=current_setting('w7a.retry')::uuid)<>'failed' then raise exception 'Retry exhaustion did not finalize failure'; end if;
 end $$;
 
+set local role service_role;
 select set_config('w7a.lease',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
   '89300000-0000-0000-0001-000000000001',null,'lease_test','transactional','w7a_lease_template','en','1','{}','w7a-lease-1',null,3)::text,true);
 do $$ declare r record; begin select * into r from public.claim_whatsapp_outbound_batch('worker-expired',25,15) where message_id=current_setting('w7a.lease')::uuid; end $$;
@@ -300,11 +316,15 @@ set local role service_role;
 do $$ begin
   if exists(select 1 from public.claim_whatsapp_outbound_batch('worker-must-not-resend',25,15)
       where message_id=current_setting('w7a.lease')::uuid) then raise exception 'Ambiguous provider call was reclaimed'; end if;
+end $$;
+reset role;
+do $$ begin
   if not exists(select 1 from public.whatsapp_outbound_messages where id=current_setting('w7a.lease')::uuid and state='failed'
       and send_phase='reconciliation_required' and last_error_category='ambiguous_provider_outcome' and lease_owner is null) then
     raise exception 'Expired provider call was not quarantined'; end if;
 end $$;
 
+set local role service_role;
 select set_config('w7a.final_attempt',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
   '89300000-0000-0000-0001-000000000001',null,'final_attempt_test','transactional','w7a_final_template','en','1','{}','w7a-final-1',null,1)::text,true);
 do $$ declare r record; begin select * into r from public.claim_whatsapp_outbound_batch('worker-final',25,15)
@@ -314,11 +334,15 @@ update public.whatsapp_outbound_messages set lease_expires_at=now()-interval '1 
 set local role service_role;
 do $$ begin
   perform public.claim_whatsapp_outbound_batch('worker-final-check',25,15);
+end $$;
+reset role;
+do $$ begin
   if not exists(select 1 from public.whatsapp_outbound_messages where id=current_setting('w7a.final_attempt')::uuid
       and state='failed' and send_phase='terminal' and last_error_category='attempts_exhausted' and lease_owner is null) then
     raise exception 'Final-attempt expired claim remained stranded'; end if;
 end $$;
 
+set local role service_role;
 select set_config('w7a.long_template',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
   '89300000-0000-0000-0001-000000000001',null,'template_validation','transactional',repeat('a',300),'en','1','{}',
   'w7a-long-template-1',null,1)::text,true);
