@@ -10,6 +10,7 @@ staging-secrets.*
 .w4-browser-fixtures.local.json
 .w5-browser-fixtures.local.json
 .w6-browser-fixtures.local.json
+.w6-review-retest-fixtures.local.json
 
 # Project-scoped JavaScript tooling dependencies
 node_modules/
