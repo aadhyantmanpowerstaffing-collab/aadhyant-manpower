@@ -5,7 +5,7 @@ import { parseWhatsAppWebhook } from "../_shared/whatsapp/parser.ts";
 import { normalizeIndianWhatsAppPhone } from "../_shared/whatsapp/phone.ts";
 import { calculateMetaSignature, verifyMetaSignature } from "../_shared/whatsapp/signature.ts";
 import type { AcceptedWebhookEvent, WebhookEnvironment } from "../_shared/whatsapp/types.ts";
-import { handleWhatsAppWebhook } from "./index.ts";
+import { createSupabaseWebhookPersistence, handleWhatsAppWebhook } from "./index.ts";
 
 const encoder = new TextEncoder();
 const environment: WebhookEnvironment = { appSecret: "unit-test-secret", verifyToken: "unit-test-verify", supabaseUrl: "https://nonprod.invalid", supabaseSecretKey: "not-used" };
@@ -112,6 +112,86 @@ test("valid POST durably submits normalized event summaries and duplicates retai
   assert.equal(result.status, 200); assert.equal(accepted.length, 1); assert.equal(accepted[0].provider_event_key, "message:wamid.same");
   assert.equal(JSON.stringify(accepted[0]).includes("Private body"), false);
   assert.equal(accepted[0].payload_sha256.length, 64);
+});
+
+test("verified text accepts first, upserts contact and records no raw text", async () => {
+  const payload = envelope({ messages: [{ id: "wamid.orchestrated.text", from: "919876543210", timestamp: "1720000000", type: "text", text: { body: "Must not reach persistence" } }] });
+  const calls: Array<{ rpc: string; body: Record<string, unknown> }> = [];
+  const fetcher = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const rpc = String(input).split("/").at(-1)!;
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    calls.push({ rpc, body });
+    const value = rpc === "accept_whatsapp_webhook_event" ? "00000000-0000-0000-0000-000000000001"
+      : rpc === "upsert_whatsapp_inbound_contact" ? "00000000-0000-0000-0000-000000000002"
+      : "00000000-0000-0000-0000-000000000003";
+    return new Response(JSON.stringify(value), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const persistence = createSupabaseWebhookPersistence(environment, fetcher);
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processInboundEvent);
+  assert.equal(result.status, 200);
+  assert.deepEqual(calls.map((call) => call.rpc), ["accept_whatsapp_webhook_event", "upsert_whatsapp_inbound_contact", "record_whatsapp_inbound_message"]);
+  assert.equal(calls[1].body.p_phone, "919876543210");
+  assert.equal(calls[2].body.p_message_type, "text");
+  assert.equal(calls[2].body.p_safe_text, null);
+  assert.equal(JSON.stringify(calls).includes("Must not reach persistence"), false);
+});
+
+test("button, list and Flow events use the normalized inbound persistence stage", async () => {
+  const cases = [
+    { type: "interactive", interactive: { type: "button_reply", button_reply: { id: "YES", title: "Yes" } } },
+    { type: "interactive", interactive: { type: "list_reply", list_reply: { id: "VIEW", title: "View" } } },
+    { type: "interactive", interactive: { type: "nfm_reply", nfm_reply: { name: "flow", response_json: JSON.stringify({ flow_token: "opaque", full_name: "Safe", bank_account: "blocked" }) } } },
+  ];
+  const processed: Array<{ webhookEventId: string; event: ReturnType<typeof parseWhatsAppWebhook>[number] }> = [];
+  const payload = envelope({ messages: cases.map((message, index) => ({ id: `orchestrated-${index}`, from: "919876543210", ...message })) });
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, async () => "00000000-0000-0000-0000-000000000001", async (webhookEventId, event) => { processed.push({ webhookEventId, event }); });
+  assert.equal(result.status, 200);
+  assert.deepEqual(processed.map(({ event }) => event.messageType), ["button", "list", "flow"]);
+  assert.deepEqual(processed[2].event.redactedResponse, { full_name: "Safe" });
+  assert.equal(JSON.stringify(processed).includes("blocked"), false);
+});
+
+test("exact duplicate replay retains one logical contact and inbound message", async () => {
+  const payload = envelope({ messages: [{ id: "wamid.orchestrated.duplicate", from: "919876543210", type: "text", text: { body: "Private" } }] });
+  const contacts = new Set<string>();
+  const messages = new Set<string>();
+  const accept = async () => "00000000-0000-0000-0000-000000000001";
+  const process = async (_webhookEventId: string, event: ReturnType<typeof parseWhatsAppWebhook>[number]) => {
+    contacts.add(event.phone!);
+    messages.add(event.providerMessageId!);
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    assert.equal((await handleWhatsAppWebhook(await signedRequest(payload), environment, accept, process)).status, 200);
+  }
+  assert.equal(contacts.size, 1);
+  assert.equal(messages.size, 1);
+});
+
+test("malformed siblings do not block valid inbound orchestration", async () => {
+  const payload = envelope({ messages: [null, 7, [], { id: "orchestrated-valid", from: "919876543210", type: "text", text: { body: "Private" } }] });
+  const processed: string[] = [];
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, async () => "00000000-0000-0000-0000-000000000001", async (_id, event) => { processed.push(event.providerMessageId!); });
+  assert.equal(result.status, 200);
+  assert.deepEqual(processed, ["orchestrated-valid"]);
+});
+
+test("contact persistence failure follows durable acceptance and fails closed", async () => {
+  const payload = envelope({ messages: [{ id: "orchestrated-failure", from: "919876543210", type: "text", text: { body: "Private" } }] });
+  const order: string[] = [];
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, async () => { order.push("accepted"); return "00000000-0000-0000-0000-000000000001"; }, async () => { order.push("contact"); throw new Error("synthetic failure"); });
+  assert.equal(result.status, 500);
+  assert.equal(await result.text(), "Event processing failed");
+  assert.deepEqual(order, ["accepted", "contact"]);
+});
+
+test("status events remain ledger-only until separately reviewed orchestration", async () => {
+  const payload = envelope({ statuses: [{ id: "status-ledger-only", status: "delivered", timestamp: "1720000001" }] });
+  let accepted = 0;
+  let inbound = 0;
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, async () => { accepted++; return "00000000-0000-0000-0000-000000000001"; }, async () => { inbound++; });
+  assert.equal(result.status, 200);
+  assert.equal(accepted, 1);
+  assert.equal(inbound, 0);
 });
 
 test("phone normalization accepts canonical Indian forms and rejects invalid values", () => {
