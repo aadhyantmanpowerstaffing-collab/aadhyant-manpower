@@ -18,6 +18,10 @@ begin
     if exists(select 1 from information_schema.role_table_grants g where g.table_schema='public' and g.table_name=v_table
       and g.grantee in ('PUBLIC','anon','authenticated')) then raise exception 'Browser table grant exists on %',v_table; end if;
   end loop;
+  if has_table_privilege('service_role','public.whatsapp_message_events','update')
+     or has_table_privilege('service_role','public.whatsapp_message_events','delete') then
+    raise exception 'Immutable WhatsApp message-event ledger has server direct-mutation grants';
+  end if;
   if (select count(*) from information_schema.columns where table_schema='public' and table_name='whatsapp_contacts'
       and column_name in ('provider_address','indian_mobile_key','candidate_id','resolution_status','marketing_consent_status',
         'transactional_contact_status','consent_source','consent_scope','consent_recorded_at','consent_policy_version','opted_out_at','opt_out_source'))<>12
@@ -27,13 +31,19 @@ begin
       and column_name in ('webhook_event_id','contact_id','provider_message_id','message_type','safe_text','action_id','correlation_key','redacted_response'))<>8
     or (select count(*) from information_schema.columns where table_schema='public' and table_name='whatsapp_outbound_messages'
       and column_name in ('contact_id','candidate_id','requirement_id','consent_class','template_variables','idempotency_key','provider_message_id',
-        'state','attempt_count','max_attempts','next_attempt_at','lease_owner','lease_expires_at','correlation_id'))<>14
+        'state','send_phase','attempt_count','max_attempts','next_attempt_at','lease_owner','lease_expires_at','correlation_id'))<>15
     or (select count(*) from information_schema.columns where table_schema='public' and table_name='whatsapp_message_events'
       and column_name in ('outbound_message_id','webhook_event_id','provider_event_key','provider_message_id','status','payload_sha256'))<>6 then
     raise exception 'W7A expected column contract is incomplete';
   end if;
   if (select count(*) from pg_catalog.pg_indexes where schemaname='public' and tablename like 'whatsapp_%')<20 then
     raise exception 'W7A justified index contract is incomplete';
+  end if;
+  if exists(select 1 from pg_catalog.pg_constraint where conrelid='public.whatsapp_outbound_messages'::regclass
+      and pg_catalog.pg_get_constraintdef(oid) like '%{1,512}%')
+     or not exists(select 1 from pg_catalog.pg_constraint where conrelid='public.whatsapp_outbound_messages'::regclass
+      and pg_catalog.pg_get_constraintdef(oid) ilike '%char_length(template_name)%512%') then
+    raise exception 'Template-name validation is not PostgreSQL-safe';
   end if;
 end;
 $$;
@@ -42,7 +52,7 @@ do $$
 declare v_reg regprocedure; v_name text;
 begin
   foreach v_name in array array[
-    'private.normalize_indian_whatsapp_phone(text)','private.can_admin_whatsapp()',
+    'private.whatsapp_safe_flat_json(jsonb)','private.normalize_indian_whatsapp_phone(text)','private.can_admin_whatsapp()',
     'private.whatsapp_contact_allows_purpose(uuid,text)','private.apply_whatsapp_delivery_projection(uuid,text,timestamptz)'] loop
     v_reg:=to_regprocedure(v_name); if v_reg is null then raise exception 'Missing helper %',v_name; end if;
     if pg_get_functiondef(v_reg) not ilike '%security definer%' or pg_get_functiondef(v_reg) not ilike '%set search_path to ''''%' then
@@ -54,7 +64,8 @@ begin
     'public.accept_whatsapp_webhook_event(text,text,text,jsonb)','public.upsert_whatsapp_inbound_contact(text)',
     'public.record_whatsapp_inbound_message(uuid,uuid,text,timestamptz,text,text,text,text,jsonb)',
     'public.enqueue_whatsapp_outbound_message(uuid,uuid,uuid,text,text,text,text,text,jsonb,text,uuid,integer)',
-    'public.claim_whatsapp_outbound_batch(text,integer,integer)','public.mark_whatsapp_outbound_sent(uuid,text,text,timestamptz)',
+    'public.claim_whatsapp_outbound_batch(text,integer,integer)','public.mark_whatsapp_provider_call_started(uuid,text)',
+    'public.mark_whatsapp_outbound_sent(uuid,text,text,timestamptz)',
     'public.mark_whatsapp_outbound_failure(uuid,text,text,text,text,timestamptz)',
     'public.record_whatsapp_message_event(uuid,uuid,text,text,text,timestamptz,text,text,text)',
     'public.set_whatsapp_contact_suppression(uuid,boolean,text,text)'] loop
@@ -66,12 +77,17 @@ begin
   end loop;
   if pg_get_functiondef('public.claim_whatsapp_outbound_batch(text,integer,integer)'::regprocedure) not ilike '%for update skip locked%'
      or pg_get_functiondef('public.claim_whatsapp_outbound_batch(text,integer,integer)'::regprocedure) not ilike '%least%100%'
-     or pg_get_functiondef('public.claim_whatsapp_outbound_batch(text,integer,integer)'::regprocedure) not ilike '%last_error_category is distinct from ''ambiguous''%' then
+     or pg_get_functiondef('public.claim_whatsapp_outbound_batch(text,integer,integer)'::regprocedure) not ilike '%provider_call_started%'
+     or pg_get_functiondef('public.claim_whatsapp_outbound_batch(text,integer,integer)'::regprocedure) not ilike '%reconciliation_required%' then
     raise exception 'Outbox claim locking, bounding or ambiguity contract is missing';
   end if;
   if pg_get_functiondef('private.apply_whatsapp_delivery_projection(uuid,text,timestamptz)'::regprocedure) ilike '%execute %'
      or pg_get_functiondef('public.record_whatsapp_message_event(uuid,uuid,text,text,text,timestamptz,text,text,text)'::regprocedure) ilike '%execute %' then
     raise exception 'Dynamic SQL is prohibited in delivery processing';
+  end if;
+  if pg_get_functiondef('public.enqueue_whatsapp_outbound_message(uuid,uuid,uuid,text,text,text,text,text,jsonb,text,uuid,integer)'::regprocedure)
+      not ilike '%extensions.gen_random_uuid()%' then
+    raise exception 'Extension UUID generation is not schema-qualified';
   end if;
 end;
 $$;
@@ -83,8 +99,16 @@ begin
   if v_key<>'9876543210' or v_address<>'+919876543210' then raise exception 'Indian phone normalization failed'; end if;
   select indian_mobile_key,provider_address into v_key,v_address from private.normalize_indian_whatsapp_phone('919876543210');
   if v_key<>'9876543210' then raise exception '91-prefixed phone normalization failed'; end if;
+  select indian_mobile_key,provider_address into v_key,v_address from private.normalize_indian_whatsapp_phone('+91 98765-43210');
+  if v_key<>'9876543210' then raise exception 'Allowlisted punctuation normalization failed'; end if;
   begin perform private.normalize_indian_whatsapp_phone('1234567890'); raise exception 'Invalid Indian mobile accepted';
   exception when raise_exception then if sqlerrm='Invalid Indian mobile accepted' then raise; end if; end;
+  begin perform private.normalize_indian_whatsapp_phone('abc9876543210'); raise exception 'Alphabetic phone contamination accepted';
+  exception when raise_exception then if sqlerrm='Alphabetic phone contamination accepted' then raise; end if; end;
+  begin perform private.normalize_indian_whatsapp_phone('98765abc43210'); raise exception 'Embedded alphabetic phone contamination accepted';
+  exception when raise_exception then if sqlerrm='Embedded alphabetic phone contamination accepted' then raise; end if; end;
+  begin perform private.normalize_indian_whatsapp_phone('98765/43210'); raise exception 'Unsupported phone punctuation accepted';
+  exception when raise_exception then if sqlerrm='Unsupported phone punctuation accepted' then raise; end if; end;
 end;
 $$;
 
@@ -110,13 +134,15 @@ insert into public.candidates(id,full_name,age,gender,mobile,current_location,di
   interview_available,consent,status,user_id,profile_status,profile_completion_status) values
 ('89300000-0000-0000-0001-000000000001','W7A Candidate',25,'Female','9876543210','Chennai','Chennai','Tamil Nadu','ITI','Fresher','Yes',true,'new','89300000-0000-0000-0000-000000000004','active','complete'),
 ('89300000-0000-0000-0001-000000000002','W7A Ambiguous One',26,'Male','9876543211','Pune','Pune','Maharashtra','Diploma','Experienced','Yes',true,'new',null,'active','complete'),
-('89300000-0000-0000-0001-000000000003','W7A Ambiguous Two',27,'Female','9876543211','Pune','Pune','Maharashtra','Graduate','Experienced','Yes',true,'new',null,'active','complete');
+('89300000-0000-0000-0001-000000000003','W7A Ambiguous Two',27,'Female','9876543211','Pune','Pune','Maharashtra','Graduate','Experienced','Yes',true,'new',null,'active','complete'),
+('89300000-0000-0000-0001-000000000004','W7A Detachable',28,'Male','9876543212','Delhi','Delhi','Delhi','12th','Fresher','Yes',true,'new',null,'active','complete');
 
 -- Server ingress/contact/message dedupe.
 set local role service_role;
 select set_config('w7a.contact',public.upsert_whatsapp_inbound_contact('+91 98765 43210')::text,true);
 select set_config('w7a.contact.duplicate',public.upsert_whatsapp_inbound_contact('919876543210')::text,true);
 select set_config('w7a.contact.ambiguous',public.upsert_whatsapp_inbound_contact('9876543211')::text,true);
+select set_config('w7a.contact.detachable',public.upsert_whatsapp_inbound_contact('9876543212')::text,true);
 select set_config('w7a.webhook.message',public.accept_whatsapp_webhook_event('message:wamid.w7a.1',repeat('a',64),'message','{"message_type":"text"}'::jsonb)::text,true);
 select set_config('w7a.webhook.message.duplicate',public.accept_whatsapp_webhook_event('message:wamid.w7a.1',repeat('a',64),'message','{"message_type":"text"}'::jsonb)::text,true);
 select set_config('w7a.inbound',public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
@@ -133,8 +159,27 @@ do $$ begin
   if (select c.resolution_status from public.whatsapp_contacts c where c.id=current_setting('w7a.contact.ambiguous')::uuid)<>'ambiguous'
      or (select c.candidate_id from public.whatsapp_contacts c where c.id=current_setting('w7a.contact.ambiguous')::uuid) is not null then
     raise exception 'Ambiguous Candidate phone did not fail closed'; end if;
+  if (select safe_text from public.whatsapp_inbound_messages where id=current_setting('w7a.inbound')::uuid) is not null then
+    raise exception 'Inbound free text was persisted'; end if;
+  begin perform public.accept_whatsapp_webhook_event('privacy',repeat('f',64),'unknown','{"aadhaar":"000000000000"}'::jsonb);
+    raise exception 'Sensitive webhook metadata accepted';
+  exception when raise_exception then if sqlerrm='Sensitive webhook metadata accepted' then raise; end if; end;
+  begin perform public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
+    'wamid.w7a.sensitive',now(),'flow',null,null,null,'{"bank_account":"0000"}'::jsonb);
+    raise exception 'Sensitive inbound metadata accepted';
+  exception when raise_exception then if sqlerrm='Sensitive inbound metadata accepted' then raise; end if; end;
 end $$;
 reset role;
+
+-- Candidate deletion detaches the contact without leaving a false resolved state; non-resolved linkage fails closed.
+delete from public.candidates where id='89300000-0000-0000-0001-000000000004';
+do $$ begin
+  if exists(select 1 from public.whatsapp_contacts where id=current_setting('w7a.contact.detachable')::uuid
+      and (candidate_id is not null or resolution_status<>'unresolved')) then raise exception 'Candidate deletion left an inconsistent WhatsApp contact'; end if;
+  begin update public.whatsapp_contacts set candidate_id='89300000-0000-0000-0001-000000000002',resolution_status='ambiguous'
+    where id=current_setting('w7a.contact.ambiguous')::uuid; raise exception 'Non-resolved contact accepted Candidate linkage';
+  exception when check_violation then null; when raise_exception then if sqlerrm='Non-resolved contact accepted Candidate linkage' then raise; end if; end;
+end $$;
 
 -- Establish explicit consent without using a browser grant.
 update public.whatsapp_contacts set marketing_consent_status='opted_in',transactional_contact_status='allowed',
@@ -149,10 +194,19 @@ select set_config('w7a.outbound.duplicate',public.enqueue_whatsapp_outbound_mess
 do $$ declare r record;
 begin
   if current_setting('w7a.outbound')<>current_setting('w7a.outbound.duplicate') then raise exception 'Outbound idempotency failed'; end if;
+  begin perform public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+    '89300000-0000-0000-0001-000000000001',null,'core_test','marketing','w7a_test_template','en','1',
+    '{"role":"Changed"}'::jsonb,'w7a-outbound-1',null,3); raise exception 'Conflicting outbound idempotency replay succeeded';
+  exception when raise_exception then if sqlerrm='Conflicting outbound idempotency replay succeeded' then raise; end if; end;
+  begin perform public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+    '89300000-0000-0000-0001-000000000001',null,'privacy_test','marketing','w7a_test_template','en','1',
+    '{"account_number":"0000"}'::jsonb,'w7a-sensitive-template',null,3); raise exception 'Sensitive template variables accepted';
+  exception when raise_exception then if sqlerrm='Sensitive template variables accepted' then raise; end if; end;
   select * into r from public.claim_whatsapp_outbound_batch('worker-w7a',1000,1);
   if r.message_id is distinct from current_setting('w7a.outbound')::uuid or r.attempt_count<>1 then raise exception 'Atomic bounded claim failed'; end if;
   begin perform public.mark_whatsapp_outbound_sent(r.message_id,'wrong-worker','wamid.outbound.1',now()); raise exception 'Wrong lease owner finalized send';
   exception when raise_exception then if sqlerrm='Wrong lease owner finalized send' then raise; end if; end;
+  perform public.mark_whatsapp_provider_call_started(r.message_id,'worker-w7a');
   perform public.mark_whatsapp_outbound_sent(r.message_id,'worker-w7a','wamid.outbound.1',now());
 end $$;
 
@@ -204,8 +258,40 @@ do $$ declare r record;
 begin
   select * into r from public.claim_whatsapp_outbound_batch('worker-reclaim',25,15) where message_id=current_setting('w7a.lease')::uuid;
   if r.attempt_count<>2 then raise exception 'Expired safe lease was not reclaimed'; end if;
-  perform public.mark_whatsapp_outbound_failure(r.message_id,'worker-reclaim','provider','ambiguous','ambiguous',null);
-  if (select last_error_category from public.whatsapp_outbound_messages where id=r.message_id)<>'ambiguous' then raise exception 'Ambiguous outcome was not quarantined'; end if;
+  perform public.mark_whatsapp_provider_call_started(r.message_id,'worker-reclaim');
+end $$;
+reset role;
+update public.whatsapp_outbound_messages set lease_expires_at=now()-interval '1 minute' where id=current_setting('w7a.lease')::uuid;
+set local role service_role;
+do $$ begin
+  if exists(select 1 from public.claim_whatsapp_outbound_batch('worker-must-not-resend',25,15)
+      where message_id=current_setting('w7a.lease')::uuid) then raise exception 'Ambiguous provider call was reclaimed'; end if;
+  if not exists(select 1 from public.whatsapp_outbound_messages where id=current_setting('w7a.lease')::uuid and state='failed'
+      and send_phase='reconciliation_required' and last_error_category='ambiguous_provider_outcome' and lease_owner is null) then
+    raise exception 'Expired provider call was not quarantined'; end if;
+end $$;
+
+select set_config('w7a.final_attempt',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+  '89300000-0000-0000-0001-000000000001',null,'final_attempt_test','transactional','w7a_final_template','en','1','{}','w7a-final-1',null,1)::text,true);
+do $$ declare r record; begin select * into r from public.claim_whatsapp_outbound_batch('worker-final',25,15)
+  where message_id=current_setting('w7a.final_attempt')::uuid; end $$;
+reset role;
+update public.whatsapp_outbound_messages set lease_expires_at=now()-interval '1 minute' where id=current_setting('w7a.final_attempt')::uuid;
+set local role service_role;
+do $$ begin
+  perform public.claim_whatsapp_outbound_batch('worker-final-check',25,15);
+  if not exists(select 1 from public.whatsapp_outbound_messages where id=current_setting('w7a.final_attempt')::uuid
+      and state='failed' and send_phase='terminal' and last_error_category='attempts_exhausted' and lease_owner is null) then
+    raise exception 'Final-attempt expired claim remained stranded'; end if;
+end $$;
+
+select set_config('w7a.long_template',public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+  '89300000-0000-0000-0001-000000000001',null,'template_validation','transactional',repeat('a',300),'en','1','{}',
+  'w7a-long-template-1',null,1)::text,true);
+do $$ declare r record; begin
+  select * into r from public.claim_whatsapp_outbound_batch('worker-long-template',25,15)
+    where message_id=current_setting('w7a.long_template')::uuid;
+  perform public.mark_whatsapp_outbound_failure(r.message_id,'worker-long-template','test','completed','permanent',null);
 end $$;
 
 -- Enqueue succeeds while opted in, then STOP suppression prevents claim and future marketing enqueue.
@@ -255,6 +341,8 @@ begin
   if exists(select 1 from public.list_whatsapp_recent_outbound(null,10,0) r where r.contact_masked not like '+91XXXXXX____') then raise exception 'Admin outbound phone was not masked'; end if;
   if exists(select 1 from public.list_whatsapp_failed_outbound(10,0) r where r.contact_masked not like '+91XXXXXX____') then raise exception 'Admin failed phone was not masked'; end if;
   if not exists(select 1 from public.get_whatsapp_contact_communication_status(current_setting('w7a.contact')::uuid)) then raise exception 'Admin contact projection failed'; end if;
+  if pg_catalog.pg_get_function_result('public.list_whatsapp_recent_inbound(integer,integer)'::regprocedure) ilike '%safe_text%' then
+    raise exception 'Admin inbound projection exposes arbitrary message text'; end if;
 end $$;
 reset role;
 
@@ -270,7 +358,11 @@ begin
     and (a.metadata::text ilike '%synthetic hello%' or a.metadata::text ilike '%provider_address%' or a.metadata::text ilike '%token%'
       or a.metadata::text ilike '%aadhaar%' or a.metadata::text ilike '%bank%')) then raise exception 'Sensitive WhatsApp audit content detected'; end if;
   if not exists(select 1 from public.audit_logs a where a.action='whatsapp.contact_suppressed' and a.entity_id=current_setting('w7a.contact')::uuid)
-     or (select count(*) from public.audit_logs a where a.action='whatsapp.outbound_failed')<2 then raise exception 'W7A control/failure audit events are incomplete'; end if;
+     or not exists(select 1 from public.audit_logs a where a.action='whatsapp.outbound_failed' and a.entity_id=current_setting('w7a.retry')::uuid)
+     or not exists(select 1 from public.audit_logs a where a.action='whatsapp.outbound_failed' and a.entity_id=current_setting('w7a.lease')::uuid
+       and a.metadata->>'error_category'='ambiguous_provider_outcome')
+     or not exists(select 1 from public.audit_logs a where a.action='whatsapp.outbound_failed' and a.entity_id=current_setting('w7a.final_attempt')::uuid
+       and a.metadata->>'error_category'='attempts_exhausted') then raise exception 'Fixture-scoped W7A control/failure audit events are incomplete'; end if;
   if exists(select 1 from public.whatsapp_webhook_events e where e.redacted_payload::text ilike '%synthetic hello%') then
     raise exception 'Webhook ledger retained message content'; end if;
   if (select marketing_consent_status from public.whatsapp_contacts where id=current_setting('w7a.contact')::uuid)<>'opted_out'

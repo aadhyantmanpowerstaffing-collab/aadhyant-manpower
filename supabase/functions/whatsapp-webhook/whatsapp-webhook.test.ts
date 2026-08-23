@@ -22,7 +22,12 @@ test("GET verification accepts only the exact token and challenge", async () => 
   const accepted: AcceptedWebhookEvent[] = [];
   const valid = await handleWhatsAppWebhook(new Request("https://x.test/?hub.mode=subscribe&hub.verify_token=unit-test-verify&hub.challenge=42"), environment, async (event) => { accepted.push(event); });
   assert.equal(valid.status, 200); assert.equal(await valid.text(), "42"); assert.equal(accepted.length, 0);
-  for (const url of ["https://x.test/?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=42", "https://x.test/?hub.mode=subscribe&hub.challenge=42"]) {
+  for (const url of [
+    "https://x.test/?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=42",
+    "https://x.test/?hub.mode=subscribe&hub.challenge=42",
+    "https://x.test/?hub.mode=wrong&hub.verify_token=unit-test-verify&hub.challenge=42",
+    "https://x.test/?hub.mode=subscribe&hub.verify_token=unit-test-verify",
+  ]) {
     assert.equal((await handleWhatsAppWebhook(new Request(url), environment, async () => {})).status, 403);
   }
 });
@@ -76,6 +81,29 @@ test("parser normalizes status events and safely ignores unknown envelopes", () 
   assert.deepEqual(parseWhatsAppWebhook({ object: "unknown" }), []);
 });
 
+test("parser skips malformed message and status members while preserving valid siblings", () => {
+  const payload = envelope({
+    messages: [null, 7, [], { id: "valid-message", from: "919876543210", type: "text", text: { body: "Valid" } }],
+    statuses: [null, "bad", [], { id: "valid-status", status: "delivered", timestamp: "1720000001" }],
+  });
+  const events = parseWhatsAppWebhook(payload);
+  assert.deepEqual(events.map((event) => event.providerEventKey), ["message:valid-message", "status:valid-status:delivered:2024-07-03T09:46:41.000Z"]);
+});
+
+test("Flow parser safely handles malformed, null and wrong-shape response JSON", () => {
+  const flow = (id: string, response_json: unknown) => ({
+    id,
+    from: "919876543210",
+    type: "interactive",
+    interactive: { type: "nfm_reply", nfm_reply: { name: "flow", response_json } },
+  });
+  const events = parseWhatsAppWebhook(envelope({ messages: [flow("f1", "{"), flow("f2", "null"), flow("f3", "[]"), flow("f4", { bank_account: "must-not-copy", full_name: "Safe" })] }));
+  assert.equal(events.length, 4);
+  assert.deepEqual(events.slice(0, 3).map((event) => event.redactedResponse), [{}, {}, {}]);
+  assert.deepEqual(events[3].redactedResponse, { full_name: "Safe" });
+  assert.equal(JSON.stringify(events).includes("must-not-copy"), false);
+});
+
 test("valid POST durably submits normalized event summaries and duplicates retain a stable key", async () => {
   const payload = envelope({ messages: [{ id: "wamid.same", from: "919876543210", type: "text", text: { body: "Private body is not included in ledger summary" } }] });
   const accepted: AcceptedWebhookEvent[] = [];
@@ -90,7 +118,10 @@ test("phone normalization accepts canonical Indian forms and rejects invalid val
   for (const value of ["9876543210", "919876543210", "+91 98765 43210"]) {
     assert.deepEqual(normalizeIndianWhatsAppPhone(value), { indianMobileKey: "9876543210", providerAddress: "+919876543210" });
   }
-  for (const value of ["", "1234567890", "+1 9876543210", "91987654321"]) assert.throws(() => normalizeIndianWhatsAppPhone(value));
+  assert.deepEqual(normalizeIndianWhatsAppPhone("+91 98765-43210"), { indianMobileKey: "9876543210", providerAddress: "+919876543210" });
+  for (const value of ["", "1234567890", "+1 9876543210", "91987654321", "abc9876543210", "98765abc43210", "98765/43210"]) {
+    assert.throws(() => normalizeIndianWhatsAppPhone(value));
+  }
 });
 
 test("fake provider returns deterministic safe outcomes without external calls", async () => {

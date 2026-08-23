@@ -10,6 +10,11 @@ const bounded = (value: unknown, limit: number): string | undefined => {
   return text ? text.slice(0, limit) : undefined;
 };
 
+const record = (value: unknown): Record<string, unknown> | undefined =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+
 const timestamp = (value: unknown): string | undefined => {
   const seconds = Number(value);
   if (!Number.isFinite(seconds) || seconds <= 0) return undefined;
@@ -29,30 +34,31 @@ function parseMessage(message: Record<string, unknown>): NormalizedWebhookEvent 
   };
 
   if (rawType === "text") {
-    const text = message.text as Record<string, unknown> | undefined;
+    const text = record(message.text);
     return { ...base, category: "message", messageType: "text", safeText: bounded(text?.body, MAX_SAFE_TEXT) };
   }
   if (rawType === "button") {
-    const button = message.button as Record<string, unknown> | undefined;
+    const button = record(message.button);
     return { ...base, category: "message", messageType: "button", safeText: bounded(button?.text, MAX_SAFE_TEXT), actionId: bounded(button?.payload, MAX_ACTION_ID) };
   }
   if (rawType === "interactive") {
-    const interactive = message.interactive as Record<string, unknown> | undefined;
+    const interactive = record(message.interactive);
     const subtype = bounded(interactive?.type, 40);
     if (subtype === "button_reply") {
-      const reply = interactive?.button_reply as Record<string, unknown> | undefined;
+      const reply = record(interactive?.button_reply);
       return { ...base, category: "message", messageType: "button", safeText: bounded(reply?.title, MAX_SAFE_TEXT), actionId: bounded(reply?.id, MAX_ACTION_ID) };
     }
     if (subtype === "list_reply") {
-      const reply = interactive?.list_reply as Record<string, unknown> | undefined;
+      const reply = record(interactive?.list_reply);
       return { ...base, category: "message", messageType: "list", safeText: bounded(reply?.title, MAX_SAFE_TEXT), actionId: bounded(reply?.id, MAX_ACTION_ID) };
     }
     if (subtype === "nfm_reply") {
-      const reply = interactive?.nfm_reply as Record<string, unknown> | undefined;
+      const reply = record(interactive?.nfm_reply);
       let response: Record<string, unknown> = {};
       try {
         const raw = reply?.response_json;
-        response = typeof raw === "string" ? JSON.parse(raw) : ((raw as Record<string, unknown>) ?? {});
+        const parsed: unknown = typeof raw === "string" ? JSON.parse(raw) : raw;
+        response = record(parsed) ?? {};
       } catch {
         response = {};
       }
@@ -75,7 +81,7 @@ function parseStatus(status: Record<string, unknown>): NormalizedWebhookEvent | 
   if (!id || !state || !["sent", "delivered", "read", "failed"].includes(state)) return null;
   const providerTimestamp = timestamp(status.timestamp);
   const errors = Array.isArray(status.errors) ? status.errors : [];
-  const error = errors[0] as Record<string, unknown> | undefined;
+  const error = record(errors[0]);
   return {
     providerEventKey: `status:${id}:${state}:${providerTimestamp ?? "unknown"}`,
     category: "message_status",
@@ -93,21 +99,26 @@ export function parseWhatsAppWebhook(payload: unknown): NormalizedWebhookEvent[]
   if (root.object !== "whatsapp_business_account" || !Array.isArray(root.entry)) return [];
   const events: NormalizedWebhookEvent[] = [];
   for (const entry of root.entry) {
-    if (!entry || typeof entry !== "object") continue;
-    const changes = (entry as Record<string, unknown>).changes;
+    const entryRecord = record(entry);
+    if (!entryRecord) continue;
+    const changes = entryRecord.changes;
     if (!Array.isArray(changes)) continue;
     for (const change of changes) {
-      const value = (change as Record<string, unknown>)?.value as Record<string, unknown> | undefined;
+      const value = record(record(change)?.value);
       if (!value) continue;
       if (Array.isArray(value.messages)) {
         for (const message of value.messages) {
-          const event = parseMessage(message as Record<string, unknown>);
+          const messageRecord = record(message);
+          if (!messageRecord) continue;
+          const event = parseMessage(messageRecord);
           if (event) events.push(event);
         }
       }
       if (Array.isArray(value.statuses)) {
         for (const status of value.statuses) {
-          const event = parseStatus(status as Record<string, unknown>);
+          const statusRecord = record(status);
+          if (!statusRecord) continue;
+          const event = parseStatus(statusRecord);
           if (event) events.push(event);
         }
       }
