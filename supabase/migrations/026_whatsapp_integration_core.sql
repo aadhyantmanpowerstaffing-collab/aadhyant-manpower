@@ -204,9 +204,9 @@ begin
     if v_count>50 or pg_catalog.char_length(v_key) not between 1 and 80 then return false; end if;
     v_normalized_key:=pg_catalog.lower(pg_catalog.regexp_replace(v_key,'[^a-zA-Z0-9]','','g'));
     if v_normalized_key in ('aadhaar','aadhar','aadhaarnumber','aadharnumber','aadhaarfingerprint','aadharfingerprint',
-      'bankaccount','bankaccountnumber','bankdetails','accountnumber','uan','uannumber','esic','esicnumber','esicip',
+      'bankaccount','bankaccountnumber','bankdetails','accountnumber','accountno','uan','uannumber','esic','esicnumber','esicip',
       'documenturl','documenturi','documentpath','documentcontent','fileurl','storagepath','storageobject','signedurl',
-      'accesstoken','servicerolekey','appsecret') then return false; end if;
+      'accesstoken','token','servicerolekey','appsecret','clientsecret','secret') then return false; end if;
     if pg_catalog.jsonb_typeof(v_item) not in ('string','number','boolean','null') then return false; end if;
     if pg_catalog.jsonb_typeof(v_item)='string' and pg_catalog.char_length(v_item #>> '{}')>500 then return false; end if;
   end loop;

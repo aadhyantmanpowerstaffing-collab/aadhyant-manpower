@@ -164,18 +164,41 @@ do $$ begin
   begin perform public.accept_whatsapp_webhook_event('privacy',repeat('f',64),'unknown','{"aadhaar":"000000000000"}'::jsonb);
     raise exception 'Sensitive webhook metadata accepted';
   exception when raise_exception then if sqlerrm='Sensitive webhook metadata accepted' then raise; end if; end;
+  begin perform public.accept_whatsapp_webhook_event('privacy-account-no',repeat('e',64),'unknown','{"accountNo":"synthetic"}'::jsonb);
+    raise exception 'Account-number webhook metadata accepted';
+  exception when raise_exception then if sqlerrm='Account-number webhook metadata accepted' then raise; end if; end;
   begin perform public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
     'wamid.w7a.sensitive',now(),'flow',null,null,null,'{"bank_account":"0000"}'::jsonb);
     raise exception 'Sensitive inbound metadata accepted';
   exception when raise_exception then if sqlerrm='Sensitive inbound metadata accepted' then raise; end if; end;
+  begin perform public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
+    'wamid.w7a.access-token',now(),'flow',null,null,null,'{"accessToken":"synthetic"}'::jsonb);
+    raise exception 'Access-token inbound metadata accepted';
+  exception when raise_exception then if sqlerrm='Access-token inbound metadata accepted' then raise; end if; end;
+  begin perform public.record_whatsapp_inbound_message(current_setting('w7a.webhook.message')::uuid,current_setting('w7a.contact')::uuid,
+    'wamid.w7a.client-secret',now(),'flow',null,null,null,'{"clientSecret":"synthetic"}'::jsonb);
+    raise exception 'Client-secret inbound metadata accepted';
+  exception when raise_exception then if sqlerrm='Client-secret inbound metadata accepted' then raise; end if; end;
 end $$;
 reset role;
 
 -- Candidate deletion detaches the contact without leaving a false resolved state; non-resolved linkage fails closed.
+update public.whatsapp_contacts set marketing_consent_status='opted_out',transactional_contact_status='suppressed',
+  consent_source='synthetic_test',consent_scope='all',consent_recorded_at=now(),consent_policy_version='w7a-test-1',
+  opted_out_at=now(),opt_out_source='synthetic_test',opt_out_reason_category='test_cleanup'
+  where id=current_setting('w7a.contact.detachable')::uuid;
 delete from public.candidates where id='89300000-0000-0000-0001-000000000004';
 do $$ begin
-  if exists(select 1 from public.whatsapp_contacts where id=current_setting('w7a.contact.detachable')::uuid
-      and (candidate_id is not null or resolution_status<>'unresolved')) then raise exception 'Candidate deletion left an inconsistent WhatsApp contact'; end if;
+  if (select count(*) from public.whatsapp_contacts where id=current_setting('w7a.contact.detachable')::uuid)<>1 then
+    raise exception 'Candidate deletion did not preserve the exact WhatsApp contact'; end if;
+  if not exists(select 1 from public.whatsapp_contacts where id=current_setting('w7a.contact.detachable')::uuid
+      and provider='whatsapp' and provider_address='+919876543212' and indian_mobile_key='9876543212'
+      and candidate_id is null and resolution_status='unresolved'
+      and marketing_consent_status='opted_out' and transactional_contact_status='suppressed'
+      and consent_source='synthetic_test' and consent_scope='all' and consent_policy_version='w7a-test-1'
+      and consent_recorded_at is not null and opted_out_at is not null
+      and opt_out_source='synthetic_test' and opt_out_reason_category='test_cleanup') then
+    raise exception 'Candidate deletion changed contact identity, state, or suppression evidence'; end if;
   begin update public.whatsapp_contacts set candidate_id='89300000-0000-0000-0001-000000000002',resolution_status='ambiguous'
     where id=current_setting('w7a.contact.ambiguous')::uuid; raise exception 'Non-resolved contact accepted Candidate linkage';
   exception when check_violation then null; when raise_exception then if sqlerrm='Non-resolved contact accepted Candidate linkage' then raise; end if; end;
@@ -202,11 +225,22 @@ begin
     '89300000-0000-0000-0001-000000000001',null,'privacy_test','marketing','w7a_test_template','en','1',
     '{"account_number":"0000"}'::jsonb,'w7a-sensitive-template',null,3); raise exception 'Sensitive template variables accepted';
   exception when raise_exception then if sqlerrm='Sensitive template variables accepted' then raise; end if; end;
+  begin perform public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+    '89300000-0000-0000-0001-000000000001',null,'privacy_test','marketing','w7a_test_template','en','1',
+    '{"token":"synthetic"}'::jsonb,'w7a-token-template',null,3); raise exception 'Token template variable accepted';
+  exception when raise_exception then if sqlerrm='Token template variable accepted' then raise; end if; end;
+  begin perform public.enqueue_whatsapp_outbound_message(current_setting('w7a.contact')::uuid,
+    '89300000-0000-0000-0001-000000000001',null,'privacy_test','marketing','w7a_test_template','en','1',
+    '{"secret":"synthetic"}'::jsonb,'w7a-secret-template',null,3); raise exception 'Secret template variable accepted';
+  exception when raise_exception then if sqlerrm='Secret template variable accepted' then raise; end if; end;
   select * into r from public.claim_whatsapp_outbound_batch('worker-w7a',1000,1);
   if r.message_id is distinct from current_setting('w7a.outbound')::uuid or r.attempt_count<>1 then raise exception 'Atomic bounded claim failed'; end if;
+  perform public.mark_whatsapp_provider_call_started(r.message_id,'worker-w7a');
   begin perform public.mark_whatsapp_outbound_sent(r.message_id,'wrong-worker','wamid.outbound.1',now()); raise exception 'Wrong lease owner finalized send';
   exception when raise_exception then if sqlerrm='Wrong lease owner finalized send' then raise; end if; end;
-  perform public.mark_whatsapp_provider_call_started(r.message_id,'worker-w7a');
+  if not exists(select 1 from public.whatsapp_outbound_messages o where o.id=r.message_id
+      and o.state='sending' and o.send_phase='provider_call_started' and o.lease_owner='worker-w7a'
+      and o.provider_message_id is null) then raise exception 'Wrong-worker attempt changed outbound state'; end if;
   perform public.mark_whatsapp_outbound_sent(r.message_id,'worker-w7a','wamid.outbound.1',now());
 end $$;
 
