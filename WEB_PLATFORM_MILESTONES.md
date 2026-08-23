@@ -109,7 +109,7 @@ Exit: replayed Meta fixtures create one event; invalid signatures never enqueue;
 
 ## W6 — Candidate Portal and Document Onboarding Foundation
 
-Implementation status: COMPLETE locally. Migrations 023-025 are installed and validated on dedicated NONPROD staging. Checkpoints 025-028, required W2-W5/migration-015/legacy regressions, 116/116 frontend tests, Candidate/Admin live-browser validation, private Storage upload/replace, responsive and BFCache checks, and manifest-bound zero-residue cleanup pass. The generic authenticated first-time Candidate onboarding path is intentional and grants no protected existing Candidate scope before successful onboarding. All six Auth fixtures, database fixtures, and browser Storage artifacts were removed with zero Auth identity/session, database, Storage, orphan, or cross-tenant residue; the unrelated staging baseline and private bucket/policies remain intact. Validated implementation HEAD: `fa2d2595d38bbc1edc3174ec975e413de51e0fe9`. Production was not contacted, no deployment occurred, and W7 was not started. Remote closure remains pending separate ahead-range review, authorized normal non-force push, and remote HEAD verification.
+Implementation status: COMPLETE locally with no remaining technical blocker. Migrations 023-025 are installed and validated on dedicated NONPROD staging. Checkpoints 025-028, required W2-W5/migration-015/legacy regressions, 121/121 frontend tests, Candidate/Admin live-browser validation, private Storage upload/replace, responsive and BFCache checks, and manifest-bound zero-residue cleanup pass. The focused final Admin retest proved Uploaded -> Start Review -> Under Verification -> Verified through the canonical RPC/state projection, with correct review-start/final attribution and final-state controls. The generic authenticated first-time Candidate onboarding path is intentional and grants no protected existing Candidate scope before successful onboarding. The original six-user browser fixture and the focused two-user retest fixture were fully removed with zero Auth user/identity/session, database, audit, Storage, orphan, or cross-tenant residue; the unrelated staging baseline and private bucket/policies remain intact. The implementation was reviewed through local HEAD `ddf55133bf0c44c2e4817ba71924cad71819f6b2` before the final documentation reconciliation. Production was not contacted, no deployment occurred, and W7 was not started. Remote closure remains pending a renewed complete ahead-range review, separately authorized normal non-force push, and remote HEAD verification.
 
 Deliverables:
 
@@ -118,7 +118,7 @@ Deliverables:
 - own-profile/preferences, approved opportunities, canonical Apply, applications, interviews, and joining progress;
 - normalized private Candidate document metadata and private Storage bucket boundary;
 - candidate-owned document upload/view/replace and joining-document checklist;
-- restricted Admin document verification/re-upload and auditable documentation override;
+- restricted Admin review start, verification/re-upload, and auditable documentation override with state-specific controls;
 - masked bank/PF/ESIC onboarding foundation without filing or external verification;
 - Candidate/Company/Contractor/Admin portal separation, BFCache protection, responsive/accessibility tests.
 
