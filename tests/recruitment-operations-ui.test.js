@@ -423,3 +423,39 @@ test('candidate detail has safe empty states and no identifier presentation', ()
   assert.doesNotMatch(detailSection,/(?:client|supabase)\.from\s*\(/);
   assert.match(detailSection,/returnFocus\?\.focus\?\.\(\)/);
 });
+
+test('uploaded Candidate documents expose only Start Review as a lifecycle action', () => {
+  const reviewSection=source.slice(source.indexOf('const loadDocuments'),source.indexOf('const footer',source.indexOf('const loadDocuments')));
+  const uploaded=reviewSection.slice(reviewSection.indexOf("record.verification_status==='uploaded'"),reviewSection.indexOf("record.verification_status==='under_verification'"));
+  assert.match(uploaded,/Start Review/);
+  assert.doesNotMatch(uploaded,/Mark Verified|Request Re-upload/);
+});
+
+test('Start Review uses the existing RPC and reloads the canonical inventory', () => {
+  const reviewSection=source.slice(source.indexOf('const loadDocuments'),source.indexOf('const footer',source.indexOf('const loadDocuments')));
+  assert.match(reviewSection,/Start Review[\s\S]*admin_review_candidate_document[\s\S]*p_status:'under_verification',p_feedback:null[\s\S]*await loadDocuments\(\)/);
+  assert.match(reviewSection,/loadDocuments=async\(\)=>\{documents\.replaceChildren[\s\S]*admin_list_candidate_documents/);
+});
+
+test('under-verification Candidate documents expose only valid final review actions', () => {
+  const reviewSection=source.slice(source.indexOf('const loadDocuments'),source.indexOf('const footer',source.indexOf('const loadDocuments')));
+  const underReview=reviewSection.slice(reviewSection.indexOf("record.verification_status==='under_verification'"),reviewSection.indexOf('card.append(actions)'));
+  assert.match(underReview,/Mark Verified/);
+  assert.match(underReview,/Request Re-upload/);
+  assert.doesNotMatch(underReview,/Start Review/);
+  assert.match(underReview,/maxLength=1000/);
+  assert.match(underReview,/feedback\.value\.trim\(\)\.length<5/);
+});
+
+test('final Candidate document states expose no same-row lifecycle actions', () => {
+  const reviewSection=source.slice(source.indexOf('const loadDocuments'),source.indexOf('const footer',source.indexOf('const loadDocuments')));
+  assert.deepEqual(Array.from(reviewSection.matchAll(/record\.verification_status==='([^']+)'/g),match=>match[1]),['uploaded','under_verification']);
+  assert.match(reviewSection,/View Securely/);
+});
+
+test('Candidate document review UI remains RPC-only and privacy bounded', () => {
+  const reviewSection=source.slice(source.indexOf('const loadDocuments'),source.indexOf('const footer',source.indexOf('const loadDocuments')));
+  assert.doesNotMatch(reviewSection,/(?:client|supabase)\.from\s*\(/);
+  assert.doesNotMatch(reviewSection,/storage_object_name|aadhaar|bank_account/i);
+  assert.match(reviewSection,/Document verification is restricted to approved Admin roles/);
+});
