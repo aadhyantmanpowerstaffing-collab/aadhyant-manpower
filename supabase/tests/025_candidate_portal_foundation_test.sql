@@ -109,6 +109,7 @@ do $$ declare ctx record; profile record; onboarding record; app uuid; first_doc
   if onboarding.bank_account_masked<>'XXXX XXXX 9012' or onboarding.uan_masked<>'XXXXXXXX9012' or onboarding.esic_ip_masked not like '%7890' then raise exception 'Bank/PF/ESIC masking failed'; end if;
   first_doc:=public.register_candidate_document('pan','89000000-0000-0000-0000-000000000001/89000000-0000-0000-0004-000000000002/pan.pdf','pan.pdf','application/pdf',2048);
   replacement_doc:=public.register_candidate_document('pan','89000000-0000-0000-0000-000000000001/89000000-0000-0000-0004-000000000003/pan.pdf','pan-updated.pdf','application/pdf',3072);
+  perform set_config('w6.replacement_document_id',replacement_doc::text,true);
   if first_doc=replacement_doc or exists(select 1 from public.list_candidate_portal_documents() d where d.document_id=first_doc) or not exists(select 1 from public.get_candidate_document_access(replacement_doc)) then raise exception 'Document replacement/access contract failed'; end if;
   if (select count(*) from public.list_candidate_job_opportunities(null,25,0))<>1 then raise exception 'Recruitment-ready opportunity filter failed'; end if;
   app:=public.apply_candidate_job('AAD-2096-000001');perform set_config('w6.application_id',app::text,true);
@@ -192,18 +193,49 @@ do $$ begin
 end $$;
 
 select set_config('request.jwt.claim.sub','89000000-0000-0000-0000-000000000004',true);
-do $$ declare reviewed record; begin
+do $$ begin
   if public.get_candidate_onboarding_eligibility() then raise exception 'Internal Admin was eligible for Candidate onboarding'; end if;
   if (select count(*) from public.admin_list_candidate_documents('89000000-0000-0000-0001-000000000001'))<>2 then raise exception 'Admin document inventory failed'; end if;
+  begin perform public.admin_review_candidate_document('89000000-0000-0000-0003-000000000001','verified',null);
+    raise exception 'Direct uploaded document verification was accepted';
+  exception when raise_exception then if sqlerrm='Direct uploaded document verification was accepted' then raise; end if; end;
+  if not public.admin_review_candidate_document('89000000-0000-0000-0003-000000000001','under_verification',null) then raise exception 'Admin document review start failed'; end if;
+end $$;
+reset role;
+do $$ begin
+  if not exists(select 1 from public.candidate_documents d where d.id='89000000-0000-0000-0003-000000000001'
+      and d.verification_status='under_verification' and d.review_started_at is not null
+      and d.review_started_by='89000000-0000-0000-0000-000000000004'
+      and d.reviewed_at is null and d.reviewed_by is null and d.verified_at is null and d.verified_by is null) then
+    raise exception 'Admin document review-start attribution failed'; end if;
+end $$;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','89000000-0000-0000-0000-000000000004',true);
+do $$ declare reviewed record; begin
   if not public.admin_review_candidate_document('89000000-0000-0000-0003-000000000001','verified',null) then raise exception 'Admin document verification failed'; end if;
-  if not public.admin_review_candidate_document('89000000-0000-0000-0003-000000000001','reupload_required','Upload a clearer synthetic document image.') then raise exception 'Admin document review failed'; end if;
+  if not public.admin_review_candidate_document(current_setting('w6.replacement_document_id')::uuid,'under_verification',null) then raise exception 'Admin replacement document review start failed'; end if;
+  if not public.admin_review_candidate_document(current_setting('w6.replacement_document_id')::uuid,'reupload_required','Upload a clearer synthetic document image.') then raise exception 'Admin document review failed'; end if;
   select * into reviewed from public.admin_list_candidate_documents('89000000-0000-0000-0001-000000000001') d
-    where d.document_id='89000000-0000-0000-0003-000000000001';
+    where d.document_id=current_setting('w6.replacement_document_id')::uuid;
   if reviewed.verification_status<>'reupload_required' or reviewed.verification_feedback is null then raise exception 'Document review persistence failed'; end if;
   if not public.admin_set_candidate_documentation_override('89000000-0000-0000-0001-000000000001',true,'Synthetic operational exception approved for checkpoint.') then raise exception 'Documentation override failed'; end if;
 end $$;
 
 reset role;
+do $$ begin
+  if not exists(select 1 from public.candidate_documents d where d.id='89000000-0000-0000-0003-000000000001'
+      and d.verification_status='verified' and d.review_started_at is not null
+      and d.review_started_by='89000000-0000-0000-0000-000000000004'
+      and d.reviewed_at is not null and d.reviewed_by='89000000-0000-0000-0000-000000000004'
+      and d.verified_at=d.reviewed_at and d.verified_by=d.reviewed_by) then
+    raise exception 'Admin final document verification attribution failed'; end if;
+  if not exists(select 1 from public.candidate_documents d where d.id=current_setting('w6.replacement_document_id')::uuid
+      and d.verification_status='reupload_required' and d.review_started_at is not null
+      and d.review_started_by='89000000-0000-0000-0000-000000000004'
+      and d.reviewed_at is not null and d.reviewed_by='89000000-0000-0000-0000-000000000004'
+      and d.verified_at is null and d.verified_by is null) then
+    raise exception 'Admin re-upload review attribution failed'; end if;
+end $$;
 set local role anon;
 do $$ begin
   begin perform public.get_candidate_portal_context();raise exception 'Anonymous accessed Candidate Portal';exception when insufficient_privilege then null; when raise_exception then if sqlerrm='Anonymous accessed Candidate Portal' then raise;end if;end;
