@@ -1,6 +1,8 @@
 # W7A WhatsApp Integration Core
 
-Status: static implementation only. Migration 026 is not applied, the Edge Function is not deployed, Meta was not contacted, and no message was sent.
+Status: migration 026 is installed only on dedicated NONPROD staging; corrective migration 027 is static and not applied. The Edge Function is not deployed, Meta was not contacted, and no message was sent.
+
+NONPROD runtime validation subsequently installed immutable migration 026 and exposed PostgreSQL special expressions that had been incorrectly qualified as ordinary `pg_catalog` functions. Corrective migration 027 replaces only the affected W7A function definitions with PostgreSQL-compatible unqualified `coalesce`, `greatest`, `least`, and `nullif` expressions. It does not change W7A authorization, privacy, idempotency, queue, consent, or delivery contracts. Migration 027 and its focused checkpoint remain subject to separate static review and NONPROD authorization.
 
 ## Scope
 
