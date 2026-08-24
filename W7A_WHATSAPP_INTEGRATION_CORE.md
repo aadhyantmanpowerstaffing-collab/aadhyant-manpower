@@ -1,6 +1,6 @@
 # W7A WhatsApp Integration Core
 
-Status: database/runtime-core validation is COMPLETE on dedicated NONPROD staging. Immutable migration 026 and upgrade-safe corrective migration 027 are installed, checkpoints 029 and 030 pass, required checkpoints 011–028 pass 18/18, W7A unit tests pass 12/12, and the frontend baseline passes 121/121. All checkpoint fixtures rolled back with zero synthetic, orphan, or cross-tenant residue. The Edge Function is not deployed or runtime-validated in Deno/Supabase Edge, Meta live validation has not occurred, production was not contacted, and no message was sent. W7A is not yet Meta-production-ready.
+Status: W7A database/runtime core and NONPROD Edge validation are COMPLETE. Immutable migration 026 and upgrade-safe corrective migration 027 are installed, checkpoints 029 and 030 pass, required checkpoints 011–028 pass 18/18, and the frontend baseline passes 121/121. The NONPROD `whatsapp-webhook` is deployed and ACTIVE; signature rejection, GET verification, durable webhook acceptance, inbound orchestration with local Edge tests, and real signed status-callback acceptance have been validated. Production was not contacted. Full real inbound live delivery is not claimed because of the Meta test-number limitation documented below.
 
 NONPROD runtime validation of immutable migration 026 exposed PostgreSQL special expressions that had been incorrectly qualified as ordinary `pg_catalog` functions. Upgrade-safe migration 027 replaces only the affected W7A function definitions with PostgreSQL-compatible unqualified `coalesce`, `greatest`, `least`, and `nullif` expressions. Migration 026 remained unchanged, and migration 027 changes no W7A authorization, privacy, idempotency, queue, consent, or delivery semantics.
 
@@ -80,9 +80,12 @@ Every W7A SECURITY DEFINER function has `search_path = ''`, uses schema-qualifie
 - constant-time `X-Hub-Signature-256` verification before JSON parsing;
 - deterministic event keys and redacted event summaries;
 - durable acceptance through `accept_whatsapp_webhook_event`;
+- accept-first status orchestration through the existing `record_whatsapp_message_event` RPC after a service-role lookup by provider message ID;
 - prompt `EVENT_RECEIVED` acknowledgement.
 
 It does not call Graph, create Candidates/applications, match jobs, or send reminders. Secrets are read only from the server environment and are not logged or echoed.
+
+Status callbacks for `sent`, `delivered`, `read`, and `failed` are signature-verified and accepted into the webhook ledger before projection. The Edge receiver resolves exactly one outbound message using the provider message ID and delegates the immutable event insert and monotonic state transition to `record_whatsapp_message_event`; it performs no direct table write. Exact duplicates and out-of-order callbacks remain governed by the database idempotency and monotonic projection contract. In particular, sent cannot regress delivered/read, delivered cannot regress read, and late failure cannot regress delivered/read.
 
 ## Provider adapter
 
@@ -111,16 +114,20 @@ Required legacy and W2–W6 checkpoints 011–028 pass 18/18. Checkpoint 025 spe
 
 The installed runtime posture contains exactly five W7A tables and 21 W7A functions. Twenty functions are `SECURITY DEFINER`, all 20 use an empty `search_path`, all five tables have RLS enabled, browser base-table grants are zero, server mutations remain browser-denied, and the five Admin read projections remain narrow. Runtime tests validate strict phone normalization, Candidate detach behavior, consent/suppression, webhook and inbound deduplication, structured sensitive-key rejection, outbound idempotency, bounded claims, safe lease/retry behavior, provider-call ambiguity quarantine, final-attempt terminalization, worker ownership, monotonic delivery, immutable message events, safe audit metadata, and omission of arbitrary inbound text from Admin projections. Final verification found zero synthetic residue and no orphan or cross-tenant residue.
 
-## Remaining validation and deployment prerequisites
+## Meta test-number live inbound limitation
+
+Meta Dashboard proved that controlled Retry 3 generated a real text event on the `messages` webhook field in the correct approved test-number/WABA context at `2026-08-24 07:13:32 IST` (`01:43:32 UTC`). A bounded Supabase live observation was already active and covered `01:42:15.479825` through `01:47:10.610994 UTC`. No matching Supabase POST, Edge invocation, request/execution ID, HTTP response, webhook-ledger row, contact, or inbound-message row was recorded. The same NONPROD endpoint has independently accepted signed status callbacks.
+
+No concrete application defect was established for the missing ingress. The unresolved boundary is Meta event generation to recorded Supabase ingress. Repeated test-number retry loops were stopped because they no longer distinguished the remaining causes. Full real inbound validation is deferred to a future controlled test with a real registered number or to Meta-side delivery-history evidence/resolution. This limitation does not invalidate local Edge orchestration, database contracts, signature verification, webhook GET verification, or the status-callback acceptance already proven. W7A does not claim a full real inbound live PASS.
+
+## Remaining production prerequisites
 
 Before deploying the Edge Function or enabling production communication:
 
-- perform Deno type-checking, Supabase Edge bundling/local serving, and controlled deployed NONPROD Edge runtime validation;
-- configure Edge Function project files and secrets through reviewed deployment controls;
 - select and approve the permanent worker host;
 - approve Meta app, number, templates, consent/STOP policy, retention, monitoring, rate limits, and operational runbooks;
 - perform controlled NONPROD provider testing before any production enablement.
 
-Local Node tests exercise the Web-compatible modules, but a Deno type-check, Supabase Edge bundle, local Edge serve, and deployed Edge runtime validation have not yet been performed. Meta live validation has not been performed, no real messages have been sent, and no production deployment has occurred. Retention, legal, provider, operational, and production approvals remain deferred.
+Local Edge tests exercise the Web-compatible receiver and status orchestration. Deployed NONPROD Edge validation is complete, but the Meta test-number inbound-delivery limitation above remains open. No production deployment or real-candidate contact occurred. Retention, legal, provider, operational, and production approvals remain deferred.
 
 W7B may add approved-vacancy campaigns and deterministic audience snapshots. W7C may add staged intake and an idempotent canonical application bridge. Neither is part of W7A.

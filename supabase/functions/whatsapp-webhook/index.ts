@@ -5,7 +5,7 @@ import type { AcceptedWebhookEvent, NormalizedWebhookEvent, WebhookEnvironment }
 const MAX_BODY_BYTES = 1_048_576;
 
 type AcceptEvent = (event: AcceptedWebhookEvent) => Promise<string | void>;
-type ProcessInboundEvent = (webhookEventId: string, event: NormalizedWebhookEvent) => Promise<void>;
+type ProcessEvent = (webhookEventId: string, event: NormalizedWebhookEvent, payloadHash: string) => Promise<void>;
 type Fetcher = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 const response = (body: string, status: number): Response => new Response(body, {
@@ -17,7 +17,7 @@ export async function handleWhatsAppWebhook(
   request: Request,
   environment: WebhookEnvironment,
   acceptEvent: AcceptEvent,
-  processInboundEvent?: ProcessInboundEvent,
+  processEvent?: ProcessEvent,
 ): Promise<Response> {
   const url = new URL(request.url);
   if (request.method === "GET") {
@@ -57,8 +57,8 @@ export async function handleWhatsAppWebhook(
           event_category: event.category,
           redacted_payload: summarizeEvent(event),
         });
-        if (webhookEventId && processInboundEvent && event.category !== "message_status") {
-          await processInboundEvent(webhookEventId, event);
+        if (webhookEventId && processEvent) {
+          await processEvent(webhookEventId, event, payloadHash);
         }
       }
     }
@@ -99,6 +99,32 @@ async function callSupabaseRpc(
   return result.json();
 }
 
+async function findOutboundMessageId(
+  environment: WebhookEnvironment,
+  fetcher: Fetcher,
+  providerMessageId: string,
+): Promise<string> {
+  if (!environment.supabaseUrl || !environment.supabaseSecretKey) throw new Error("Server database configuration is unavailable");
+  const url = new URL(`${environment.supabaseUrl}/rest/v1/whatsapp_outbound_messages`);
+  url.searchParams.set("select", "id");
+  url.searchParams.set("provider_message_id", `eq.${providerMessageId}`);
+  url.searchParams.set("limit", "2");
+  const result = await fetcher(url, {
+    method: "GET",
+    headers: {
+      apikey: environment.supabaseSecretKey,
+      authorization: `Bearer ${environment.supabaseSecretKey}`,
+      accept: "application/json",
+    },
+  });
+  if (!result.ok) throw new Error(`Webhook outbound lookup failed (${result.status})`);
+  const rows: unknown = await result.json();
+  if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0]?.id !== "string" || !rows[0].id) {
+    throw new Error("Webhook status has no unique outbound message linkage");
+  }
+  return rows[0].id;
+}
+
 export function createSupabaseWebhookPersistence(environment: WebhookEnvironment, fetcher: Fetcher = fetch) {
   return {
     async acceptEvent(event: AcceptedWebhookEvent): Promise<string> {
@@ -111,8 +137,25 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
       if (typeof id !== "string" || !id) throw new Error("Webhook persistence returned an invalid identifier");
       return id;
     },
-    async processInboundEvent(webhookEventId: string, event: NormalizedWebhookEvent): Promise<void> {
-      if (!event.phone || !event.providerMessageId || !event.messageType) throw new Error("Inbound event is missing normalized identifiers");
+    async processEvent(webhookEventId: string, event: NormalizedWebhookEvent, payloadHash: string): Promise<void> {
+      if (!event.providerMessageId) throw new Error("Webhook event is missing its provider message identifier");
+      if (event.category === "message_status") {
+        if (!event.status) throw new Error("Webhook status is missing its normalized state");
+        const outboundMessageId = await findOutboundMessageId(environment, fetcher, event.providerMessageId);
+        await callSupabaseRpc(environment, fetcher, "record_whatsapp_message_event", {
+          p_outbound_message_id: outboundMessageId,
+          p_webhook_event_id: webhookEventId,
+          p_provider_event_key: event.providerEventKey,
+          p_provider_message_id: event.providerMessageId,
+          p_status: event.status,
+          p_provider_timestamp: event.providerTimestamp ?? null,
+          p_payload_sha256: payloadHash,
+          p_provider_error_category: event.errorCategory ?? null,
+          p_provider_error_code: event.errorCode ?? null,
+        });
+        return;
+      }
+      if (!event.phone || !event.messageType) throw new Error("Inbound event is missing normalized identifiers");
       const contactId = await callSupabaseRpc(environment, fetcher, "upsert_whatsapp_inbound_contact", { p_phone: event.phone });
       if (typeof contactId !== "string" || !contactId) throw new Error("Contact persistence returned an invalid identifier");
       await callSupabaseRpc(environment, fetcher, "record_whatsapp_inbound_message", {
@@ -134,6 +177,6 @@ export default {
   fetch(request: Request): Promise<Response> {
     const environment = runtimeEnvironment();
     const persistence = createSupabaseWebhookPersistence(environment);
-    return handleWhatsAppWebhook(request, environment, persistence.acceptEvent, persistence.processInboundEvent);
+    return handleWhatsAppWebhook(request, environment, persistence.acceptEvent, persistence.processEvent);
   },
 };

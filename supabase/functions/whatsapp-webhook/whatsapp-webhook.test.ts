@@ -127,7 +127,7 @@ test("verified text accepts first, upserts contact and records no raw text", asy
     return new Response(JSON.stringify(value), { status: 200, headers: { "content-type": "application/json" } });
   };
   const persistence = createSupabaseWebhookPersistence(environment, fetcher);
-  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processInboundEvent);
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processEvent);
   assert.equal(result.status, 200);
   assert.deepEqual(calls.map((call) => call.rpc), ["accept_whatsapp_webhook_event", "upsert_whatsapp_inbound_contact", "record_whatsapp_inbound_message"]);
   assert.equal(calls[1].body.p_phone, "919876543210");
@@ -184,14 +184,81 @@ test("contact persistence failure follows durable acceptance and fails closed", 
   assert.deepEqual(order, ["accepted", "contact"]);
 });
 
-test("status events remain ledger-only until separately reviewed orchestration", async () => {
-  const payload = envelope({ statuses: [{ id: "status-ledger-only", status: "delivered", timestamp: "1720000001" }] });
-  let accepted = 0;
-  let inbound = 0;
-  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, async () => { accepted++; return "00000000-0000-0000-0000-000000000001"; }, async () => { inbound++; });
+test("sent, delivered, read and failed statuses accept first and reuse the delivery projector RPC", async () => {
+  for (const status of ["sent", "delivered", "read", "failed"] as const) {
+    const calls: Array<{ method: string; target: string; body?: Record<string, unknown> }> = [];
+    const fetcher = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      const url = new URL(String(input));
+      const method = init?.method ?? "GET";
+      const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : undefined;
+      calls.push({ method, target: url.pathname.split("/").at(-1)!, body });
+      if (url.pathname.endsWith("whatsapp_outbound_messages")) {
+        assert.equal(url.searchParams.get("provider_message_id"), `eq.status-${status}`);
+        return new Response(JSON.stringify([{ id: "00000000-0000-0000-0000-000000000010" }]), { status: 200 });
+      }
+      const value = url.pathname.endsWith("accept_whatsapp_webhook_event")
+        ? "00000000-0000-0000-0000-000000000001"
+        : "00000000-0000-0000-0000-000000000011";
+      return new Response(JSON.stringify(value), { status: 200 });
+    };
+    const persistence = createSupabaseWebhookPersistence(environment, fetcher);
+    const payload = envelope({ statuses: [{ id: `status-${status}`, status, timestamp: "1720000001", errors: status === "failed" ? [{ code: 131000, title: "Safe category" }] : undefined }] });
+    const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processEvent);
+    assert.equal(result.status, 200);
+    assert.deepEqual(calls.map(({ method, target }) => [method, target]), [
+      ["POST", "accept_whatsapp_webhook_event"],
+      ["GET", "whatsapp_outbound_messages"],
+      ["POST", "record_whatsapp_message_event"],
+    ]);
+    const projected = calls[2].body!;
+    assert.equal(projected.p_status, status);
+    assert.equal(projected.p_provider_message_id, `status-${status}`);
+    assert.equal(projected.p_payload_sha256?.toString().length, 64);
+    assert.equal(projected.p_provider_error_category, status === "failed" ? "Safe category" : null);
+    assert.equal(projected.p_provider_error_code, status === "failed" ? "131000" : null);
+    assert.equal(JSON.stringify(calls).includes(environment.appSecret), false);
+  }
+});
+
+test("duplicate and out-of-order statuses are all delegated to the monotonic database contract", async () => {
+  const projected: string[] = [];
+  const fetcher = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("whatsapp_outbound_messages")) {
+      return new Response(JSON.stringify([{ id: "00000000-0000-0000-0000-000000000010" }]), { status: 200 });
+    }
+    if (url.pathname.endsWith("record_whatsapp_message_event")) {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      projected.push(String(body.p_status));
+      return new Response(JSON.stringify("00000000-0000-0000-0000-000000000011"), { status: 200 });
+    }
+    return new Response(JSON.stringify("00000000-0000-0000-0000-000000000001"), { status: 200 });
+  };
+  const persistence = createSupabaseWebhookPersistence(environment, fetcher);
+  const payload = envelope({ statuses: [
+    { id: "status-ordered", status: "read", timestamp: "1720000004" },
+    { id: "status-ordered", status: "delivered", timestamp: "1720000003" },
+    { id: "status-ordered", status: "failed", timestamp: "1720000005", errors: [{ code: 131000, title: "Safe category" }] },
+    { id: "status-ordered", status: "read", timestamp: "1720000004" },
+  ] });
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processEvent);
   assert.equal(result.status, 200);
-  assert.equal(accepted, 1);
-  assert.equal(inbound, 0);
+  assert.deepEqual(projected, ["read", "delivered", "failed", "read"]);
+});
+
+test("status projection fails closed after durable acceptance when outbound linkage is absent", async () => {
+  const calls: string[] = [];
+  const fetcher = async (input: string | URL | Request): Promise<Response> => {
+    const url = new URL(String(input));
+    calls.push(url.pathname.split("/").at(-1)!);
+    if (url.pathname.endsWith("accept_whatsapp_webhook_event")) return new Response(JSON.stringify("00000000-0000-0000-0000-000000000001"), { status: 200 });
+    return new Response("[]", { status: 200 });
+  };
+  const persistence = createSupabaseWebhookPersistence(environment, fetcher);
+  const payload = envelope({ statuses: [{ id: "status-unlinked", status: "delivered", timestamp: "1720000001" }] });
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processEvent);
+  assert.equal(result.status, 500);
+  assert.deepEqual(calls, ["accept_whatsapp_webhook_event", "whatsapp_outbound_messages"]);
 });
 
 test("phone normalization accepts canonical Indian forms and rejects invalid values", () => {
