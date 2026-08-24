@@ -6,6 +6,7 @@ const page = fs.readFileSync('admin/index.html', 'utf8');
 const admin = fs.readFileSync('admin/admin.js', 'utf8');
 const source = fs.readFileSync('admin/whatsapp-campaigns.js', 'utf8');
 const styles = fs.readFileSync('admin/admin.css', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/028_whatsapp_vacancy_campaigns.sql', 'utf8');
 
 test('campaign module is integrated into the Admin shell', () => {
   assert.match(page, /whatsapp-campaigns\.js/);
@@ -44,4 +45,38 @@ test('campaign UI is responsive and has no blocking browser dialogs', () => {
 test('W7B prepares INTERESTED metadata but no response workflow', () => {
   assert.match(source, /INTERESTED prepared; no application action in W7B/);
   assert.doesNotMatch(source, /create_candidate_application|interested_response|registration_flow/i);
+});
+
+test('requirement eligibility is authoritative before optional narrowing filters', () => {
+  for (const field of ['req.qualification','req.iti_trade','req.experience_requirement','req.job_location']) assert.match(migration, new RegExp(field.replace('.', '\\.')));
+  assert.match(source, /Requirement matches/);
+  assert.match(source, /No Candidates match the selected vacancy and optional narrowing filters/);
+});
+
+test('existing campaigns resume only server-authorized lifecycle actions', () => {
+  assert.match(source, /detail\.campaign_status==='draft'/);
+  assert.match(source, /detail\.campaign_status==='audience_ready'/);
+  assert.match(source, /detail\.campaign_status==='approved'/);
+  assert.match(source, /\['queued','sending'\]\.includes/);
+  assert.match(source, /admin_reconcile_whatsapp_campaign/);
+  assert.doesNotMatch(source, /detail\.campaign_status==='(?:completed|failed|cancelled)'[^}]+actions\.append/);
+});
+
+test('post-freeze navigation cannot reopen audience editing', () => {
+  assert.match(source, /state\.step>0&&!state\.campaignId/);
+  assert.match(source, /state\.step=6/);
+  assert.match(source, /state\.step=7/);
+});
+
+test('campaign creation and freeze retries are idempotent and double-submit guarded', () => {
+  assert.match(source, /operationKey:crypto\.randomUUID\(\)/);
+  assert.match(source, /p_operation_key:state\.operationKey/);
+  assert.match(source, /if\(!state\.campaignId\)state\.campaignId=/);
+  assert.match(source, /next\.disabled=true/);
+  assert.match(migration, /operation_key uuid not null unique/);
+});
+
+test('detail renders attribution, aggregate counts and terminal read-only posture', () => {
+  for (const field of ['created_by','approved_by','audience_count','queued_count','sending_count','sent_count','delivered_count','read_count','failed_count']) assert.match(source, new RegExp(field));
+  assert.match(source, /renderCounts\(workspace,detail\)/);
 });

@@ -1,6 +1,6 @@
 # Web Platform Schema Blueprint
 
-> W7B extends the repository through migration 028 with `whatsapp_campaigns` and `whatsapp_campaign_recipients`. These narrow campaign/audience tables reference canonical requirements, Candidates, WhatsApp contacts, and the W7A outbox; they do not duplicate those domains. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md`.
+> W7B migration 028 (not yet applied) adds `whatsapp_campaigns` and `whatsapp_campaign_recipients`. These narrow campaign/audience tables reference canonical requirements, Candidates, resolved WhatsApp contacts, and the W7A outbox; they do not duplicate those domains. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md`.
 
 Status: normalized target model and alignment plan. Repository migration 016 now
 implements the W1 foundation described below; no SQL was executed against production.
