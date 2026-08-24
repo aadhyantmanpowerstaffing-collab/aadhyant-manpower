@@ -21,10 +21,21 @@ end $$;
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
 ('89600000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-admin@test.local','x','{}','{}',now(),now()),
-('89600000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-viewer@test.local','x','{}','{}',now(),now());
+('89600000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-recruiter@test.local','x','{}','{}',now(),now()),
+('89600000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-candidate@test.local','x','{}','{}',now(),now()),
+('89600000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-company@test.local','x','{}','{}',now(),now()),
+('89600000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000000','authenticated','authenticated','w7b-contractor@test.local','x','{}','{}',now(),now());
 insert into public.admin_users(user_id) values('89600000-0000-0000-0000-000000000001');
-insert into public.staff_profiles(user_id,display_name,status) values('89600000-0000-0000-0000-000000000002','W7B Viewer','active');
-insert into public.staff_roles(user_id,role,status,granted_by) values('89600000-0000-0000-0000-000000000002','viewer','active','89600000-0000-0000-0000-000000000001');
+insert into public.staff_profiles(user_id,display_name,status) values('89600000-0000-0000-0000-000000000002','W7B Recruiter','active');
+insert into public.staff_roles(user_id,role,status,granted_by) values('89600000-0000-0000-0000-000000000002','recruiter','active','89600000-0000-0000-0000-000000000001');
+insert into public.platform_users(user_id,account_type,display_name,email,account_status) values
+('89600000-0000-0000-0000-000000000003','candidate','W7B Candidate','w7b-candidate@test.local','active'),
+('89600000-0000-0000-0000-000000000004','company','W7B Company User','w7b-company@test.local','active'),
+('89600000-0000-0000-0000-000000000005','contractor','W7B Contractor User','w7b-contractor@test.local','active');
+insert into public.companies(id,legal_name,verification_status,account_status) values('89600000-0000-0000-0003-000000000001','W7B Test Company','verified','active');
+insert into public.company_users(company_id,user_id,role,status) values('89600000-0000-0000-0003-000000000001','89600000-0000-0000-0000-000000000004','recruiter','active');
+insert into public.contractors(id,agency_name,verification_status,account_status) values('89600000-0000-0000-0004-000000000001','W7B Test Contractor','verified','active');
+insert into public.contractor_users(contractor_id,user_id,role,status) values('89600000-0000-0000-0004-000000000001','89600000-0000-0000-0000-000000000005','recruiter','active');
 
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,qualification,iti_trade,experience_requirement,consent,status,requirement_code,job_location,filled_positions,requirement_visibility,requirement_stage) values
 ('89600000-0000-0000-0001-000000000001','W7B Employer','Contact','9876600000','Chennai','Fitter',2,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7B-OPEN','Chennai',0,'private','open'),
@@ -37,13 +48,19 @@ insert into public.candidates(id,full_name,age,gender,mobile,current_location,di
 ('89600000-0000-0000-0002-000000000004','Wrong Qualification',25,'Male','9876600004','Chennai','Chennai','Tamil Nadu','Diploma','Fitter','Fresher','Yes',true,'new','active','complete','unemployed','available'),
 ('89600000-0000-0000-0002-000000000005','Wrong Location',25,'Male','9876600005','Madurai','Madurai','Tamil Nadu','ITI','Fitter','Fresher','Yes',true,'new','active','complete','unemployed','available'),
 ('89600000-0000-0000-0002-000000000006','Wrong Experience',25,'Male','9876600006','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Experienced','Yes',true,'new','active','complete','employed','open_to_opportunities'),
-('89600000-0000-0000-0002-000000000007','Suppressed One',25,'Female','9876600007','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Fresher','Yes',true,'new','active','complete','unemployed','available');
+('89600000-0000-0000-0002-000000000007','Suppressed One',25,'Female','9876600007','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Fresher','Yes',true,'new','active','complete','unemployed','available'),
+('89600000-0000-0000-0002-000000000008','Already Applied',26,'Female','9876600008','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Fresher','Yes',true,'new','active','complete','unemployed','available');
+update public.candidates set user_id='89600000-0000-0000-0000-000000000003' where id='89600000-0000-0000-0002-000000000008';
+insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status) values
+('89600000-0000-0000-0005-000000000001','89600000-0000-0000-0002-000000000008','89600000-0000-0000-0001-000000000001','admin','applied'),
+('89600000-0000-0000-0005-000000000002','89600000-0000-0000-0002-000000000001','89600000-0000-0000-0001-000000000002','admin','applied');
 
 set local role service_role;
 select set_config('w7b.c1',public.upsert_whatsapp_inbound_contact('+919876600001')::text,true);
 select set_config('w7b.c2',public.upsert_whatsapp_inbound_contact('+919876600002')::text,true);
 select set_config('w7b.c7',public.upsert_whatsapp_inbound_contact('+919876600007')::text,true);
-update public.whatsapp_contacts set marketing_consent_status='opted_in',consent_source='synthetic_test',consent_scope='vacancy_campaign',consent_recorded_at=now(),consent_policy_version='w7b-test' where id in (current_setting('w7b.c1')::uuid,current_setting('w7b.c2')::uuid);
+select set_config('w7b.c8',public.upsert_whatsapp_inbound_contact('+919876600008')::text,true);
+update public.whatsapp_contacts set marketing_consent_status='opted_in',consent_source='synthetic_test',consent_scope='vacancy_campaign',consent_recorded_at=now(),consent_policy_version='w7b-test' where id in (current_setting('w7b.c1')::uuid,current_setting('w7b.c2')::uuid,current_setting('w7b.c8')::uuid);
 update public.whatsapp_contacts set marketing_consent_status='opted_out',opted_out_at=now(),opt_out_source='synthetic_test' where id=current_setting('w7b.c7')::uuid;
 reset role;
 
@@ -55,21 +72,40 @@ do $$ begin
 end $$;
 reset role;
 
+do $$
+declare uid uuid;
+begin
+  foreach uid in array array['89600000-0000-0000-0000-000000000003'::uuid,'89600000-0000-0000-0000-000000000004'::uuid,'89600000-0000-0000-0000-000000000005'::uuid] loop
+    perform set_config('request.jwt.claim.sub',uid::text,true);
+    begin perform public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',10,0); raise exception 'denial_not_enforced';
+    exception when others then if sqlerrm<>'WhatsApp campaign Admin access is required' then raise exception 'Unexpected role denial for %: %',uid,sqlerrm; end if; end;
+    if exists(select 1 from public.whatsapp_campaigns where created_by=uid) then raise exception 'Denied role mutated campaigns'; end if;
+  end loop;
+  if has_function_privilege('anon','public.admin_create_whatsapp_campaign(uuid,uuid,text,text,text,text,jsonb)','EXECUTE') then raise exception 'Anonymous mutation execution unexpectedly granted'; end if;
+end $$;
+
 select set_config('request.jwt.claim.sub','89600000-0000-0000-0000-000000000001',true);
 set local role authenticated;
 do $$
-declare main_id uuid; detached_id uuid; failure_id uuid; cancel_id uuid; first_queue integer; second_queue integer; detail jsonb;
+declare main_id uuid; detached_id uuid; failure_id uuid; mixed_id uuid; cancel_id uuid; first_queue integer; second_queue integer; detail jsonb;
 begin
   begin perform public.admin_create_whatsapp_campaign('89600000-0000-0000-9999-000000000001','89600000-0000-0000-0010-000000000090','Missing','vacancy_interest','en','1','{}'); raise exception 'missing_accepted'; exception when others then if sqlerrm<>'Open requirement was not found' then raise; end if; end;
   begin perform public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000002','89600000-0000-0000-0010-000000000091','Closed','vacancy_interest','en','1','{}'); raise exception 'closed_accepted'; exception when others then if sqlerrm<>'Open requirement was not found' then raise; end if; end;
-  if (select count(*) from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0))<>3 then raise exception 'Requirement preview count failed'; end if;
+  if (select count(*) from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0))<>4 then raise exception 'Requirement preview count failed'; end if;
   if exists(select 1 from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0) where candidate_id in ('89600000-0000-0000-0002-000000000003','89600000-0000-0000-0002-000000000004','89600000-0000-0000-0002-000000000005','89600000-0000-0000-0002-000000000006')) then raise exception 'Requirement mismatch entered preview'; end if;
   if not exists(select 1 from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0) where candidate_id='89600000-0000-0000-0002-000000000007' and not eligible and eligibility_reason='opted_out' and contact_masked not like '%9876600007%') then raise exception 'Suppression/masking failed'; end if;
+  if not exists(select 1 from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0) where candidate_id='89600000-0000-0000-0002-000000000008' and existing_application and not eligible and eligibility_reason='existing_application') then raise exception 'Existing application was not excluded'; end if;
+  if not exists(select 1 from public.admin_preview_whatsapp_campaign_audience('89600000-0000-0000-0001-000000000001','{}',100,0) where candidate_id='89600000-0000-0000-0002-000000000001' and not existing_application and eligible) then raise exception 'Unrelated application incorrectly excluded Candidate'; end if;
   main_id:=public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000001','89600000-0000-0000-0010-000000000001','Main Campaign','vacancy_interest','en','1','{}');
   if main_id<>public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000001','89600000-0000-0000-0010-000000000001','Main Campaign','vacancy_interest','en','1','{}') then raise exception 'Create idempotency failed'; end if;
+  begin perform public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000001','89600000-0000-0000-0010-000000000001','Conflicting Campaign','vacancy_interest','en','1','{}'); raise exception 'conflicting_replay_accepted'; exception when others then if sqlerrm<>'Campaign operation key conflicts with existing campaign' then raise; end if; end;
+  if (select count(*) from public.whatsapp_campaigns where operation_key='89600000-0000-0000-0010-000000000001')<>1 then raise exception 'Conflicting create produced another draft'; end if;
   perform set_config('w7b.main',main_id::text,true);
   begin perform public.admin_approve_whatsapp_campaign(main_id); raise exception 'draft_approval_accepted'; exception when others then if sqlerrm<>'Audience-ready campaign is required' then raise; end if; end;
   if public.admin_freeze_whatsapp_campaign_audience(main_id,array['89600000-0000-0000-0002-000000000001'::uuid,'89600000-0000-0000-0002-000000000001'::uuid],array['89600000-0000-0000-0002-000000000002'::uuid],1)<>1 then raise exception 'Freeze/dedupe failed'; end if;
+  if public.admin_freeze_whatsapp_campaign_audience(main_id,array['89600000-0000-0000-0002-000000000001'::uuid,'89600000-0000-0000-0002-000000000001'::uuid],array['89600000-0000-0000-0002-000000000002'::uuid],1)<>1 or (select count(*) from public.whatsapp_campaign_recipients where campaign_id=main_id)<>2 then raise exception 'Repeated freeze was not idempotent'; end if;
+  begin perform public.admin_freeze_whatsapp_campaign_audience(main_id,array['89600000-0000-0000-0002-000000000008'::uuid],'{}',1); raise exception 'existing_application_frozen'; exception when others then if sqlerrm<>'Included Candidate already has an application' then raise; end if; end;
+  if (select count(*) from public.whatsapp_campaign_recipients where campaign_id=main_id)<>2 then raise exception 'Denied freeze changed existing audience'; end if;
   begin perform public.admin_queue_whatsapp_campaign(main_id); raise exception 'audience_queue_accepted'; exception when others then if sqlerrm<>'Approved campaign is required before queueing' then raise; end if; end;
   perform public.admin_approve_whatsapp_campaign(main_id);
   begin perform public.admin_freeze_whatsapp_campaign_audience(main_id,array['89600000-0000-0000-0002-000000000002'::uuid],'{}',1); raise exception 'approved_mutation_accepted'; exception when others then if sqlerrm<>'Campaign audience can no longer change' then raise; end if; end;
@@ -89,6 +125,9 @@ begin
   perform public.admin_freeze_whatsapp_campaign_audience(detached_id,array['89600000-0000-0000-0002-000000000002'::uuid],'{}',1);perform set_config('w7b.detached',detached_id::text,true);
   failure_id:=public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000001','89600000-0000-0000-0010-000000000003','Failure Campaign','vacancy_interest','en','1','{}');
   perform public.admin_freeze_whatsapp_campaign_audience(failure_id,array['89600000-0000-0000-0002-000000000002'::uuid],'{}',1);perform public.admin_approve_whatsapp_campaign(failure_id);perform set_config('w7b.failure',failure_id::text,true);
+  mixed_id:=public.admin_create_whatsapp_campaign('89600000-0000-0000-0001-000000000001','89600000-0000-0000-0010-000000000005','Mixed Campaign','vacancy_interest','en','1','{}');
+  perform public.admin_freeze_whatsapp_campaign_audience(mixed_id,array['89600000-0000-0000-0002-000000000001'::uuid,'89600000-0000-0000-0002-000000000002'::uuid],'{}',2);perform public.admin_approve_whatsapp_campaign(mixed_id);perform public.admin_queue_whatsapp_campaign(mixed_id);perform set_config('w7b.mixed',mixed_id::text,true);
+  if (select count(*) from public.whatsapp_campaign_recipients where campaign_id=mixed_id and recipient_status='queued' and outbound_message_id is not null)<>2 then raise exception 'Mixed terminal fixture linkage missing'; end if;
   if (select count(*) from public.whatsapp_campaign_recipients where campaign_id=main_id)<>2
      or (select count(*) from public.whatsapp_campaign_recipients where campaign_id=detached_id)<>1
      or (select count(*) from public.whatsapp_campaign_recipients where campaign_id=failure_id)<>1 then raise exception 'Cross-campaign audience isolation failed'; end if;
@@ -122,19 +161,31 @@ reset role;
 
 set local role service_role;
 update public.whatsapp_outbound_messages set state='delivered',send_phase='confirmed',provider_message_id='w7b-provider-safe',sent_at=now(),delivered_at=now(),lease_owner=null,lease_expires_at=null where id=current_setting('w7b.outbound')::uuid;
+update public.whatsapp_outbound_messages o set state=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'read' else 'failed' end,
+  send_phase=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'confirmed' else 'terminal' end,provider_message_id=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'w7b-mixed-success' else null end,
+  sent_at=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then now() else null end,
+  delivered_at=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then now() else null end,
+  read_at=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then now() else null end,
+  failed_at=case when cr.candidate_id='89600000-0000-0000-0002-000000000002' then now() else null end,
+  last_error_category=case when cr.candidate_id='89600000-0000-0000-0002-000000000002' then 'synthetic_terminal' else null end,lease_owner=null,lease_expires_at=null
+from public.whatsapp_campaign_recipients cr where cr.campaign_id=current_setting('w7b.mixed')::uuid and cr.outbound_message_id=o.id;
 update public.whatsapp_contacts set candidate_id='89600000-0000-0000-0002-000000000002',resolution_status='resolved',marketing_consent_status='opted_out',opted_out_at=now(),opt_out_source='synthetic_test' where id=current_setting('w7b.c2')::uuid;
 reset role;
 
 set local role authenticated;
 do $$ declare detail jsonb; begin
   if (public.admin_reconcile_whatsapp_campaign(current_setting('w7b.main')::uuid)->>'campaign_status')<>'completed' then raise exception 'Completion reconciliation failed'; end if;
+  detail:=public.admin_reconcile_whatsapp_campaign(current_setting('w7b.mixed')::uuid);
+  if detail->>'campaign_status'<>'completed' or (detail->>'read_count')::integer<>1 or (detail->>'failed_count')::integer<>1 then raise exception 'Mixed terminal completion failed'; end if;
+  if not exists(select 1 from public.whatsapp_campaigns where id=current_setting('w7b.mixed')::uuid and campaign_status='completed') then raise exception 'Mixed campaign row disappeared or was not completed'; end if;
   begin perform public.admin_cancel_whatsapp_campaign(current_setting('w7b.main')::uuid); raise exception 'terminal_cancel_accepted'; exception when others then if sqlerrm<>'Campaign can no longer be cancelled' then raise; end if; end;
   begin perform public.admin_queue_whatsapp_campaign(current_setting('w7b.failure')::uuid); raise exception 'suppressed_queue_accepted'; exception when others then if sqlerrm<>'Campaign recipient became suppressed or unresolved' then raise; end if; end;
   if exists(select 1 from public.audit_logs where entity_id=current_setting('w7b.failure')::uuid and action in ('whatsapp.campaign_queue_started','whatsapp.campaign_queue_completed')) then raise exception 'Failed queue retained audit'; end if;
   detail:=public.admin_get_whatsapp_campaign(current_setting('w7b.main')::uuid,100,0);
   if detail->>'created_by' is null or detail->>'approved_by' is null or (detail->>'audience_count')::integer<>1 or (detail->>'delivered_count')::integer<>1 or detail::text like '%9876600001%' then raise exception 'Detail projection failed'; end if;
   if not exists(select 1 from public.admin_list_whatsapp_campaigns(null,100,0) where campaign_id=current_setting('w7b.main')::uuid and campaign_status='completed' and audience_count=1 and delivered_count=1) then raise exception 'List projection failed'; end if;
-  if not exists(select 1 from public.candidates where id='89600000-0000-0000-0002-000000000001' and full_name='Eligible One' and status='new') or not exists(select 1 from public.employer_requirements where id='89600000-0000-0000-0001-000000000001' and requirement_code='REQ-W7B-OPEN' and requirement_stage='open') or exists(select 1 from public.candidate_applications where candidate_id::text like '89600000-%') then raise exception 'Canonical fixture mutated'; end if;
+  if not exists(select 1 from public.candidates where id='89600000-0000-0000-0002-000000000001' and full_name='Eligible One' and status='new') or not exists(select 1 from public.employer_requirements where id='89600000-0000-0000-0001-000000000001' and requirement_code='REQ-W7B-OPEN' and requirement_stage='open')
+     or (select count(*) from public.candidate_applications where id in ('89600000-0000-0000-0005-000000000001','89600000-0000-0000-0005-000000000002'))<>2 then raise exception 'Canonical fixture mutated'; end if;
 end $$;
 reset role;
 
@@ -161,7 +212,7 @@ do $$ begin
   if exists(select 1 from public.whatsapp_campaigns where operation_key::text like '89600000-%')
      or exists(select 1 from public.whatsapp_campaign_recipients where candidate_id::text like '89600000-%')
      or exists(select 1 from public.whatsapp_outbound_messages where candidate_id::text like '89600000-%')
-     or exists(select 1 from public.whatsapp_contacts where provider_address in ('+919876600001','+919876600002','+919876600007'))
+     or exists(select 1 from public.whatsapp_contacts where provider_address in ('+919876600001','+919876600002','+919876600007','+919876600008'))
      or exists(select 1 from public.audit_logs where actor_user_id::text like '89600000-%' or entity_id::text like '89600000-%')
      or exists(select 1 from public.candidates where id::text like '89600000-%')
      or exists(select 1 from public.employer_requirements where id::text like '89600000-%')
@@ -169,5 +220,10 @@ do $$ begin
      or exists(select 1 from public.admin_users where user_id::text like '89600000-%')
      or exists(select 1 from public.staff_profiles where user_id::text like '89600000-%')
      or exists(select 1 from public.staff_roles where user_id::text like '89600000-%')
+     or exists(select 1 from public.platform_users where user_id::text like '89600000-%')
+     or exists(select 1 from public.company_users where user_id::text like '89600000-%')
+     or exists(select 1 from public.contractor_users where user_id::text like '89600000-%')
+     or exists(select 1 from public.companies where id::text like '89600000-%')
+     or exists(select 1 from public.contractors where id::text like '89600000-%')
      or exists(select 1 from auth.users where id::text like '89600000-%') then raise exception 'W7B checkpoint residue detected'; end if;
 end $$;
