@@ -9,8 +9,9 @@ begin
     raise exception 'W7A exact five-table contract is incomplete';
   end if;
   if exists(select 1 from information_schema.tables where table_schema='public' and table_name like 'whatsapp_%'
-    and table_name not in ('whatsapp_contacts','whatsapp_webhook_events','whatsapp_inbound_messages','whatsapp_outbound_messages','whatsapp_message_events')) then
-    raise exception 'Unexpected W7A WhatsApp table exists';
+    and table_name not in ('whatsapp_contacts','whatsapp_webhook_events','whatsapp_inbound_messages','whatsapp_outbound_messages','whatsapp_message_events',
+      'whatsapp_campaigns','whatsapp_campaign_recipients')) then
+    raise exception 'Unexpected WhatsApp table exists outside the W7A/W7B contracts';
   end if;
   foreach v_table in array v_tables loop
     if not exists(select 1 from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace
