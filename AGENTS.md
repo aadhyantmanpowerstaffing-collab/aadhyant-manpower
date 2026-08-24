@@ -35,6 +35,7 @@ Treat the branch, HEAD, ahead/behind state, and cleanliness above as a handoff c
 - The reviewed `whatsapp-webhook` source from W7C closure HEAD `eed8fe73ceadcad3f7669193441005466737c17e` is deployed only to approved NONPROD as version 5, ACTIVE, with `verify_jwt=false`; the downloaded runtime source matches the authorized files exactly.
 - Signed deployed-endpoint validation proves W7A durable ingress/orchestration, exact W7B correlation, W7C canonical Application creation, safe audit/history, and exact replay idempotency without a Graph API call or WhatsApp send.
 - Full real Meta inbound validation remains deferred: the single final operator-controlled test-number message at `2026-08-24 13:25:42 IST` produced no observable Meta-to-Edge invocation, webhook row, or inbound row through `13:32:47 IST`. This reproduces the documented Meta test-number ingress limitation and is not evidence of an application defect.
+- The separately authorized Post-W7C Admin Product Phase is implemented and locally regression-validated. It adds a grouped responsive Admin shell, composite safe-projection dashboard, stronger canonical recruitment workspaces, polished W7B campaigns, and W7A Incoming/Replies plus Failed/Attention views without changing schema, Edge, Meta, messaging, or production state. Focused Admin tests pass 90/90, the complete frontend suite passes 153/153, and the unchanged Edge suite passes 21/21. See `POST_W7C_ADMIN_PRODUCT_PHASE.md`.
 
 ## Canonical architecture
 
@@ -184,6 +185,6 @@ Do not weaken, remove, bypass, or rewrite assertions merely to obtain a PASS. Di
 
 Any hash mismatch must fail closed. Determine whether the file changed through an authorized, reviewed commit before updating any recorded or guarded hash.
 
-## W7C closure and next approval boundary
+## Post-W7C Admin Product closure and next approval boundary
 
-W7C is technically and operationally closed on dedicated NONPROD with the Meta test-number ingress limitation above. Full real Meta inbound proof remains deferred and must not be inferred from signed endpoint validation. Any further Edge or Meta change, another real-message test, production mutation/deployment, real-candidate contact, synthetic-residue deletion, or milestone beyond W7C requires explicit human authorization.
+W7C remains technically and operationally closed on dedicated NONPROD with the Meta test-number ingress limitation above. The authorized Admin Product Phase is complete locally and changes no backend or runtime architecture. Its exact W7C trace/conversion and Audit views remain deferred because current safe Admin projections do not expose those links. Full real Meta inbound proof remains deferred and must not be inferred from signed endpoint validation. Stop before any deployment, Edge or Meta change, another real-message test, production mutation, real-candidate contact, synthetic-residue deletion, or new backend milestone without explicit human authorization.
