@@ -14,32 +14,54 @@
   <script src="staff-management.js" defer></script>
   <script src="recruitment-operations.js" defer></script>
   <script src="whatsapp-campaigns.js" defer></script>
+  <script src="admin-product.js" defer></script>
   <script src="admin.js" defer></script>
 </head>
 <body data-admin-page="dashboard">
   <div class="admin-loading" data-admin-loading role="status">Verifying administrator access…</div>
   <div class="dashboard" data-dashboard hidden>
     <header class="admin-header">
+      <button class="admin-nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="admin-primary-navigation"><span aria-hidden="true">☰</span><span>Menu</span></button>
       <a class="admin-brand" href="../index.html" aria-label="Aadhyant Manpower & Staffing website">
         <span aria-hidden="true">A</span><strong>AADHYANT <small>ADMIN</small></strong>
       </a>
       <div class="admin-account"><span data-admin-email></span><button class="admin-button admin-button-quiet" type="button" data-logout>Log Out</button></div>
     </header>
 
-    <main class="admin-main">
+    <div class="admin-product-shell">
+      <aside class="admin-sidebar" data-admin-sidebar>
+        <nav class="admin-tabs" id="admin-primary-navigation" aria-label="Admin workspace">
+          <section class="admin-nav-group"><p>Overview</p><div data-nav-group="dashboard"></div></section>
+          <section class="admin-nav-group"><p>Recruitment</p><div data-nav-group="recruitment"></div></section>
+          <section class="admin-nav-group"><p>WhatsApp</p><div data-nav-group="whatsapp"></div></section>
+          <section class="admin-nav-group"><p>Network</p><div data-nav-group="network">
+            <button type="button" aria-selected="false" aria-controls="company-panel" id="company-tab" data-tab="companies">Companies</button>
+            <button type="button" aria-selected="false" aria-controls="contractor-panel" id="contractor-tab" data-tab="contractors">Contractors</button>
+          </div></section>
+          <section class="admin-nav-group"><p>Administration</p><div data-nav-group="administration">
+            <button type="button" aria-selected="false" aria-controls="staff-panel" id="staff-tab" data-tab="staff" hidden>Users / Roles</button>
+          </div></section>
+          <div data-nav-group="compatibility" hidden>
+            <button type="button" aria-selected="false" aria-controls="employer-panel" id="employer-tab" data-tab="employers">Employer Requirements</button>
+            <button type="button" aria-selected="false" aria-controls="candidate-panel" id="candidate-tab" data-tab="candidates">Candidate Registrations</button>
+            <button type="button" aria-selected="false" aria-controls="candidate-interests-panel" id="candidate-interests-tab" data-tab="candidateInterests">Candidate Interests</button>
+            <button type="button" aria-selected="false" aria-controls="company-requirements-panel" id="company-requirements-tab" data-tab="companyRequirements">Company Requirements</button>
+          </div>
+        </nav>
+        <section class="admin-session-card" data-shell-foundation hidden aria-label="Current staff access">
+          <span>Signed in as</span><strong data-staff-session-name>—</strong><small data-staff-session-roles>—</small>
+        </section>
+      </aside>
+
+    <main class="admin-main" id="admin-workspace" tabindex="-1">
       <div class="dashboard-heading">
-        <div><p class="admin-eyebrow">Operations overview</p><h1>Admin Dashboard</h1><p>Review submissions and manage company account approvals.</p></div>
+        <div><p class="admin-eyebrow">Recruitment operations</p><h1>Admin Workspace</h1><p>Canonical recruitment, WhatsApp, network, and access operations.</p></div>
         <button class="admin-button admin-button-secondary" type="button" data-refresh>Refresh Data</button>
       </div>
 
       <div class="admin-message" data-dashboard-message role="status" aria-live="polite"></div>
 
-      <section class="record-panel shell-foundation" data-shell-foundation hidden>
-        <div class="panel-heading"><div><h2>Internal Staff Portal</h2><p>Your staff session is active. Operational modules will be assigned in later milestones according to role.</p></div></div>
-        <dl class="staff-session-summary"><div><dt>Staff member</dt><dd data-staff-session-name>—</dd></div><div><dt>Roles</dt><dd data-staff-session-roles>—</dd></div></dl>
-      </section>
-
-      <section class="summary-grid" aria-label="Submission summary">
+      <section class="summary-grid" aria-label="Legacy submission summary" hidden>
         <article><span>Total Employer Requirements</span><strong data-count="employer-total">—</strong></article>
         <article><span>New Employer Requirements</span><strong data-count="employer-new">—</strong></article>
         <article><span>Total Candidates</span><strong data-count="candidate-total">—</strong></article>
@@ -47,16 +69,6 @@
         <article><span>Total Company Accounts</span><strong data-count="company-total">—</strong></article>
         <article><span>Pending Company Reviews</span><strong data-count="company-pending">—</strong></article>
       </section>
-
-      <div class="admin-tabs" role="tablist" aria-label="Dashboard records">
-        <button type="button" role="tab" aria-selected="true" aria-controls="employer-panel" id="employer-tab" data-tab="employers">Employer Requirements</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="candidate-panel" id="candidate-tab" data-tab="candidates">Candidates</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="candidate-interests-panel" id="candidate-interests-tab" data-tab="candidateInterests">Candidate Interests</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="company-panel" id="company-tab" data-tab="companies">Company Accounts</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="company-requirements-panel" id="company-requirements-tab" data-tab="companyRequirements">Company Requirements</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="contractor-panel" id="contractor-tab" data-tab="contractors">Staffing Partners</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="staff-panel" id="staff-tab" data-tab="staff" hidden>Staff Management</button>
-      </div>
 
       <section class="record-panel staff-management-panel" id="staff-panel" role="tabpanel" aria-labelledby="staff-tab" data-panel="staff" hidden>
         <div class="panel-heading"><div><h2>Internal Staff</h2><p>Create profiles for existing Supabase Auth users and manage least-privilege roles.</p></div><button class="admin-button admin-button-secondary" type="button" data-refresh-staff>Refresh Staff</button></div>
@@ -151,6 +163,7 @@
         <nav class="pagination" aria-label="Company account pages"><button class="admin-button admin-button-quiet" type="button" data-page="companies-prev">Previous</button><span data-page-label="companies">Page 1</span><button class="admin-button admin-button-quiet" type="button" data-page="companies-next">Next</button></nav>
       </section>
     </main>
+    </div>
   </div>
 
   <dialog class="detail-dialog" data-detail-dialog aria-labelledby="detail-title">

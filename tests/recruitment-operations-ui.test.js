@@ -13,9 +13,9 @@ const moduleApi = window.aadhyantRecruitmentOperations;
 
 test('W3 navigation exposes the six approved recruitment modules', () => {
   assert.deepEqual(Array.from(moduleApi.definitions, (item) => Array.from(item).slice(0, 2)), [
-    ['recruitmentDashboard','Dashboard'],['recruitmentCandidates','Candidates'],
-    ['recruitmentRequirements','Requirements'],['recruitmentApplications','Applications'],
-    ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joining / Placement']
+    ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Requirements / Vacancies'],
+    ['recruitmentCandidates','Candidates'],['recruitmentApplications','Applications'],
+    ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joinings']
   ]);
 });
 
@@ -311,7 +311,7 @@ test('joining errors are business-facing and success refreshes related workspace
 
 test('joining UI does not present UUIDs or candidate contact PII', () => {
   assert.doesNotMatch(source,/Application UUID|Candidate UUID|name=['"]applicationId/i);
-  const joiningSection=source.slice(source.indexOf('const joiningActionGraph'),source.indexOf('const renderDashboard'));
+  const joiningSection=source.slice(source.indexOf('const joiningActionGraph'),source.indexOf('const dashboardMetricGroups'));
   assert.doesNotMatch(joiningSection,/mobile|phone|whatsapp|email/i);
   assert.match(joiningSection,/Candidate.*Requirement.*Company/);
 });
@@ -364,14 +364,14 @@ test('application detail remains read-only and excludes internal identifiers', (
 
 test('W3 tab activation hides every unrelated legacy and W3 panel', () => {
   assert.match(source,/querySelectorAll\('\[data-panel\]'\).*panel\.hidden=panel!==item\.panel/);
-  assert.match(source,/querySelectorAll\('\[data-tab\],\[data-w3-tab\]'\)/);
+  assert.match(source,/querySelectorAll\('\[data-tab\],\[data-w3-tab\],\[data-product-tab\]'\)/);
   for (const key of ['recruitmentCandidates','recruitmentApplications','recruitmentInterviews','recruitmentJoinings']) assert.match(source,new RegExp(key));
   assert.match(adminHtml,/data-panel="employers"/);
   assert.match(adminHtml,/data-panel="candidates"/);
 });
 
 test('legacy tab activation clears W3 selection and shows only its own legacy panel', () => {
-  assert.match(adminSource,/querySelectorAll\('\[data-tab\],\[data-w3-tab\]'\)/);
+  assert.match(adminSource,/querySelectorAll\('\[data-tab\],\[data-w3-tab\],\[data-product-tab\]'\)/);
   assert.match(adminSource,/panel\.hidden = panel\.dataset\.panel !== tab\.dataset\.tab/);
   for (const label of ['Employer Requirements','Candidate Interests','Company Accounts','Company Requirements','Staffing Partners']) assert.match(adminHtml,new RegExp(label));
 });

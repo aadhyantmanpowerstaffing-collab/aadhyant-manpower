@@ -558,15 +558,11 @@
     }
     await window.aadhyantRecruitmentOperations?.initialize({ client, authorization });
     await window.aadhyantWhatsAppCampaigns?.initialize({ client, authorization });
+    await window.aadhyantAdminProduct?.initialize({ client, authorization });
 
     const loadDashboard = async () => {
-      showMessage(dashboardMessage, 'Loading dashboard data…');
-      try {
-        await Promise.all([loadCounts(), loadRecords('employers'), loadRecords('candidates'), loadRecords('candidateInterests'), loadRecords('companies'), loadRecords('companyRequirements'),loadRecords('contractors')]);
-        showMessage(dashboardMessage, '');
-      } catch (_error) {
-        showMessage(dashboardMessage, 'Dashboard data could not be loaded. Check the connection and try again.', 'error');
-      }
+      const active=document.querySelector('[data-w3-tab][aria-selected="true"],[data-product-tab][aria-selected="true"],[data-tab][aria-selected="true"]');
+      active?.click();
     };
 
     document.querySelector('[data-logout]').addEventListener('click', async () => {
@@ -724,9 +720,13 @@
     });
 
     document.querySelectorAll('[data-tab]').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('[data-tab],[data-w3-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+      tab.addEventListener('click', async () => {
+        document.querySelectorAll('[data-tab],[data-w3-tab],[data-product-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
         document.querySelectorAll('[data-panel]').forEach((panel) => { panel.hidden = panel.dataset.panel !== tab.dataset.tab; });
+        if (['companies','contractors'].includes(tab.dataset.tab)) {
+          try { await loadRecords(tab.dataset.tab); } catch (_error) { showMessage(dashboardMessage, 'Network records could not be loaded. Try again.', 'error'); }
+        }
+        window.aadhyantAdminProduct?.afterNavigation?.(tab.dataset.tab);
       });
     });
 
@@ -801,8 +801,7 @@
     adminAuth.monitorAccess(({ authorization: current }) => {
       if (JSON.stringify(current) !== authorizationSignature) window.location.reload();
     }, './login.html');
-    if (operationalAccess) await loadDashboard();
-    else showMessage(dashboardMessage, authorization.staff_management_access ? 'Staff management access is active.' : 'Your internal staff session is active.');
+    showMessage(dashboardMessage, '');
   };
 
   if (pageType === 'login') initializeLogin();

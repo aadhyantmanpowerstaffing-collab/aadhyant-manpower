@@ -23,7 +23,7 @@ const clientWith = (handler) => ({rpc:handler});
 // Source/static security and integration checks (6).
 test('static: module is integrated and exposes the eight controlled stages', () => {
   assert.match(page, /whatsapp-campaigns\.js/); assert.match(admin, /aadhyantWhatsAppCampaigns\?\.initialize/);
-  assert.deepEqual(Array.from(controller.steps), ['Select Vacancy','Matching Criteria','Preview Candidates','Include / Exclude','Message Template','Review Campaign','Approve','Queue']);
+  assert.deepEqual(Array.from(controller.steps), ['Select Vacancy','Matching Criteria','Candidate Preview','Include / Exclude','Template Preview','Review Campaign','Approve','Queue']);
 });
 
 test('static: campaign UI is RPC-only and has no blocking browser dialogs', () => {
