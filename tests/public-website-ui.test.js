@@ -58,6 +58,17 @@ test('homepage preserves one primary candidate CTA and distinct employer and par
   assert.match(hero, /href="jobs\/">Find Jobs/);
   assert.match(hero, /href="hire-manpower\/">Hire Manpower/);
   assert.match(hero, /href="staffing-partner\/">For Contractors \/ Staffing Partners/);
+  assert.match(hero, /Structured from opportunity to progress/);
+  assert.doesNotMatch(hero, /Three clear ways to begin|Find work|Build a workforce/);
+});
+
+test('homepage explains the three roles once and ends with one compact conversion band', () => {
+  assert.equal((pages.home.match(/One platform\. Three distinct journeys\./g) || []).length, 1);
+  assert.equal((pages.home.match(/class="public-journey-grid"/g) || []).length, 1);
+  assert.doesNotMatch(pages.home, /public-audience-cta|Move forward through the right pathway/);
+  assert.match(pages.home, /class="public-conversion-band"/);
+  assert.match(pages.home, /Ready to move forward\?/);
+  ['Find Jobs', 'For Employers', 'For Contractors'].forEach((label) => assert.match(pages.home, new RegExp(`public-conversion-actions[\\s\\S]*?>${label}<`)));
 });
 
 test('homepage job discovery uses the existing safe public projection', () => {
@@ -147,7 +158,7 @@ test('contractor journey is distinct and review gated', () => {
 
 test('homepage uses defensible trust language and real business identity', () => {
   assert.match(pages.home, /Approved public opportunities/);
-  assert.match(pages.home, /Reviewed partner access/);
+  assert.match(pages.home, /Reviewed workspace access/);
   assert.match(pages.home, /GSTIN 24ACNFA4445J1Z9/);
   assert.doesNotMatch(pages.home, /verified candidates|guaranteed|AI-powered|instant matching/i);
 });
@@ -176,10 +187,11 @@ test('supporting public pages converge on the canonical role entry points', () =
 });
 
 test('homepage polish keeps desktop rhythm compact without changing mobile breakpoints', () => {
-  assert.match(css, /public-home-page \.public-home-hero__grid \{ min-height: 34rem;/);
-  assert.match(css, /public-home-page \.public-home-section \{ padding-block: clamp\(3\.9rem, 5\.5vw, 5rem\);/);
-  assert.match(css, /public-home-page \.public-jobs-empty \{ margin-top: 1\.5rem; padding: 2\.5rem;/);
-  assert.match(css, /public-home-page \.public-audience-cta \{ min-height: 18rem;/);
+  assert.match(css, /public-home-page \.public-home-hero__grid \{ min-height: 30rem;/);
+  assert.match(css, /public-home-page \.public-home-section \{ padding-block: clamp\(3\.25rem, 4\.5vw, 4\.25rem\);/);
+  assert.match(css, /public-home-page \.public-jobs-empty \{ margin-top: 1\.25rem; padding: 2\.25rem;/);
+  assert.match(css, /public-home-conversion \{ padding-block: 3\.25rem;/);
+  assert.doesNotMatch(css, /public-audience-cta/);
   assert.match(css, /@media \(min-width: 821px\)/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /@media \(max-width: 620px\)/);
