@@ -86,7 +86,8 @@ begin
 end $$;
 
 select set_config('request.jwt.claim.sub','89600000-0000-0000-0000-000000000001',true);
-set local role authenticated;
+-- Owner executes Admin RPCs with the synthetic JWT so fixture-only base-table assertions remain possible.
+-- Authenticated EXECUTE grants and non-Admin denials are verified independently above.
 do $$
 declare main_id uuid; detached_id uuid; failure_id uuid; mixed_id uuid; cancel_id uuid; first_queue integer; second_queue integer; detail jsonb;
 begin
@@ -144,7 +145,6 @@ update public.whatsapp_outbound_messages set state='sending',send_phase='claimed
 update public.whatsapp_contacts set candidate_id=null where id=current_setting('w7b.c2')::uuid;
 reset role;
 
-set local role authenticated;
 do $$ begin
   if (public.admin_reconcile_whatsapp_campaign(current_setting('w7b.main')::uuid)->>'campaign_status')<>'sending' then raise exception 'Sending reconciliation failed'; end if;
   begin perform public.admin_approve_whatsapp_campaign(current_setting('w7b.detached')::uuid); raise exception 'detached_approved'; exception when others then if sqlerrm<>'Campaign audience is empty, mismatched, unresolved, or suppressed' then raise; end if; end;
@@ -153,7 +153,6 @@ reset role;
 
 update public.whatsapp_contacts set candidate_id='89600000-0000-0000-0002-000000000003',resolution_status='resolved' where id=current_setting('w7b.c2')::uuid;
 reset role;
-set local role authenticated;
 do $$ begin
   begin perform public.admin_approve_whatsapp_campaign(current_setting('w7b.detached')::uuid); raise exception 'mismatched_contact_approved'; exception when others then if sqlerrm<>'Campaign audience is empty, mismatched, unresolved, or suppressed' then raise; end if; end;
 end $$;
@@ -171,7 +170,6 @@ from public.whatsapp_campaign_recipients cr where cr.campaign_id=current_setting
 update public.whatsapp_contacts set candidate_id='89600000-0000-0000-0002-000000000002',resolution_status='resolved',marketing_consent_status='opted_out',opted_out_at=now(),opt_out_source='synthetic_test' where id=current_setting('w7b.c2')::uuid;
 reset role;
 
-set local role authenticated;
 do $$ declare detail jsonb; begin
   if (public.admin_reconcile_whatsapp_campaign(current_setting('w7b.main')::uuid)->>'campaign_status')<>'completed' then raise exception 'Completion reconciliation failed'; end if;
   detail:=public.admin_reconcile_whatsapp_campaign(current_setting('w7b.mixed')::uuid);
@@ -190,13 +188,11 @@ reset role;
 
 update public.whatsapp_contacts set marketing_consent_status='opted_in',opted_out_at=null,opt_out_source=null,opt_out_reason_category=null where id=current_setting('w7b.c2')::uuid;
 reset role;
-set local role authenticated;
 select public.admin_queue_whatsapp_campaign(current_setting('w7b.failure')::uuid);
 select set_config('w7b.failed_outbound',(select outbound_message_id::text from public.whatsapp_campaign_recipients where campaign_id=current_setting('w7b.failure')::uuid and recipient_status='queued'),true);
 reset role;
 update public.whatsapp_outbound_messages set state='failed',send_phase='terminal',failed_at=now(),last_error_category='synthetic_terminal',last_error_code='synthetic_terminal' where id=current_setting('w7b.failed_outbound')::uuid;
 reset role;
-set local role authenticated;
 do $$ begin
   if (public.admin_reconcile_whatsapp_campaign(current_setting('w7b.failure')::uuid)->>'campaign_status')<>'failed' then raise exception 'All-failed reconciliation failed'; end if;
   begin perform public.admin_cancel_whatsapp_campaign(current_setting('w7b.failure')::uuid); raise exception 'failed_cancel_accepted'; exception when others then if sqlerrm<>'Campaign can no longer be cancelled' then raise; end if; end;
