@@ -30,8 +30,8 @@ Treat the branch, HEAD, ahead/behind state, and cleanliness above as a handoff c
 - W7B implementation and dedicated NONPROD database/runtime validation are complete.
 - Migration 028 is installed on NONPROD. At the start of the closure run its objects were already present and empty, so the migration's fail-closed preflight correctly prevented replay.
 - Corrected checkpoint 031 and W7A regressions 029/030 pass with client exit 0; W7A Edge tests pass 20/20 and the frontend baseline passes 138/138.
-- W7C planning and implementation are separately authorized. It must preserve W7A/W7B and create or reuse only canonical Candidate Applications.
-- W7C migration 029 and checkpoint 032 are in local implementation/runtime-validation scope. No Edge deployment or real messaging is authorized.
+- W7C implementation and dedicated NONPROD runtime validation are complete. It preserves W7A/W7B and creates or reuses only canonical Candidate Applications.
+- Migration 029 is installed; checkpoint 032 and W7A/W7B regressions pass with zero synthetic residue. No Edge deployment or real messaging is authorized.
 
 ## Canonical architecture
 
@@ -172,11 +172,14 @@ Do not weaken, remove, bypass, or rewrite assertions merely to obtain a PASS. Di
 - Checkpoint 032 SHA-256: `4fddf27c4246737c80bf5fc3243d0b0052b37a67b65ce98c844eb63027b3989f`
 - Aggregate schema plus migrations 007–029 SHA-256: `7429888214faca7524c1e119674684ab8765052bb36701dd82b22353de07ac46`
 - The staging guard is extended through exactly migration 029.
-- Migration 029 is not installed on approved NONPROD yet; its objects must be absent in the verified pre-state.
+- Migration 029 is installed on approved NONPROD with the reviewed catalog, RLS, and service-role-only RPC posture.
+- Checkpoint 032 passes with `ON_ERROR_STOP=1`, rollback, client exit 0, and zero residue.
+- W7A checkpoints 029/030 and W7B checkpoint 031 pass unchanged; Edge tests pass 21/21, focused W7B tests 17/17, and frontend tests 138/138.
+- Candidate, Application, Requirement, and retained W7A count/digests match the captured pre-state; W7B tables and retained W7C links remain empty.
 - The W7C Edge changes are source-only and must not be deployed under the current authorization.
 
 Any hash mismatch must fail closed. Determine whether the file changed through an authorized, reviewed commit before updating any recorded or guarded hash.
 
 ## Current W7C task and next approval boundary
 
-Complete W7C implementation, guarded dedicated-NONPROD migration 029 application, checkpoint 032, W7A/W7B/frontend regressions, zero-residue/fingerprint verification, self-review, and focused local commits. Stop before any push unless separately authorized. Edge deployment, production mutation/deployment, Meta configuration, real-user contact/message, and any milestone beyond W7C each require explicit human authorization.
+W7C is technically complete locally and on dedicated NONPROD. Stop before push unless a complete local-ahead review and normal non-force push are separately authorized. Edge deployment, production mutation/deployment, Meta configuration, real-user contact/message, and any milestone beyond W7C each require explicit human authorization.

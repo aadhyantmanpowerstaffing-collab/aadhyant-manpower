@@ -1,6 +1,6 @@
 # Web Platform Delivery Roadmap
 
-> W7B NONPROD database/runtime validation and remote closure are complete. W7C is authorized and implements exact inbound `INTERESTED` correlation to the canonical Candidate/Application workflow; migration 029 and checkpoint 032 await dedicated NONPROD runtime validation. No Edge deployment or real messaging is authorized.
+> W7B remote closure is complete. W7C exact inbound `INTERESTED` correlation to the canonical Candidate/Application workflow is implemented and dedicated NONPROD validated: migration 029 is installed, checkpoint 032 and W7A/W7B regressions pass, and residue is zero. Remote closure remains pending; no Edge deployment or real messaging is authorized.
 
 Status: proposed sequence. Dates are not commitments. Each milestone requires its own scope, review, tests, backup, and deployment authorization.
 

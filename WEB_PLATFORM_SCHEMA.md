@@ -1,6 +1,6 @@
 # Web Platform Schema Blueprint
 
-> W7B migration 028 is installed on dedicated NONPROD. W7C migration 029 extends normalized inbound messages with exact W7B-recipient and canonical-application links; it adds no parallel recruitment or messaging table. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md` and `W7C_WHATSAPP_INTERESTED_APPLICATIONS.md`.
+> W7B migration 028 and W7C migration 029 are installed and rollback-checkpoint validated on dedicated NONPROD. W7C extends normalized inbound messages with exact W7B-recipient and canonical-application links; it adds no parallel recruitment or messaging table. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md` and `W7C_WHATSAPP_INTERESTED_APPLICATIONS.md`.
 
 Status: normalized target model and alignment plan. Repository migration 016 now
 implements the W1 foundation described below; no SQL was executed against production.

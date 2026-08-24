@@ -1,6 +1,6 @@
 # W7C WhatsApp INTERESTED Applications
 
-Status: implementation and local static/unit review complete; dedicated NONPROD migration and rollback-checkpoint validation remain pending. No Edge deployment, Meta configuration change, real message, or production action is part of this milestone.
+Status: implementation, dedicated NONPROD migration/runtime validation, regression, and zero-residue review are complete. Remote closure remains pending a separately authorized ahead-range review and normal non-force push. No Edge deployment, Meta configuration change, real message, or production action occurred.
 
 ## Scope and continuity
 
@@ -45,7 +45,17 @@ Reviewed pre-runtime artifacts:
 - checkpoint 032 SHA-256: `4fddf27c4246737c80bf5fc3243d0b0052b37a67b65ce98c844eb63027b3989f`; and
 - aggregate `schema.sql` plus migrations 007–029 SHA-256: `7429888214faca7524c1e119674684ab8765052bb36701dd82b22353de07ac46`.
 
-Before applying migration 029 to dedicated NONPROD, the tracked implementation must be committed and clean, the staging guard must be independently reviewed and extended through exactly migration 029, its approved HEAD and aggregate must match, and the exact TLS/read-only NONPROD identity and production denylist must pass. Apply only migration 029, verify the installed catalog/security posture, run checkpoint 032 with `ON_ERROR_STOP=1`, then run W7A checkpoints 029/030, W7B checkpoint 031, Edge tests, the full frontend suite, static/privacy/security scans, and final residue/fingerprint checks.
+The runtime procedure requires a committed clean implementation, a staging guard independently reviewed through exactly migration 029, matching approved HEAD/aggregate, and the exact TLS/read-only NONPROD identity with a clear production denylist. Only migration 029 may be applied before verifying catalog/security posture, executing checkpoint 032 with `ON_ERROR_STOP=1`, and running W7A checkpoints 029/030, W7B checkpoint 031, Edge tests, the full frontend suite, static/privacy/security scans, and final residue/fingerprint checks.
+
+## Final NONPROD validation evidence
+
+The guard passed on branch `web-platform-development` at runtime-validation HEAD `2fe4de1fb5f39ecad357a6564e0484b03969df6c`, with the approved 007–029 aggregate and allowlisted session-pooler project identity. The immediate identity transaction verified TLS required, database `postgres`, backend role `postgres`, port 5432, PostgreSQL 17.6, and `transaction_read_only=on`; the production project/host denylists were clear.
+
+Pre-state verification proved W7C objects absent, W7B campaign/recipient tables empty, and captured Candidate, Application, Requirement, and retained W7A count/digests. Only exact migration 029 was applied, with client exit 0 and transaction commit. Post-install catalog verification found both foreign keys, both partial indexes, the processed-state/link checks, RLS retained, zero W7A/W7B browser grants, and execute permission only for `service_role` on the W7C RPC. All four retained inbound rows received null W7C links and their prior-shape digest was unchanged.
+
+Checkpoint 032 passes with `ON_ERROR_STOP=1`, rollback, client exit 0, and its executable zero-residue assertion. Pre-execution catalog review found and corrected one checkpoint-only issue: the first assertion incorrectly rejected the canonical `candidate_applications` table's pre-existing authenticated grants despite its authoritative RLS policies. The corrected assertion verifies RLS on all involved canonical tables while keeping zero browser grants mandatory for the W7A/W7B tables W7C extends. Migration 029 and runtime grants were unchanged.
+
+Unchanged W7A checkpoints 029/030 and W7B checkpoint 031 pass after fresh guard/identity gates. Edge tests pass 21/21, focused W7B tests pass 17/17, the complete frontend suite passes 138/138, and static/privacy/security scans plus `git diff --check` pass. Final read-only reconciliation found zero W7C fixture residue, zero W7B campaign/recipient rows, zero retained inbound W7C links, and exact pre/post count+digest matches for Candidates, Applications, Requirements, and all retained W7A rows. Production and Meta were not contacted, no message was sent, no Edge or application deployment occurred, and no milestone beyond W7C started.
 
 ## Excluded work
 
