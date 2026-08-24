@@ -158,7 +158,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
       if (!event.phone || !event.messageType) throw new Error("Inbound event is missing normalized identifiers");
       const contactId = await callSupabaseRpc(environment, fetcher, "upsert_whatsapp_inbound_contact", { p_phone: event.phone });
       if (typeof contactId !== "string" || !contactId) throw new Error("Contact persistence returned an invalid identifier");
-      await callSupabaseRpc(environment, fetcher, "record_whatsapp_inbound_message", {
+      const inboundMessageId = await callSupabaseRpc(environment, fetcher, "record_whatsapp_inbound_message", {
         p_webhook_event_id: webhookEventId,
         p_contact_id: contactId,
         p_provider_message_id: event.providerMessageId,
@@ -169,6 +169,12 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         p_correlation_key: event.correlationKey ?? null,
         p_redacted_response: event.redactedResponse ?? null,
       });
+      if (typeof inboundMessageId !== "string" || !inboundMessageId) throw new Error("Inbound persistence returned an invalid identifier");
+      if (event.actionId?.trim().toUpperCase() === "INTERESTED") {
+        await callSupabaseRpc(environment, fetcher, "process_whatsapp_interested_response", {
+          p_inbound_message_id: inboundMessageId,
+        });
+      }
     },
   };
 }

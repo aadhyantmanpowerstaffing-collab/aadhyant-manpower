@@ -61,12 +61,13 @@ test("POST validates content type, size and JSON only after signature", async ()
 test("parser normalizes text, button, list, Flow and multi-event envelopes", () => {
   const payload = envelope({ messages: [
     { id: "m1", from: "919876543210", timestamp: "1720000000", type: "text", text: { body: "Hello" } },
-    { id: "m2", from: "919876543210", type: "interactive", interactive: { type: "button_reply", button_reply: { id: "INTERESTED", title: "Interested" } } },
+    { id: "m2", from: "919876543210", context: { id: "wamid.campaign.original" }, type: "interactive", interactive: { type: "button_reply", button_reply: { id: "INTERESTED", title: "Interested" } } },
     { id: "m3", from: "919876543210", type: "interactive", interactive: { type: "list_reply", list_reply: { id: "VIEW_JOB", title: "View job" } } },
     { id: "m4", from: "919876543210", type: "interactive", interactive: { type: "nfm_reply", nfm_reply: { name: "flow", response_json: JSON.stringify({ flow_token: "opaque", full_name: "Synthetic User", aadhaar: "must-not-copy" }) } } },
   ] });
   const events = parseWhatsAppWebhook(payload);
   assert.deepEqual(events.map((event) => event.messageType), ["text", "button", "list", "flow"]);
+  assert.equal(events[1].correlationKey, "wamid.campaign.original");
   assert.equal(events[3].redactedResponse?.full_name, "Synthetic User");
   assert.equal("aadhaar" in (events[3].redactedResponse ?? {}), false);
   assert.equal(new Set(events.map((event) => event.providerEventKey)).size, 4);
@@ -149,6 +150,40 @@ test("button, list and Flow events use the normalized inbound persistence stage"
   assert.deepEqual(processed.map(({ event }) => event.messageType), ["button", "list", "flow"]);
   assert.deepEqual(processed[2].event.redactedResponse, { full_name: "Safe" });
   assert.equal(JSON.stringify(processed).includes("blocked"), false);
+});
+
+test("INTERESTED reply persists first and then invokes the server-only W7C processor", async () => {
+  const payload = envelope({ messages: [{
+    id: "wamid.interested.reply",
+    from: "919876543210",
+    context: { id: "wamid.campaign.original" },
+    type: "interactive",
+    interactive: { type: "button_reply", button_reply: { id: "INTERESTED", title: "Interested" } },
+  }] });
+  const calls: Array<{ rpc: string; body: Record<string, unknown> }> = [];
+  const fetcher = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const rpc = String(input).split("/").at(-1)!;
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    calls.push({ rpc, body });
+    const value = rpc === "accept_whatsapp_webhook_event" ? "00000000-0000-0000-0000-000000000001"
+      : rpc === "upsert_whatsapp_inbound_contact" ? "00000000-0000-0000-0000-000000000002"
+      : rpc === "record_whatsapp_inbound_message" ? "00000000-0000-0000-0000-000000000003"
+      : { status: "application_created", application_id: "00000000-0000-0000-0000-000000000004" };
+    return new Response(JSON.stringify(value), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const persistence = createSupabaseWebhookPersistence(environment, fetcher);
+  const result = await handleWhatsAppWebhook(await signedRequest(payload), environment, persistence.acceptEvent, persistence.processEvent);
+  assert.equal(result.status, 200);
+  assert.deepEqual(calls.map((call) => call.rpc), [
+    "accept_whatsapp_webhook_event",
+    "upsert_whatsapp_inbound_contact",
+    "record_whatsapp_inbound_message",
+    "process_whatsapp_interested_response",
+  ]);
+  assert.equal(calls[2].body.p_action_id, "INTERESTED");
+  assert.equal(calls[2].body.p_correlation_key, "wamid.campaign.original");
+  assert.equal(calls[3].body.p_inbound_message_id, "00000000-0000-0000-0000-000000000003");
+  assert.equal(JSON.stringify(calls).includes(environment.supabaseSecretKey), false);
 });
 
 test("exact duplicate replay retains one logical contact and inbound message", async () => {
@@ -282,8 +317,9 @@ test("fake provider returns deterministic safe outcomes without external calls",
   }
 });
 
-test("webhook implementation contains no recruitment mutation or Graph send path", async () => {
+test("webhook delegates W7C application processing without direct recruitment mutation or Graph send", async () => {
   const source = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./index.ts", import.meta.url), "utf8"));
   assert.doesNotMatch(source, /candidate_applications|create_candidate|graph\.facebook|send_template/i);
+  assert.match(source, /process_whatsapp_interested_response/);
   assert.doesNotMatch(source, /console\.(?:log|error).*secret/i);
 });

@@ -26,11 +26,13 @@ function parseMessage(message: Record<string, unknown>): NormalizedWebhookEvent 
   if (!id) return null;
   const rawType = bounded(message.type, 40) ?? "unknown";
   const phone = bounded(message.from, 32);
+  const context = record(message.context);
   const base = {
     providerEventKey: `message:${id}`,
     providerMessageId: id,
     providerTimestamp: timestamp(message.timestamp),
     phone,
+    correlationKey: bounded(context?.id, MAX_CORRELATION),
   };
 
   if (rawType === "text") {
