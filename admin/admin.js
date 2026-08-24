@@ -557,6 +557,7 @@
       document.querySelector('.admin-tabs').hidden = true;
     }
     await window.aadhyantRecruitmentOperations?.initialize({ client, authorization });
+    await window.aadhyantWhatsAppCampaigns?.initialize({ client, authorization });
 
     const loadDashboard = async () => {
       showMessage(dashboardMessage, 'Loading dashboard data…');

@@ -1,5 +1,7 @@
 # Web Platform Delivery Roadmap
 
+> W7B local foundation adds Admin vacancy campaigns, server-derived Candidate matching, frozen/approved audiences, W7A outbox queue integration, and delivery projections. INTERESTED handling and Candidate/Application automation remain deferred to W7C.
+
 Status: proposed sequence. Dates are not commitments. Each milestone requires its own scope, review, tests, backup, and deployment authorization.
 
 ## Delivery rules
