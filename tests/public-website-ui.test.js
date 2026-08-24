@@ -173,6 +173,8 @@ test('footer includes all audiences, contact pathways and complete legal navigat
     assert.match(page, /class="footer-column public-footer-meta"/);
     assert.equal((page.match(/class="public-legal-links"/g) || []).length, 1);
     const footer = page.match(/<footer class="site-footer public-footer"([\s\S]*?)<\/footer>/)[0];
+    assert.match(footer, /href="mailto:aadhyantmanpowerstaffing@gmail\.com">aadhyantmanpowerstaffing@gmail\.com<\/a>/);
+    assert.doesNotMatch(footer, />Email Aadhyant<\/a>/);
     assert.doesNotMatch(footer, /Candidate Options|Register Interest|Submit Requirement|Join the Network|Partner Registration|Submit Vacancy/);
   });
   assert.match(navigation, /Data Deletion/);
