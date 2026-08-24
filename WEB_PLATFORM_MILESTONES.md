@@ -1,6 +1,6 @@
 # Web Platform Delivery Roadmap
 
-> W7B remote closure is complete. W7C exact inbound `INTERESTED` correlation to the canonical Candidate/Application workflow is implemented and dedicated NONPROD validated: migration 029 is installed, checkpoint 032 and W7A/W7B regressions pass, and residue is zero. Remote closure remains pending; no Edge deployment or real messaging is authorized.
+> W7B remote closure is complete. W7C exact inbound `INTERESTED` correlation to the canonical Candidate/Application workflow is implemented, migration/checkpoint validated, and deployed only to dedicated NONPROD as `whatsapp-webhook` version 5. Signed deployed-endpoint W7A/W7B/W7C orchestration, canonical Application create-once behavior, idempotency, privacy, and zero sendable queues pass. Full real Meta inbound validation remains deferred because the approved test-number action produced no observable Meta-to-Edge ingress; this is not established as an application defect. No production action, Meta configuration change, automated message, or real-Candidate contact occurred.
 
 Status: proposed sequence. Dates are not commitments. Each milestone requires its own scope, review, tests, backup, and deployment authorization.
 
