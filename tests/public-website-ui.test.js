@@ -13,6 +13,17 @@ const pages = {
   employer: read('hire-manpower', 'index.html'),
   partner: read('staffing-partner', 'index.html')
 };
+const supportingPages = {
+  candidateAssisted: read('candidate', 'register', 'index.html'),
+  employerEnquiry: read('hire-manpower', 'requirement', 'index.html'),
+  services: read('services', 'index.html'),
+  industries: read('industries', 'index.html'),
+  contact: read('contact', 'index.html'),
+  companyLogin: read('company', 'login.html'),
+  companyRegister: read('company', 'register.html'),
+  contractorLogin: read('contractor', 'login.html'),
+  contractorRegister: read('contractor', 'register.html')
+};
 const navigation = read('assets', 'js', 'public-navigation.js');
 const jobs = read('assets', 'js', 'jobs.js');
 const css = read('assets', 'css', 'public.css');
@@ -33,13 +44,20 @@ test('portal selection names all three supported role workspaces', () => {
   assert.match(pages.home, /candidate\/portal\/login\.html/);
   assert.match(pages.home, /company\/login\.html/);
   assert.match(pages.home, /contractor\/login\.html/);
+  const menuTemplate = navigation.match(/portal\.innerHTML = '([\s\S]*?)';/)[1];
+  ['Candidate Portal', 'Employer Portal', 'Contractor Portal'].forEach((label) => {
+    assert.equal((menuTemplate.match(new RegExp(`<strong>${label}<`, 'g')) || []).length, 1);
+  });
+  assert.equal((menuTemplate.match(/<a href=/g) || []).length, 3);
+  assert.doesNotMatch(navigation, /portalMenu\.prepend|candidateLink/);
+  assert.match(navigation, /if \(navigation\) \{/);
 });
 
 test('homepage preserves one primary candidate CTA and distinct employer and partner routes', () => {
   const hero = pages.home.match(/<section class="public-home-hero">([\s\S]*?)<\/section>/)[1];
   assert.match(hero, /href="jobs\/">Find Jobs/);
   assert.match(hero, /href="hire-manpower\/">Hire Manpower/);
-  assert.match(hero, /href="staffing-partner\/">Join as a staffing partner/);
+  assert.match(hero, /href="staffing-partner\/">For Contractors \/ Staffing Partners/);
 });
 
 test('homepage job discovery uses the existing safe public projection', () => {
@@ -66,11 +84,13 @@ test('job detail is a safe view over the same projected record', () => {
   assert.doesNotMatch(jobs, /company_name|contact_person|mobile|whatsapp|internal_notes/);
 });
 
-test('job cards render useful safe fields and route to detail and interest', () => {
+test('job cards route only to detail before the canonical account application', () => {
   ['job_role', 'job_location', 'open_positions', 'salary_min', 'salary_text', 'qualification', 'iti_trade', 'experience_requirement', 'shift_details', 'published_at'].forEach((field) => assert.match(jobs, new RegExp(field)));
-  assert.match(jobs, /Register Interest/);
-  assert.match(jobs, /candidate\/register\/\?requirement=/);
   assert.match(jobs, /View Job/);
+  assert.doesNotMatch(jobs, /Register Interest|candidate\/register\/\?requirement=/);
+  assert.match(pages.jobs, /data-detail-apply>Apply for this Job/);
+  assert.match(css, /\.public-job-detail\[hidden\] \{ display: none; \}/);
+  assert.match(jobs, /candidate\/portal\/login\.html\?requirement=/);
 });
 
 test('job UI has loading, empty, error and unavailable states', () => {
@@ -80,11 +100,16 @@ test('job UI has loading, empty, error and unavailable states', () => {
   assert.match(jobs, /This opportunity is no longer available/);
 });
 
-test('candidate journey distinguishes quick interest from Candidate Portal application', () => {
-  assert.match(pages.candidate, /Two supported application paths/);
-  assert.match(pages.candidate, /Quick Job Interest/);
-  assert.match(pages.candidate, /Candidate Portal/);
-  assert.match(pages.candidate, /No Aadhaar requested in the public form/);
+test('candidate journey is account based and keeps assisted registration secondary', () => {
+  assert.match(pages.candidate, /one secure Candidate account/);
+  assert.match(pages.candidate, /Browse Jobs/);
+  assert.match(pages.candidate, /Candidate Login \/ Register/);
+  assert.match(pages.candidate, /Sign in or register/);
+  assert.match(pages.candidate, /Apply and follow progress/);
+  assert.match(pages.candidate, /assisted registration form/);
+  assert.doesNotMatch(pages.candidate, /Two supported application paths|Quick Job Interest|Express interest or apply/);
+  assert.match(supportingPages.candidateAssisted, /secondary enquiry/);
+  assert.match(supportingPages.candidateAssisted, /not a Candidate Portal application/);
   assert.match(interestMigration, /register_candidate_requirement_interest/);
   assert.match(interestMigration, /insert into public\.candidate_applications/);
 });
@@ -94,22 +119,30 @@ test('candidate copy does not claim guaranteed hiring outcomes', () => {
   assert.doesNotMatch(pages.candidate, /guaranteed placement|instant hiring|100% placement/i);
 });
 
-test('employer journey exposes quick requirement and reviewed Employer Portal separately', () => {
-  assert.match(pages.employer, /Quick Requirement/);
-  assert.match(pages.employer, /No account required/);
+test('employer journey makes reviewed account access primary and public enquiry secondary', () => {
+  assert.match(pages.employer, /Primary employer journey/);
+  assert.match(pages.employer, /Create Employer Account/);
+  assert.match(pages.employer, /Employer Login/);
   assert.match(pages.employer, /Employer Portal/);
-  assert.match(pages.employer, /Registration and Admin approval required/);
+  assert.match(pages.employer, /Secondary · one-time enquiry/);
+  assert.match(pages.employer, /Does not create an Employer account/);
   assert.match(pages.employer, /href="requirement\/"/);
   assert.match(pages.employer, /company\/register\.html/);
+  assert.match(supportingPages.employerEnquiry, /Secondary one-time enquiry/);
+  assert.match(supportingPages.companyLogin, /Employer Login/);
+  assert.match(supportingPages.companyRegister, /Employer Registration/);
+  assert.doesNotMatch(supportingPages.companyRegister, /index\.html#employer-form|index\.html#contact/);
 });
 
 test('contractor journey is distinct and review gated', () => {
-  assert.match(pages.partner, /For Contractors &amp; Staffing Partners/);
+  assert.match(pages.partner, /For Contractors \/ Staffing Partners/);
   assert.match(pages.partner, /Registration begins a review—not an automatic activation/);
   assert.match(pages.partner, /Vacancies remain review-gated/);
   assert.match(pages.partner, /does not promise assignments, business, revenue or candidate outcomes/);
   assert.match(pages.partner, /contractor\/register\.html/);
   assert.match(pages.partner, /contractor\/login\.html/);
+  assert.match(supportingPages.contractorLogin, /Contractor Portal Login/);
+  assert.match(supportingPages.contractorRegister, /Register as a Staffing Partner/);
 });
 
 test('homepage uses defensible trust language and real business identity', () => {
@@ -125,8 +158,21 @@ test('footer includes all audiences, contact pathways and complete legal navigat
     assert.match(page, /class="public-footer-contact"/);
     assert.match(page, /class="footer-column public-footer-meta"/);
     assert.equal((page.match(/class="public-legal-links"/g) || []).length, 1);
+    const footer = page.match(/<footer class="site-footer public-footer"([\s\S]*?)<\/footer>/)[0];
+    assert.doesNotMatch(footer, /Candidate Options|Register Interest|Submit Requirement|Join the Network|Partner Registration|Submit Vacancy/);
   });
   assert.match(navigation, /Data Deletion/);
+});
+
+test('supporting public pages converge on the canonical role entry points', () => {
+  const contactMain = supportingPages.contact.match(/<main[\s\S]*?<\/main>/)[0];
+  assert.match(supportingPages.services, /Create Employer Account/);
+  assert.doesNotMatch(supportingPages.services, /hire-manpower\/requirement/);
+  assert.doesNotMatch(supportingPages.industries, /hire-manpower\/requirement/);
+  assert.match(contactMain, /<h3>Candidate<\/h3>[\s\S]*?href="\.\.\/jobs\/">Browse Jobs/);
+  assert.match(contactMain, /<h3>Employer<\/h3>[\s\S]*?href="\.\.\/hire-manpower\/">For Employers/);
+  assert.match(contactMain, /<h3>Contractor \/ Staffing Partner<\/h3>[\s\S]*?href="\.\.\/staffing-partner\/">For Contractors/);
+  assert.doesNotMatch(contactMain, /<h3>Company Account<\/h3>|Candidate Registration|Submit Requirement/);
 });
 
 test('homepage polish keeps desktop rhythm compact without changing mobile breakpoints', () => {

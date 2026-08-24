@@ -80,9 +80,7 @@
     const actions = make('div', 'public-job-card__actions');
     const detailLink = make('a', 'public-button public-button--primary', 'View Job');
     detailLink.href = `${onJobsPage ? './' : 'jobs/'}?requirement=${encodeURIComponent(code)}`;
-    const interestLink = make('a', 'public-button public-button--secondary', 'Register Interest');
-    interestLink.href = `${onJobsPage ? '../' : ''}candidate/register/?requirement=${encodeURIComponent(code)}`;
-    actions.append(detailLink, interestLink);
+    actions.append(detailLink);
     card.append(top, title, department, highlights, details, actions);
     return card;
   };
@@ -204,7 +202,7 @@
         ['Expected Joining', formatDate(job.expected_joining_date)]
       ].map(([term, value]) => detailItem(term, value)).filter(Boolean).forEach((item) => details.append(item));
       const code = encodeURIComponent(text(job.requirement_code));
-      detail.querySelector('[data-detail-interest]').href = `../candidate/register/?requirement=${code}`;
+      detail.querySelector('[data-detail-apply]').href = `../candidate/portal/login.html?requirement=${code}`;
       listing.hidden = true;
       detail.hidden = false;
       document.title = `${text(job.job_role) || 'Job Opportunity'} | Aadhyant Jobs`;
