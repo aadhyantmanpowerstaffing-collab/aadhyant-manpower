@@ -1,6 +1,6 @@
 # Post-W7C Admin Product Phase
 
-Status: implementation and local regression validation complete on `web-platform-development` from the remote-closed W7C closure commit `42f7611a90691d8e52a36c03a3b85b9778ac85d6`. This phase changes the Admin product surface only. It does not authorize a deployment, database mutation, Meta configuration change, WhatsApp message, real-Candidate contact, or production action.
+Status: implementation, automated Chrome interaction QA, final UI polish, and local regression validation complete on `web-platform-development`. Browser QA continued from remote-closed Admin Product HEAD `54ed298fcc246b9e0984e2e14d94ae2ce958aa8e`. This phase changes the Admin product surface only. It does not authorize a deployment, database mutation, Meta configuration change, WhatsApp message, real-Candidate contact, or production action.
 
 ## Product audit
 
@@ -118,15 +118,27 @@ Legacy duplicate submission panels remain implementation compatibility surfaces 
 - Interview and Joining RPCs are bounded to the latest 100 rows and do not currently accept an offset.
 - Network pages retain established legacy Admin/RLS data contracts. This phase did not add or broaden direct-table access.
 - Full real Meta inbound validation remains deferred under the documented Meta test-number ingress limitation. The Admin UI does not alter that conclusion.
-- Interactive browser QA could not be run because no local browser engine or Playwright/Puppeteer package was available. No claim of interactive or visual browser PASS is made.
+- Human visual review against an authenticated approved NONPROD Admin session remains pending. Automated browser QA used isolated synthetic data and does not claim that unsupported W7C conversion or Audit projections exist.
+
+## Automated browser QA and final polish
+
+- Engine: installed Google Chrome 151.0.7922.170 in headless DevTools mode; no browser dependency or package was installed.
+- Environment: loopback-only HTTP route serving the real committed Admin HTML/CSS/JS with an in-memory synthetic authorization/RPC client. It made zero external resource requests and performed no Supabase, Meta, queue, message, or retained-data mutation.
+- Screens exercised: Dashboard; Requirements / Vacancies; Candidates; Applications; Interviews; Joinings; Campaigns; Incoming / Replies; Failed / Attention; Companies; Contractors; Users / Roles.
+- Responsive matrix: 1440x1000 desktop, 1180x820 laptop, 768x1024 tablet, and 412x915 mobile. Every checked screen retained exactly one selected navigation item and one visible panel, with no document-level horizontal overflow.
+- Detail and state checks: Requirement, Candidate, and Application dialogs opened without viewport clipping; focus moved to the dialog close control; Incoming failure/retry recovered; visible focus measured as a 3px solid outline; the mobile drawer opened with correct expanded state and a 43px toggle target.
+- W7B flow: all exact eight stages were exercised with synthetic state through the final Queue screen. Queue was not invoked. Resumed-campaign criteria remained immutable and visibly explained.
+- Console/network: zero runtime exceptions, console errors, failed network loads, or external browser requests.
+- Proven defects corrected: tablet-width navigation now uses the drawer; narrow dashboard metrics retain a compact two-column layout; the desktop campaign stepper fits without a redundant scrollbar; Incoming filtering and role labels have stronger touch targets; Requirements no longer claims read-only posture when supported Match/Review actions are authorized; read-only wording is presented only once for genuinely read-only modules.
+- All temporary browser profiles, synthetic fixtures, harness files, and screenshots were removed after inspection.
 
 ## Validation record
 
 - Pre-change frontend baseline: 138/138 PASS.
-- Local executable browser/automation: unavailable at audit time (`msedge`, Chrome, Chromium, Firefox, Playwright, and Puppeteer were not available on PATH or in local packages).
-- Focused post-change Admin suites: 90/90 PASS.
+- Initial audit-time browser discovery missed installed browsers because their executables were not on PATH. The controlled follow-up found installed Chrome and Edge through their standard installation paths and used Chrome without adding packages.
+- Focused post-polish Admin suites: 92/92 PASS.
 - Focused W7B campaign suite: 17/17 PASS.
-- Complete frontend regression: 153/153 PASS.
+- Complete frontend regression: 155/155 PASS.
 - Unchanged W7A/W7B/W7C Edge suite: 21/21 PASS.
 - JavaScript syntax checks: PASS for `admin.js`, `admin-product.js`, `recruitment-operations.js`, and `whatsapp-campaigns.js`.
 - HTML structural check: PASS with 76 unique IDs and all nine local/external script references resolved.
@@ -136,6 +148,6 @@ Legacy duplicate submission panels remain implementation compatibility surfaces 
 
 ## Production-readiness posture
 
-The Admin product phase is ready for human product review, subject to the known projection and interactive-browser-QA limitations above. Before any production launch, complete authorized interactive desktop/tablet/mobile QA against the intended environment, production security/readiness review, deployment planning, and explicit production deployment approval.
+The Admin product phase is ready for human visual review, subject to the known projection limitations above. For authenticated local review, start a loopback static server from the repository root with `python -m http.server 4173 --bind 127.0.0.1`, open `http://127.0.0.1:4173/admin/`, and sign in with an approved NONPROD Admin account. Before any production launch, complete the human review, production security/readiness review, deployment planning, and explicit production deployment approval.
 
 No deployment was performed. Production and Meta were not contacted. No WhatsApp message was sent or queued as part of validation, and no real Candidate was contacted.
