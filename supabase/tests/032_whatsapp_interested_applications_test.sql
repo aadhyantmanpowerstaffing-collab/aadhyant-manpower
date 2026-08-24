@@ -28,8 +28,11 @@ begin
      or not has_function_privilege('service_role','public.process_whatsapp_interested_response(uuid)','execute') then
     raise exception 'W7C processor grant boundary is invalid';
   end if;
+  if exists(select 1 from pg_class where oid in ('public.whatsapp_inbound_messages'::regclass,
+      'public.candidate_applications'::regclass,'public.whatsapp_campaign_recipients'::regclass)
+      and not relrowsecurity) then raise exception 'W7C canonical RLS boundary changed'; end if;
   if exists(select 1 from information_schema.role_table_grants where table_schema='public'
-      and table_name in ('whatsapp_inbound_messages','candidate_applications','whatsapp_campaign_recipients')
+      and table_name in ('whatsapp_inbound_messages','whatsapp_campaign_recipients')
       and grantee in ('PUBLIC','anon','authenticated')) then raise exception 'W7C browser table grant detected'; end if;
 end $$;
 

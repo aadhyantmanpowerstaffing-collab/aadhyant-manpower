@@ -42,7 +42,7 @@ Rollback checkpoint `032_whatsapp_interested_applications_test.sql` verifies cat
 Reviewed pre-runtime artifacts:
 
 - migration 029 SHA-256: `a1214b6beea3e575d4594edef8adacbf34b53ee2da20e52761fdefd3a50ecd1e`;
-- checkpoint 032 SHA-256: `545991f1ca889d313e529b6f881df1731d5dff4e2de85b5d8496442aa0171abf`; and
+- checkpoint 032 SHA-256: `4fddf27c4246737c80bf5fc3243d0b0052b37a67b65ce98c844eb63027b3989f`; and
 - aggregate `schema.sql` plus migrations 007–029 SHA-256: `7429888214faca7524c1e119674684ab8765052bb36701dd82b22353de07ac46`.
 
 Before applying migration 029 to dedicated NONPROD, the tracked implementation must be committed and clean, the staging guard must be independently reviewed and extended through exactly migration 029, its approved HEAD and aggregate must match, and the exact TLS/read-only NONPROD identity and production denylist must pass. Apply only migration 029, verify the installed catalog/security posture, run checkpoint 032 with `ON_ERROR_STOP=1`, then run W7A checkpoints 029/030, W7B checkpoint 031, Edge tests, the full frontend suite, static/privacy/security scans, and final residue/fingerprint checks.

@@ -169,7 +169,7 @@ Do not weaken, remove, bypass, or rewrite assertions merely to obtain a PASS. Di
 - Migration 029: `supabase/migrations/029_whatsapp_interested_applications.sql`
 - Migration 029 SHA-256: `a1214b6beea3e575d4594edef8adacbf34b53ee2da20e52761fdefd3a50ecd1e`
 - Checkpoint 032: `supabase/tests/032_whatsapp_interested_applications_test.sql`
-- Checkpoint 032 SHA-256: `545991f1ca889d313e529b6f881df1731d5dff4e2de85b5d8496442aa0171abf`
+- Checkpoint 032 SHA-256: `4fddf27c4246737c80bf5fc3243d0b0052b37a67b65ce98c844eb63027b3989f`
 - Aggregate schema plus migrations 007–029 SHA-256: `7429888214faca7524c1e119674684ab8765052bb36701dd82b22353de07ac46`
 - The staging guard is extended through exactly migration 029.
 - Migration 029 is not installed on approved NONPROD yet; its objects must be absent in the verified pre-state.
