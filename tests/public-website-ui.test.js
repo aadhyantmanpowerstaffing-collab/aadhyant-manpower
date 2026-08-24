@@ -53,6 +53,13 @@ test('portal selection names all three supported role workspaces', () => {
   assert.match(navigation, /if \(navigation\) \{/);
 });
 
+test('runtime-injected shared footer uses the published email as its visible mailto label', () => {
+  const footerTemplate = navigation.match(/footer\.innerHTML = '([\s\S]*?)';/)[1];
+  assert.equal((footerTemplate.match(/href="mailto:aadhyantmanpowerstaffing@gmail\.com">aadhyantmanpowerstaffing@gmail\.com<\/a>/g) || []).length, 1);
+  assert.doesNotMatch(footerTemplate, />Email Aadhyant<\/a>/);
+  assert.match(footerTemplate, /href="tel:\+919586785800">\+91 95867 85800<\/a>/);
+});
+
 test('homepage preserves one primary candidate CTA and distinct employer and partner routes', () => {
   const hero = pages.home.match(/<section class="public-home-hero">([\s\S]*?)<\/section>/)[1];
   assert.match(hero, /href="jobs\/">Find Jobs/);
