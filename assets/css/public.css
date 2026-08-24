@@ -556,24 +556,46 @@
 .public-site .public-action-panel > div:last-child { display: flex; flex-wrap: wrap; gap: .65rem; flex: 0 0 auto; }
 
 .public-site .public-footer { padding-top: 0; color: #bdcad4; background: var(--public-primary-strong); }
-.public-site .public-footer__lead { min-height: 11rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-bottom: 1px solid rgba(255,255,255,.15); }
+.public-site .public-footer__lead { min-height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-bottom: 1px solid rgba(255,255,255,.15); }
 .public-site .public-footer__lead .eyebrow { margin-bottom: .45rem; }
 .public-site .public-footer__lead h2 { max-width: 40rem; margin: 0; color: #fff; font-size: clamp(1.7rem, 3.4vw, 2.75rem); line-height: 1.12; }
-.public-site .public-footer-grid { grid-template-columns: 1.35fr repeat(4, 1fr); gap: 2.4rem; padding-block: 3.2rem; }
+.public-site .public-footer-grid { display: grid; grid-template-columns: minmax(13rem, 1.35fr) repeat(3, minmax(8rem, .82fr)) minmax(13rem, 1.1fr); gap: clamp(1.25rem, 2.4vw, 2.2rem); padding-block: 2.5rem; }
 .public-site .public-footer .footer-brand p { max-width: 17rem; }
 .public-site .public-footer-identity { color: #8799a9 !important; font-size: .75rem !important; }
+.public-site .public-footer-contact { display: grid; gap: .3rem; margin-top: 1rem; }
+.public-site .public-footer-contact a { color: #bdcad4; font-size: .78rem; }
 .public-site .public-footer .footer-column h2 { margin-bottom: .9rem; color: #fff; font-size: .7rem; letter-spacing: .12em; }
 .public-site .public-footer .footer-column a { margin-bottom: .45rem; color: #bdcad4; font-size: .8rem; }
 .public-site .public-footer .footer-column a:hover { color: #fff; }
+.public-site .public-footer-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-content: start; }
+.public-site .public-footer-meta > div { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.public-site .public-footer-meta .public-legal-links { display: grid; justify-content: stretch; gap: .45rem; }
+.public-site .public-footer-meta .public-legal-links a { margin: 0; }
 .public-site .public-footer .footer-bottom { min-height: 4.5rem; }
 .public-site .public-legal-links { display: flex; flex-wrap: wrap; gap: 1.1rem; }
 .public-site .public-legal-links a { color: #bdcad4; font-size: .76rem; }
+
+@media (min-width: 821px) {
+  .public-site.public-home-page .public-home-hero__grid { min-height: 34rem; gap: clamp(2.5rem, 6vw, 5rem); padding-block: clamp(3.75rem, 5.5vw, 5rem); }
+  .public-site.public-home-page .public-home-section { padding-block: clamp(3.9rem, 5.5vw, 5rem); }
+  .public-site.public-home-page .public-section-heading, .public-site.public-home-page .public-home-heading { margin-bottom: 2rem; }
+  .public-site.public-home-page .public-jobs-empty { margin-top: 1.5rem; padding: 2.5rem; }
+  .public-site.public-home-page .public-journey-grid article { padding: 2rem; }
+  .public-site.public-home-page .public-journey-number { margin-bottom: 2.25rem; }
+  .public-site.public-home-page .public-industries-layout { gap: clamp(2.5rem, 6vw, 5rem); }
+  .public-site.public-home-page .public-audience-ctas { padding-top: 4rem; }
+  .public-site.public-home-page .public-audience-cta { min-height: 18rem; padding: 2rem; }
+}
 
 @media (max-width: 1180px) {
   .public-site .container { width: min(calc(100% - 2.5rem), 72rem); }
   .public-site .public-nav { gap: .9rem; }
   .public-site .public-nav > a { font-size: .8rem; }
-  .public-site .public-footer-grid { grid-template-columns: 1.25fr repeat(2, 1fr); }
+}
+
+@media (max-width: 980px) and (min-width: 821px) {
+  .public-site .public-footer-grid { grid-template-columns: repeat(3, 1fr); }
+  .public-site .public-footer .footer-brand { grid-column: 1 / -1; }
 }
 
 @media (max-width: 1080px) {
@@ -614,6 +636,7 @@
   .public-site .public-job-detail { grid-template-columns: 1fr; }
   .public-site .public-job-detail__aside { position: static; }
   .public-site .public-footer-grid { grid-template-columns: 1fr 1fr; }
+  .public-site .public-footer .footer-brand { grid-column: 1 / -1; }
 }
 
 @media (max-width: 620px) {
@@ -651,5 +674,7 @@
   .public-site .public-audience-cta { min-height: 15rem; padding: 1.6rem; }
   .public-site .public-footer__lead { align-items: flex-start; flex-direction: column; padding-block: 2.5rem; }
   .public-site .public-footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .public-site .public-footer .footer-brand { grid-column: auto; }
+  .public-site .public-footer-meta { grid-template-columns: 1fr 1fr; }
   .public-site .public-footer .footer-bottom { align-items: flex-start; flex-direction: column; padding-block: 1.2rem; }
 }

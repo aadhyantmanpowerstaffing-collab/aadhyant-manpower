@@ -120,8 +120,23 @@ test('homepage uses defensible trust language and real business identity', () =>
 });
 
 test('footer includes all audiences, contact pathways and complete legal navigation', () => {
-  ['Jobs &amp; Candidates', 'Employers', 'Contractors', 'Privacy Policy', 'Terms of Use', 'Data Deletion'].forEach((label) => assert.match(pages.home, new RegExp(label)));
+  ['Candidates / Jobs', 'Employers', 'Contractors', 'Aadhyant', 'Legal', 'Privacy Policy', 'Terms of Use', 'Data Deletion'].forEach((label) => assert.match(pages.home, new RegExp(label)));
+  Object.values(pages).forEach((page) => {
+    assert.match(page, /class="public-footer-contact"/);
+    assert.match(page, /class="footer-column public-footer-meta"/);
+    assert.equal((page.match(/class="public-legal-links"/g) || []).length, 1);
+  });
   assert.match(navigation, /Data Deletion/);
+});
+
+test('homepage polish keeps desktop rhythm compact without changing mobile breakpoints', () => {
+  assert.match(css, /public-home-page \.public-home-hero__grid \{ min-height: 34rem;/);
+  assert.match(css, /public-home-page \.public-home-section \{ padding-block: clamp\(3\.9rem, 5\.5vw, 5rem\);/);
+  assert.match(css, /public-home-page \.public-jobs-empty \{ margin-top: 1\.5rem; padding: 2\.5rem;/);
+  assert.match(css, /public-home-page \.public-audience-cta \{ min-height: 18rem;/);
+  assert.match(css, /@media \(min-width: 821px\)/);
+  assert.match(css, /@media \(max-width: 820px\)/);
+  assert.match(css, /@media \(max-width: 620px\)/);
 });
 
 test('core public pages have unique metadata and canonical URLs', () => {
