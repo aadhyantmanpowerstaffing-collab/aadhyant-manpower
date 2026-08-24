@@ -1,6 +1,6 @@
 # Web Platform Schema Blueprint
 
-> W7B migration 028 (not yet applied) adds `whatsapp_campaigns` and `whatsapp_campaign_recipients`. These narrow campaign/audience tables reference canonical requirements, Candidates, resolved WhatsApp contacts, and the W7A outbox; they do not duplicate those domains. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md`.
+> W7B migration 028 is installed on dedicated NONPROD. W7C migration 029 extends normalized inbound messages with exact W7B-recipient and canonical-application links; it adds no parallel recruitment or messaging table. See `W7B_WHATSAPP_VACANCY_CAMPAIGNS.md` and `W7C_WHATSAPP_INTERESTED_APPLICATIONS.md`.
 
 Status: normalized target model and alignment plan. Repository migration 016 now
 implements the W1 foundation described below; no SQL was executed against production.
@@ -361,6 +361,12 @@ Full Aadhaar is not persisted: W6 retains a deterministic SHA-256 equality finge
 Migration 019 adds no business table. It resolves exactly one company membership from `auth.uid()` and projects the tenant's canonical requirements, associated applications, interviews, and joinings through narrow RPCs. Company owners/HR admins may update allowlisted profile fields; company recruiters may manage permitted requirement lifecycle actions; company viewers are read-only. Legal/verification fields and all internal recruitment mutations remain server-controlled.
 
 The company candidate projection deliberately omits contact details, Auth/candidate identifiers, internal notes, staff identities, unrelated history, and other tenant data. Migration 015 base-table isolation remains unchanged, and W3 remains authoritative for candidate, application-stage, interview, and joining mutations.
+
+## W7C INTERESTED application bridge
+
+Migration 029 reuses `whatsapp_inbound_messages`, W7B campaign recipients, the W7A outbox/provider message identity, resolved WhatsApp contacts, canonical Candidates and Requirements, and the unique canonical `candidate_applications` pair. Its server-only processor accepts no browser-supplied recruitment identity. It derives the full chain from the persisted inbound row and requires contact, Candidate, recipient, campaign, Requirement, purpose, consent class, correlation ID, and successful outbound state to agree.
+
+Successful processing adds recipient/application foreign-key links to the inbound row and creates a WhatsApp-sourced `interested` application only when the canonical pair does not already exist. Existing applications are linked without lifecycle mutation. Invalid chains receive bounded safe failure classifications and no application link. RLS and browser table grants remain unchanged; the new RPC is service-role-only and does not send a message.
 
 ## 10. Matching model (design only)
 

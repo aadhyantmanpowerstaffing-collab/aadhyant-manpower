@@ -15,8 +15,8 @@ This file governs autonomous work in the repository root and all descendant path
 ## Verified continuation point
 
 - Branch: `web-platform-development`
-- Verified HEAD at handoff: `ff87bf3706306181bc4b9587e7b5216d80dfadd8`
-- At handoff, the local branch is ahead of `origin/web-platform-development` by 4 and behind by 0.
+- Verified remote-closed W7B HEAD at the W7C handoff: `ff2d436c321a7d2cde5dac1bd11b2b85fe4a041a`
+- At the W7C handoff, local and `origin/web-platform-development` were even.
 - At handoff, the tracked worktree and index are clean.
 - `supabase/.temp/` is expected untracked local Supabase CLI metadata. Never commit it.
 - Docker Desktop, Supabase CLI, and Codex CLI are available.
@@ -30,7 +30,8 @@ Treat the branch, HEAD, ahead/behind state, and cleanliness above as a handoff c
 - W7B implementation and dedicated NONPROD database/runtime validation are complete.
 - Migration 028 is installed on NONPROD. At the start of the closure run its objects were already present and empty, so the migration's fail-closed preflight correctly prevented replay.
 - Corrected checkpoint 031 and W7A regressions 029/030 pass with client exit 0; W7A Edge tests pass 20/20 and the frontend baseline passes 138/138.
-- W7C has not started. Do not start or implement W7C without separate milestone authorization.
+- W7C planning and implementation are separately authorized. It must preserve W7A/W7B and create or reuse only canonical Candidate Applications.
+- W7C migration 029 and checkpoint 032 are in local implementation/runtime-validation scope. No Edge deployment or real messaging is authorized.
 
 ## Canonical architecture
 
@@ -103,8 +104,8 @@ Fail closed on any mismatch, ambiguity, missing evidence, or guard failure. Do n
 - Never edit an already-installed migration.
 - Use upgrade-safe corrective migrations for fixes to installed behavior.
 - Preserve exact migration numbering and ordering.
-- The current migration range is through 028.
-- Do not create migration 029 or later unless the authorized milestone explicitly requires it.
+- The current authorized migration range is through 029 for W7C.
+- Do not create migration 030 or later unless an upgrade-safe W7C correction is required or a later milestone is explicitly authorized.
 - Recalculate and verify hashes after any authorized migration or checkpoint change.
 - Extend the staging guard only after independent static review.
 
@@ -138,8 +139,8 @@ Do not weaken, remove, bypass, or rewrite assertions merely to obtain a PASS. Di
 - Recheck consent and suppression server-side at the time required by the established contracts.
 - Keep marketing consent and transactional consent distinct.
 - W7B owns campaign, matching, and queue behavior.
-- W7C will own the `INTERESTED` response and application workflow later.
-- Do not implement W7C while finishing or validating W7B.
+- W7C owns exact `INTERESTED` response correlation and canonical application creation/reuse.
+- Do not expand W7C into Candidate creation, application-stage advancement, interview/reminder automation, live sending, or a later chatbot/inbox milestone.
 - A validation fixture must not become a real candidate contact or real bulk send.
 
 ## Git workflow
@@ -163,8 +164,19 @@ Do not weaken, remove, bypass, or rewrite assertions merely to obtain a PASS. Di
 - W7B campaign and recipient tables contain zero rows after runtime validation.
 - Retained W7A live data must not be deleted, truncated, overwritten, or treated as disposable test data.
 
+## Current verified W7C facts
+
+- Migration 029: `supabase/migrations/029_whatsapp_interested_applications.sql`
+- Migration 029 SHA-256: `a1214b6beea3e575d4594edef8adacbf34b53ee2da20e52761fdefd3a50ecd1e`
+- Checkpoint 032: `supabase/tests/032_whatsapp_interested_applications_test.sql`
+- Checkpoint 032 SHA-256: `545991f1ca889d313e529b6f881df1731d5dff4e2de85b5d8496442aa0171abf`
+- Aggregate schema plus migrations 007–029 SHA-256: `7429888214faca7524c1e119674684ab8765052bb36701dd82b22353de07ac46`
+- The staging guard is extended through exactly migration 029.
+- Migration 029 is not installed on approved NONPROD yet; its objects must be absent in the verified pre-state.
+- The W7C Edge changes are source-only and must not be deployed under the current authorization.
+
 Any hash mismatch must fail closed. Determine whether the file changed through an authorized, reviewed commit before updating any recorded or guarded hash.
 
-## Next approval boundary
+## Current W7C task and next approval boundary
 
-W7B is technically ready for final closure review. The next action is human review of the complete local-ahead range and, only if separately authorized, a normal non-force push followed by remote-HEAD verification. Do not deploy, contact real users, enable a real WhatsApp send, or begin W7C/a materially new milestone without explicit authorization.
+Complete W7C implementation, guarded dedicated-NONPROD migration 029 application, checkpoint 032, W7A/W7B/frontend regressions, zero-residue/fingerprint verification, self-review, and focused local commits. Stop before any push unless separately authorized. Edge deployment, production mutation/deployment, Meta configuration, real-user contact/message, and any milestone beyond W7C each require explicit human authorization.

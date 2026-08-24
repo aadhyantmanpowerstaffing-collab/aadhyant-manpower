@@ -83,7 +83,7 @@ Every W7A SECURITY DEFINER function has `search_path = ''`, uses schema-qualifie
 - accept-first status orchestration through the existing `record_whatsapp_message_event` RPC after a service-role lookup by provider message ID;
 - prompt `EVENT_RECEIVED` acknowledgement.
 
-It does not call Graph, create Candidates/applications, match jobs, or send reminders. Secrets are read only from the server environment and are not logged or echoed.
+The W7A receiver does not call Graph, create Candidates directly, match jobs, or send reminders. The additive W7C path delegates an exact normalized `INTERESTED` reply to a service-role RPC after durable inbound persistence; the Edge code still performs no direct recruitment-table write. Secrets are read only from the server environment and are not logged or echoed.
 
 Status callbacks for `sent`, `delivered`, `read`, and `failed` are signature-verified and accepted into the webhook ledger before projection. The Edge receiver resolves exactly one outbound message using the provider message ID and delegates the immutable event insert and monotonic state transition to `record_whatsapp_message_event`; it performs no direct table write. Exact duplicates and out-of-order callbacks remain governed by the database idempotency and monotonic projection contract. In particular, sent cannot regress delivered/read, delivered cannot regress read, and late failure cannot regress delivered/read.
 
@@ -130,4 +130,4 @@ Before deploying the Edge Function or enabling production communication:
 
 Local Edge tests exercise the Web-compatible receiver and status orchestration. Deployed NONPROD Edge validation is complete, but the Meta test-number inbound-delivery limitation above remains open. No production deployment or real-candidate contact occurred. Retention, legal, provider, operational, and production approvals remain deferred.
 
-W7B may add approved-vacancy campaigns and deterministic audience snapshots. W7C may add staged intake and an idempotent canonical application bridge. Neither is part of W7A.
+W7B adds approved-vacancy campaigns and deterministic audience snapshots. W7C adds an idempotent server-only canonical application bridge for exact `INTERESTED` replies. Both remain additive consumers of W7A; neither replaces its webhook, contact, privacy, consent, delivery, or outbox contracts.

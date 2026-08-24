@@ -1,6 +1,6 @@
 # W7B WhatsApp Vacancy Campaigns
 
-Status: NONPROD database/runtime validation is complete. Migration 028 is installed on the dedicated approved NONPROD project, corrected checkpoint 031 passes with client exit 0, W7A checkpoints 029/030 pass, W7A Edge unit tests pass 20/20, and the complete frontend regression passes 138/138. All synthetic fixtures rolled back with zero residue, canonical recruitment fingerprints were unchanged, production and Meta were not contacted, and no message was sent. W7C has not started.
+Status: NONPROD database/runtime validation and remote closure are complete. Migration 028 is installed on the dedicated approved NONPROD project, corrected checkpoint 031 passes with client exit 0, W7A checkpoints 029/030 pass, W7A Edge unit tests pass 20/20, and the complete frontend regression passes 138/138. All synthetic fixtures rolled back with zero residue, canonical recruitment fingerprints were unchanged, production and Meta were not contacted, and no message was sent. W7C is now separately authorized and preserves these contracts.
 
 ## Scope
 
@@ -28,7 +28,7 @@ All exposed operations are authenticated Admin-only `SECURITY DEFINER` RPCs with
 
 ## W7C boundary
 
-W7B prepares deterministic `INTERESTED` correlation metadata only. It does not handle replies, create or mutate Candidates or Applications, trigger registration, transition applications, automate interviews, schedule reminders, or implement a live Graph sender. Those workflows remain W7C or later scope.
+W7B prepares deterministic `INTERESTED` correlation metadata only. W7C consumes that metadata through a server-only bridge to the canonical application system; W7B itself still does not handle replies, create or mutate Candidates or Applications, trigger registration, transition applications, automate interviews, schedule reminders, or implement a live Graph sender.
 
 ## Validation boundary
 
