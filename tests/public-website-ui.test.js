@@ -143,6 +143,7 @@ test('employer journey makes reviewed account access primary and public enquiry 
   assert.match(supportingPages.companyLogin, /Employer Login/);
   assert.match(supportingPages.companyRegister, /Employer Registration/);
   assert.doesNotMatch(supportingPages.companyRegister, /index\.html#employer-form|index\.html#contact/);
+  assert.doesNotMatch(supportingPages.companyRegister, /Brief manpower requirement \/ notes|one-time enquiry|public manpower enquiry/);
 });
 
 test('contractor journey is distinct and review gated', () => {
@@ -159,6 +160,8 @@ test('contractor journey is distinct and review gated', () => {
 test('homepage uses defensible trust language and real business identity', () => {
   assert.match(pages.home, /Approved public opportunities/);
   assert.match(pages.home, /Reviewed workspace access/);
+  assert.match(pages.home, /Clear process\. Clear expectations\./);
+  assert.doesNotMatch(pages.home, /Clear process\. Defensible expectations\./);
   assert.match(pages.home, /GSTIN 24ACNFA4445J1Z9/);
   assert.doesNotMatch(pages.home, /verified candidates|guaranteed|AI-powered|instant matching/i);
 });
