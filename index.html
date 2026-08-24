@@ -3,362 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102447'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Aadhyant Manpower & Staffing connects employers, candidates and approved Staffing Partners through professional industrial workforce support and job opportunities.">
-  <meta name="theme-color" content="#102447">
+  <meta name="description" content="Aadhyant Manpower & Staffing connects industrial employers, candidates and approved staffing partners through structured recruitment and workforce coordination.">
+  <meta name="theme-color" content="#0b1f3a">
   <link rel="canonical" href="https://aadhyantmanpower.in/">
-  <title>Aadhyant Manpower & Staffing | Industrial Staffing &amp; Job Opportunities</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1f3a'/%3E%3Cpath d='M17 46 29 17h7l12 29h-8l-2-6H26l-2 6zm11-13h8l-4-10z' fill='%23fff'/%3E%3C/svg%3E">
+  <title>Aadhyant Manpower &amp; Staffing | Industrial Jobs &amp; Recruitment</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="assets/css/public.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Aadhyant Manpower & Staffing","url":"https://aadhyantmanpower.in/","email":"aadhyantmanpowerstaffing@gmail.com","telephone":"+91-95867-85800","address":{"@type":"PostalAddress","addressLocality":"Kadi","addressRegion":"Gujarat","postalCode":"384440","addressCountry":"IN"}}</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="config.js" defer></script>
   <script src="supabase-client.js" defer></script>
   <script src="assets/js/public-navigation.js" defer></script>
-  <script src="script.js" defer></script>
+  <script src="assets/js/jobs.js" defer></script>
 </head>
-<body class="public-site">
+<body class="public-site public-home-page">
   <a class="skip-link" href="#main-content">Skip to main content</a>
-
   <header class="site-header public-header" data-public-header>
-    <div class="container header-inner public-header__inner">
-      <a class="brand public-brand" href="#home" aria-label="Aadhyant Manpower & Staffing home">
-        <span class="brand-mark" aria-hidden="true">A</span>
-        <span class="brand-copy">
-          <strong>AADHYANT</strong>
-          <small>MANPOWER &amp; STAFFING</small>
-        </span>
-      </a>
-
-      <button class="menu-toggle public-menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation" data-public-menu-button>
-        <span class="menu-toggle-label">Menu</span>
-        <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-      </button>
-
+    <div class="container public-header__inner">
+      <a class="brand public-brand" href="./" aria-label="Aadhyant home"><span class="brand-mark" aria-hidden="true">A</span><span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span></a>
+      <button class="menu-toggle public-menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation" data-public-menu-button><span class="menu-toggle-label">Menu</span><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
       <nav class="primary-nav public-nav" id="primary-navigation" aria-label="Primary navigation" data-public-navigation>
-        <a href="./">Home</a>
-        <a href="about/">About</a>
-        <a href="services/">Services</a>
-        <a href="industries/">Industries</a>
-        <a href="jobs/">Jobs</a>
-        <a href="contact/">Contact</a>
-        <div class="public-portal" data-public-portal>
-          <button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button>
-          <div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu>
-            <a href="company/login.html">Company Login</a>
-            <a href="contractor/login.html">Staffing Partner Login</a>
-          </div>
-        </div>
-        <div class="nav-actions public-nav__actions">
-          <a class="nav-link-secondary public-button public-button--secondary" href="jobs/">Find Jobs</a>
-          <a class="button button-small button-primary public-button public-button--primary" href="hire-manpower/">Hire Manpower</a>
-        </div>
+        <a href="jobs/">Jobs</a><a href="hire-manpower/">For Employers</a><a href="staffing-partner/">For Contractors</a><a href="about/">About</a><a href="contact/">Contact</a>
+        <div class="public-portal" data-public-portal><button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button><div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu><p>Choose your workspace</p><a href="candidate/portal/login.html"><strong>Candidate Portal</strong><span>Profile, jobs and applications</span></a><a href="company/login.html"><strong>Employer Portal</strong><span>Requirements and hiring progress</span></a><a href="contractor/login.html"><strong>Contractor Portal</strong><span>Vacancies and assignments</span></a></div></div>
       </nav>
     </div>
   </header>
-
   <main id="main-content">
-    <section class="public-home-hero" id="home">
+    <section class="public-home-hero">
       <div class="container public-home-hero__grid">
-        <div class="public-home-hero__content">
-          <p class="eyebrow">Aadhyant Workforce Platform</p>
-          <h1>Reliable Workforce.<br><span>Better Opportunities.</span><br>Stronger Partnerships.</h1>
-          <p>Aadhyant supports employers, candidates, and approved Staffing Partners through structured industrial workforce coordination.</p>
-          <div class="public-home-actions"><a class="public-button public-button--primary" href="hire-manpower/">Hire Manpower</a><a class="public-button public-button--secondary" href="jobs/">Find Jobs</a></div>
-          <a class="public-hero-link" href="staffing-partner/">Become a Staffing Partner <span aria-hidden="true">→</span></a>
-        </div>
-        <aside class="public-home-hero__panel" aria-label="Aadhyant platform participants">
-          <p>One coordinated workforce network</p>
-          <ul><li><strong>Companies</strong><span>Share workforce requirements</span></li><li><strong>Candidates</strong><span>Register for suitable opportunities</span></li><li><strong>Staffing Partners</strong><span>Work on approved assignments</span></li></ul>
-        </aside>
+        <div class="public-home-hero__content"><p class="eyebrow">Industrial manpower &amp; recruitment</p><h1>People for industry.<br><span>Opportunities for people.</span></h1><p class="public-hero-lead">Aadhyant helps employers communicate manpower needs, candidates discover suitable work, and approved staffing partners coordinate recruitment through clear, structured pathways.</p><div class="public-home-actions"><a class="public-button public-button--primary" href="jobs/">Find Jobs</a><a class="public-button public-button--secondary" href="hire-manpower/">Hire Manpower</a></div><a class="public-hero-link" href="staffing-partner/">Join as a staffing partner <span aria-hidden="true">→</span></a></div>
+        <aside class="public-workforce-board" aria-label="Aadhyant workforce network"><div class="public-workforce-board__top"><span>Workforce network</span><strong>Three clear ways to begin</strong></div><ol><li><span>01</span><div><strong>Find work</strong><small>Browse approved public opportunities</small></div></li><li><span>02</span><div><strong>Build a workforce</strong><small>Share a defined manpower requirement</small></div></li><li><span>03</span><div><strong>Partner with Aadhyant</strong><small>Join the reviewed staffing network</small></div></li></ol><p><span aria-hidden="true">●</span> Kadi, Mahesana, Gujarat</p></aside>
       </div>
     </section>
-
-    <section class="public-home-section" id="about" aria-labelledby="pathways-title">
-      <div class="container"><div class="public-home-heading"><p class="eyebrow">Choose your pathway</p><h2 id="pathways-title">Workforce support built around your role</h2><p>Start with the route that fits what you need today.</p><a class="public-text-link" href="about/">Read About Aadhyant</a></div>
-        <div class="public-pathway-grid">
-          <article class="public-pathway-card" id="employers"><span>01</span><h3>Hire Manpower</h3><p>Submit workforce requirements and connect with Aadhyant for structured staffing support.</p><a href="hire-manpower/">Explore Employer Options <b aria-hidden="true">→</b></a></article>
-          <article class="public-pathway-card" id="candidates"><span>02</span><h3>Find Jobs</h3><p>Explore workforce opportunities and register your profile for suitable openings.</p><a href="candidate/">Explore Candidate Options <b aria-hidden="true">→</b></a></article>
-          <article class="public-pathway-card public-pathway-card--accent"><span>03</span><h3>Become a Staffing Partner</h3><p>Learn how approved workforce partners coordinate assigned requirements through Aadhyant.</p><a href="staffing-partner/">Explore the Partner Journey <b aria-hidden="true">→</b></a></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="public-home-section public-home-section--soft" id="services" aria-labelledby="services-title">
-      <div class="container public-overview-grid"><div class="public-home-heading"><p class="eyebrow">Workforce services</p><h2 id="services-title">Practical support for industrial hiring</h2><p>Focused services shaped around real workforce requirements and operational needs.</p><a class="public-text-link" href="services/">Explore Services</a></div>
-        <div class="public-service-list" id="services-list"><article><h3>Industrial Manpower</h3><p>Skilled, semi-skilled, and general workforce support.</p></article><article><h3>Contract Staffing</h3><p>Coordinated staffing support for defined requirements.</p></article><article><h3>Workforce Mobilisation</h3><p>Candidate communication and joining coordination.</p></article><article><h3>Recruitment Support</h3><p>Requirement-led sourcing and interview coordination.</p></article><article><h3>Partner Coordination</h3><p>Controlled assignments with approved Staffing Partners.</p></article></div>
-      </div>
-    </section>
-
-    <section class="public-home-section" id="industries" aria-labelledby="industries-title">
-      <div class="container public-industries"><div class="public-home-heading"><p class="eyebrow">Industries we serve</p><h2 id="industries-title">Workforce support for industrial operations</h2><p>Aadhyant coordinates staffing support around practical role, location, and operational needs.</p><a class="public-text-link" href="industries/">View Industries</a></div><ul id="industry-list"><li>Manufacturing</li><li>Automotive</li><li>Engineering</li><li>Warehouse &amp; Logistics</li><li>FMCG</li><li>Industrial Operations</li></ul></div>
-    </section>
-
-    <section class="public-home-section public-home-section--navy" aria-labelledby="process-title">
-      <div class="container"><div class="public-home-heading"><p class="eyebrow">How Aadhyant works</p><h2 id="process-title">Clear coordination from requirement to deployment</h2></div><ol class="public-process"><li><span>01</span><div><h3>Requirement / Opportunity</h3><p>Employers share clearly defined workforce needs.</p></div></li><li><span>02</span><div><h3>Workforce Coordination</h3><p>Aadhyant coordinates candidates and approved Staffing Partners.</p></div></li><li><span>03</span><div><h3>Interview &amp; Deployment</h3><p>Suitable candidates proceed through the employer's process.</p></div></li></ol></div>
-    </section>
-
-    <section class="public-home-section" aria-labelledby="trust-title">
-      <div class="container public-trust"><div class="public-home-heading"><p class="eyebrow">Why Aadhyant</p><h2 id="trust-title">Structured, professional workforce support</h2><p>A clear operating model for employers, candidates, and approved Staffing Partners.</p></div><div class="public-trust-grid"><article><h3>Industrial Focus</h3><p>Support aligned with practical workforce environments.</p></article><article><h3>Defined Pathways</h3><p>Separate journeys for every platform participant.</p></article><article><h3>Transparent Handling</h3><p>Requirements and assignments follow controlled workflows.</p></article><article><h3>Professional Communication</h3><p>Coordinated follow-up throughout the hiring process.</p></article></div><p class="public-credential"><strong>Registered business</strong> · GSTIN 24ACNFA4445J1Z9 · Kadi, Mahesana, Gujarat</p></div>
-    </section>
-
-    <section class="public-home-section public-home-section--soft" id="jobs" aria-labelledby="jobs-title">
-      <div class="container public-jobs-teaser"><div><p class="eyebrow">Workforce opportunities</p><h2 id="jobs-title">Looking for your next opportunity?</h2><p>Register your profile to share your qualification, trade, experience, and preferred work location with Aadhyant.</p></div><a class="public-button public-button--primary" href="candidate/register/">Register as a Candidate</a></div>
-    </section>
-
-    <section class="public-final-cta" id="contact" aria-labelledby="final-cta-title">
-      <div class="container"><div class="public-home-heading"><p class="eyebrow">Start with Aadhyant</p><h2 id="final-cta-title">Choose the workforce pathway for you</h2></div><div class="public-final-cta__actions"><a href="hire-manpower/"><span>Need workforce?</span><strong>Hire Manpower →</strong></a><a href="candidate/"><span>Looking for work?</span><strong>Explore Candidate Options →</strong></a><a href="staffing-partner/"><span>Staffing agency?</span><strong>Become a Staffing Partner →</strong></a></div><p>Prefer to talk? <a href="contact/">Contact Aadhyant</a> · <a href="tel:+919586785800">+91 95867 85800</a></p></div>
-    </section>
-
-    <section class="hero legacy-home-section" hidden aria-hidden="true">
-      <div class="hero-pattern" aria-hidden="true"></div>
-      <div class="container hero-grid">
-        <div class="hero-content">
-          <p class="eyebrow">Industrial manpower &amp; staffing solutions</p>
-          <h2>Reliable Manpower.<br><span>Right People. Right Time.</span></h2>
-          <p class="hero-lead">Aadhyant Manpower &amp; Staffing helps industrial businesses meet workforce requirements through practical recruitment support, candidate mobilisation and staffing coordination.</p>
-          <div class="button-group">
-            <a class="button button-primary" href="hire-manpower/">Hire Manpower <span aria-hidden="true">→</span></a>
-            <a class="button button-outline" href="jobs/">Find a Job</a>
-          </div>
-          <p class="hero-support"><span aria-hidden="true">●</span> Industrial workforce solutions for growing businesses.</p>
-        </div>
-
-        <aside class="hero-panel" aria-label="Workforce support overview">
-          <div class="panel-accent"></div>
-          <p class="panel-label">Workforce support</p>
-          <h2>Built around your operational requirements.</h2>
-          <ul class="check-list">
-            <li>Requirement-based candidate coordination</li>
-            <li>Industrial and manufacturing focus</li>
-            <li>Recruitment and joining support</li>
-          </ul>
-          <a class="text-link" href="tel:+919586785800">Discuss your requirement <span aria-hidden="true">→</span></a>
-        </aside>
-      </div>
-    </section>
-
-    <section class="value-strip" hidden aria-hidden="true">
-      <div class="container value-grid">
-        <div><span>01</span><strong>Industrial Workforce Focus</strong></div>
-        <div><span>02</span><strong>Skilled &amp; General Manpower</strong></div>
-        <div><span>03</span><strong>Employer-Focused Support</strong></div>
-        <div><span>04</span><strong>Candidate Mobilisation</strong></div>
-      </div>
-    </section>
-
-    <section class="section about-section" hidden aria-hidden="true">
-      <div class="container about-grid">
-        <div class="section-intro">
-          <p class="eyebrow">About Aadhyant</p>
-          <h2>Workforce Support Built Around Business Needs</h2>
-        </div>
-        <div class="about-copy">
-          <p>Aadhyant Manpower &amp; Staffing supports employers, HR teams, manpower partners and candidates with industrial manpower, recruitment support, workforce sourcing and staffing coordination.</p>
-          <p>Our approach connects clearly defined business requirements with suitable candidate availability, helping coordinate the journey from vacancy communication to interview and joining support.</p>
-          <a class="text-link" href="services/">Learn More <span aria-hidden="true">→</span></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-soft" hidden aria-hidden="true">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">Our Services</p>
-          <h2>Practical Staffing Support for Industry</h2>
-          <p>Workforce services shaped around role, location, qualification and operational requirements.</p>
-        </div>
-        <div class="service-grid">
-          <article class="service-card">
-            <span class="card-number">01</span>
-            <h3>Industrial Manpower</h3>
-            <p>Workforce support for industrial and manufacturing requirements.</p>
-          </article>
-          <article class="service-card">
-            <span class="card-number">02</span>
-            <h3>Skilled &amp; Semi-Skilled Staffing</h3>
-            <p>Candidates based on job role, trade, qualification and operational needs.</p>
-          </article>
-          <article class="service-card">
-            <span class="card-number">03</span>
-            <h3>General Workforce</h3>
-            <p>Support for suitable general manpower requirements across industrial operations.</p>
-          </article>
-          <article class="service-card">
-            <span class="card-number">04</span>
-            <h3>Bulk Recruitment</h3>
-            <p>Candidate sourcing support where employers require multiple workers.</p>
-          </article>
-          <article class="service-card">
-            <span class="card-number">05</span>
-            <h3>Candidate Mobilisation</h3>
-            <p>Candidate outreach and coordination aligned with recruitment needs.</p>
-          </article>
-          <article class="service-card">
-            <span class="card-number">06</span>
-            <h3>Workforce Coordination</h3>
-            <p>Support between hiring requirements and candidate availability.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section industries-section" hidden aria-hidden="true">
-      <div class="container industries-grid">
-        <div class="section-heading">
-          <p class="eyebrow">Industries We Serve</p>
-          <h2>Workforce Solutions Suitable for Industrial Operations</h2>
-          <p>Support structured around the role requirements and working environments found across key industrial sectors.</p>
-        </div>
-        <div class="industry-list">
-          <article><span>01</span><h3>Automobile</h3></article>
-          <article><span>02</span><h3>Manufacturing</h3></article>
-          <article><span>03</span><h3>Engineering</h3></article>
-          <article><span>04</span><h3>Warehouse &amp; Logistics</h3></article>
-          <article><span>05</span><h3>FMCG</h3></article>
-          <article><span>06</span><h3>Packaging</h3></article>
-          <article><span>07</span><h3>Pharmaceutical</h3></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="pathways" hidden aria-hidden="true">
-      <article class="pathway pathway-employer">
-        <div class="pathway-content">
-          <p class="eyebrow light">For Employers &amp; HR Teams</p>
-          <h2>Looking for Reliable Manpower?</h2>
-          <p>Share your workforce requirement, job roles, work location and expected joining needs with our team.</p>
-          <a class="button button-light" href="hire-manpower/">Submit Manpower Requirement <span aria-hidden="true">→</span></a>
-          <small>Prepare your requirement and choose WhatsApp or email after review.</small>
-        </div>
-      </article>
-      <article class="pathway pathway-candidate">
-        <div class="pathway-content">
-          <p class="eyebrow">For Candidates</p>
-          <h2>Looking for Your Next Job Opportunity?</h2>
-          <p>Connect with us for information about suitable industrial employment opportunities as they become available.</p>
-          <a class="button button-dark" href="candidate/register/">Register as Candidate <span aria-hidden="true">→</span></a>
-          <small>Review your details before choosing how to contact our team.</small>
-        </div>
-      </article>
-    </section>
-
-    <section class="public-compatibility-link" id="employer-form" aria-labelledby="employer-compatibility-title">
-      <div class="container"><p class="eyebrow">Hire Manpower</p><h2 id="employer-compatibility-title">The Employer form has a dedicated page.</h2><p>Continue to the canonical Quick Requirement form. No account is required.</p><a class="public-button public-button--primary" href="hire-manpower/requirement/">Submit Requirement</a></div>
-    </section>
-
-    <section class="public-compatibility-link" id="candidate-form" aria-labelledby="candidate-compatibility-title">
-      <div class="container"><p class="eyebrow">Candidate Registration</p><h2 id="candidate-compatibility-title">Candidate registration has a dedicated page.</h2><p>Continue to the canonical Candidate Registration form. No Candidate login is required.</p><a class="public-button public-button--primary" href="candidate/register/">Register as a Candidate</a></div>
-    </section>
-
-    <section class="section opportunities" hidden aria-hidden="true">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">Jobs Preview</p>
-          <h2>Current Opportunities</h2>
-        </div>
-        <div class="empty-state">
-          <div class="empty-icon" aria-hidden="true">↗</div>
-          <div>
-            <h3>New opportunities are being prepared.</h3>
-            <p>Current openings will be published here as they become available.</p>
-          </div>
-          <a class="button button-outline" href="candidate/register/">Register as Candidate</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-dark" hidden aria-hidden="true">
-      <div class="container why-grid">
-        <div class="section-heading">
-          <p class="eyebrow light">Why Aadhyant</p>
-          <h2>A Clear, Practical Approach to Workforce Coordination</h2>
-          <p>Focused support for employers and candidates throughout the recruitment coordination process.</p>
-        </div>
-        <div class="approach-list">
-          <article><span>01</span><div><h3>Industry-Focused Sourcing</h3><p>Candidate sourcing aligned with industrial workforce requirements.</p></div></article>
-          <article><span>02</span><div><h3>Requirement-Based Coordination</h3><p>Clear attention to role, location, qualification and joining needs.</p></div></article>
-          <article><span>03</span><div><h3>Candidate Screening Support</h3><p>Profile coordination based on the information provided by employers.</p></div></article>
-          <article><span>04</span><div><h3>Responsive Communication</h3><p>Practical follow-up between workforce demand and candidate availability.</p></div></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section credentials" id="business" hidden aria-hidden="true">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">Business Credentials</p>
-          <h2>Registered Business Information</h2>
-          <p>Key details for Aadhyant Manpower &amp; Staffing.</p>
-        </div>
-        <div class="credential-grid">
-          <div><small>LEGAL / TRADE NAME</small><strong>Aadhyant Manpower &amp; Staffing</strong></div>
-          <div><small>GSTIN</small><strong>24ACNFA4445J1Z9</strong></div>
-          <div><small>CONSTITUTION</small><strong>Partnership</strong></div>
-          <div><small>GST REGISTRATION</small><strong>Regular</strong></div>
-        </div>
-        <div class="credential-address">
-          <small>PRINCIPAL PLACE OF BUSINESS</small>
-          <p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section contact-section" hidden aria-hidden="true">
-      <div class="container contact-grid">
-        <div class="contact-intro">
-          <p class="eyebrow">Contact Aadhyant</p>
-          <h2>Let’s Discuss Your Workforce Requirement</h2>
-          <p>Contact our team for manpower requirements, recruitment assistance, candidate registration or business enquiries.</p>
-          <p class="contact-note">Choose the employer or candidate pathway above, or call and email our team directly.</p>
-        </div>
-        <div class="contact-actions">
-          <a class="contact-card" href="tel:+919586785800">
-            <span class="contact-label">Call</span>
-            <strong>+91 95867 85800</strong>
-            <span class="contact-arrow" aria-hidden="true">↗</span>
-          </a>
-          <a class="contact-card" href="mailto:aadhyantmanpowerstaffing@gmail.com">
-            <span class="contact-label">Email</span>
-            <strong>aadhyantmanpowerstaffing@gmail.com</strong>
-            <span class="contact-arrow" aria-hidden="true">↗</span>
-          </a>
-          <div class="contact-card contact-address">
-            <span class="contact-label">Office</span>
-            <p>First Floor, 23/B, Dharti City Complex, Sujatpura Road, Near Railway Crossing, Radhe Dharti City, Kadi, Mahesana, Gujarat – 384440</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <section class="public-value-strip" aria-label="Aadhyant service principles"><div class="container"><div><span>01</span><strong>Industrial recruitment</strong></div><div><span>02</span><strong>Approved public opportunities</strong></div><div><span>03</span><strong>Reviewed partner access</strong></div><div><span>04</span><strong>Structured hiring coordination</strong></div></div></section>
+    <section class="public-home-section public-jobs-discovery" aria-labelledby="featured-jobs-title"><div class="container"><div class="public-section-heading public-section-heading--split"><div><p class="eyebrow">Current opportunities</p><h2 id="featured-jobs-title">Start with a real opening.</h2><p>Public jobs are drawn from requirements approved for public visibility. Company and contact details remain protected unless they are part of the supported public record.</p></div><a class="public-text-link" href="jobs/">Browse all jobs <span aria-hidden="true">→</span></a></div><div class="public-jobs-state public-jobs-state--compact" data-home-jobs-loading role="status"><p>Loading current opportunities…</p></div><div class="public-job-grid public-job-grid--featured" data-home-jobs-list aria-live="polite" aria-busy="true"></div><div class="public-jobs-empty" data-home-jobs-empty hidden><h3>No public openings are listed right now.</h3><p>You can create a Candidate account for future opportunities or check again later.</p><div><a class="public-button public-button--primary" href="candidate/portal/register.html">Create Candidate Account</a><a class="public-button public-button--secondary" href="candidate/">Candidate Options</a></div></div><div class="public-jobs-state public-jobs-error" data-home-jobs-error role="status" hidden><h3>Current opportunities could not be loaded.</h3><p>The Candidate and contact pathways remain available.</p><a class="public-text-link" href="candidate/">Explore Candidate options</a></div></div></section>
+    <section class="public-home-section public-home-section--soft" aria-labelledby="journeys-title"><div class="container"><div class="public-section-heading"><p class="eyebrow">How it works</p><h2 id="journeys-title">One platform. Three distinct journeys.</h2><p>Choose the path that matches your role; each uses the existing supported workflow.</p></div><div class="public-journey-grid"><article><span class="public-journey-number">01</span><p class="public-card-kicker">Candidates</p><h3>Find and express interest</h3><ol><li>Browse public jobs</li><li>Review role and work details</li><li>Register interest or use your Candidate Portal</li></ol><a class="public-text-link" href="candidate/">Explore Candidate journey</a></article><article><span class="public-journey-number">02</span><p class="public-card-kicker">Employers</p><h3>Share a manpower need</h3><ol><li>Define role, location and headcount</li><li>Submit a quick requirement or use the Employer Portal</li><li>Coordinate hiring progress</li></ol><a class="public-text-link" href="hire-manpower/">Explore Employer solutions</a></article><article><span class="public-journey-number">03</span><p class="public-card-kicker">Staffing partners</p><h3>Join the reviewed network</h3><ol><li>Register your agency</li><li>Complete Aadhyant review</li><li>Submit and manage supported vacancies</li></ol><a class="public-text-link" href="staffing-partner/">Explore Contractor journey</a></article></div></div></section>
+    <section class="public-home-section" aria-labelledby="industries-title"><div class="container public-industries-layout"><div class="public-section-heading"><p class="eyebrow">Workforce focus</p><h2 id="industries-title">Built for practical industrial hiring.</h2><p>Aadhyant coordinates around each employer's stated role, location, qualification and operating conditions.</p><a class="public-text-link" href="industries/">Explore workforce categories</a></div><div class="public-industry-list"><article><span>01</span><h3>Manufacturing</h3><p>Production, assembly and plant-support roles.</p></article><article><span>02</span><h3>Automotive</h3><p>Shop-floor, quality and production support.</p></article><article><span>03</span><h3>Engineering &amp; Trades</h3><p>Technical, ITI and skilled trade requirements.</p></article><article><span>04</span><h3>Warehouse &amp; Logistics</h3><p>Material movement and fulfilment operations.</p></article><article><span>05</span><h3>Industrial Support</h3><p>General workforce and operational support roles.</p></article></div></div></section>
+    <section class="public-home-section public-home-section--navy" aria-labelledby="why-title"><div class="container public-why-layout"><div class="public-section-heading"><p class="eyebrow">Why Aadhyant</p><h2 id="why-title">Clear process builds better workforce decisions.</h2><p>Aadhyant keeps public inquiries, authenticated accounts and operational coordination distinct, with expectations stated at every step.</p></div><div class="public-proof-grid"><article><span aria-hidden="true">01</span><h3>Requirement-led</h3><p>Hiring begins with defined roles, headcount and work conditions.</p></article><article><span aria-hidden="true">02</span><h3>Role-specific access</h3><p>Candidates, employers and partners use separate supported workspaces.</p></article><article><span aria-hidden="true">03</span><h3>Transparent expectations</h3><p>Registration is a starting point, not a promise of placement or assignment.</p></article><article><span aria-hidden="true">04</span><h3>Legitimate business identity</h3><p>Registered in Gujarat with direct business contact and published legal information.</p></article></div></div></section>
+    <section class="public-home-section public-audience-ctas" aria-labelledby="next-step-title"><div class="container"><div class="public-section-heading"><p class="eyebrow">Your next step</p><h2 id="next-step-title">Move forward through the right pathway.</h2></div><div class="public-audience-cta-grid"><article class="public-audience-cta public-audience-cta--candidate"><p>Looking for work?</p><h3>See current jobs and choose how to apply.</h3><a class="public-button public-button--light" href="jobs/">Browse Jobs</a></article><article class="public-audience-cta public-audience-cta--employer"><p>Need manpower?</p><h3>Share a requirement with Aadhyant.</h3><a class="public-button public-button--light" href="hire-manpower/requirement/">Submit Requirement</a></article><article class="public-audience-cta public-audience-cta--partner"><p>Have vacancies or a candidate network?</p><h3>Join the reviewed staffing network.</h3><a class="public-button public-button--light" href="staffing-partner/">Partner With Us</a></article></div></div></section>
   </main>
-
-  <footer class="site-footer public-footer">
-    <div class="container footer-main">
-      <div class="footer-brand">
-        <a class="brand brand-light" href="./" aria-label="Aadhyant Manpower & Staffing home">
-          <span class="brand-mark" aria-hidden="true">A</span>
-          <span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span>
-        </a>
-        <p>Industrial manpower, recruitment support and staffing coordination for workforce requirements.</p>
-      </div>
-      <div class="footer-column">
-        <h2>Explore</h2>
-        <a href="about/">About</a><a href="services/">Services</a><a href="industries/">Industries</a><a href="jobs/">Jobs</a><a href="contact/">Contact</a>
-      </div>
-      <div class="footer-column">
-        <h2>Work With Us</h2>
-        <a href="hire-manpower/">Hire Manpower</a><a href="candidate/register/">Candidate Registration</a><a href="jobs/">Jobs</a><a href="staffing-partner/">Become a Staffing Partner</a><a href="company/login.html">Company Login</a><a href="contractor/login.html">Staffing Partner Login</a>
-      </div>
-      <div class="footer-column footer-contact">
-        <h2>Contact</h2>
-        <a href="tel:+919586785800">+91 95867 85800</a>
-        <a href="mailto:aadhyantmanpowerstaffing@gmail.com">aadhyantmanpowerstaffing@gmail.com</a>
-        <p>Kadi, Mahesana, Gujarat – 384440</p>
-      </div>
-    </div>
-    <div class="container footer-bottom">
-      <p>GSTIN: 24ACNFA4445J1Z9</p>
-      <p>© 2026 Aadhyant Manpower &amp; Staffing. All rights reserved.</p>
-    </div>
-  </footer>
+  <footer class="site-footer public-footer"><div class="container public-footer__lead"><div><p class="eyebrow">Aadhyant Manpower &amp; Staffing</p><h2>Workforce coordination with a clear path forward.</h2></div><a class="public-button public-button--light" href="contact/">Contact Aadhyant</a></div><div class="container public-footer-grid"><div class="footer-brand"><a class="brand brand-light" href="./"><span class="brand-mark" aria-hidden="true">A</span><span class="brand-copy"><strong>AADHYANT</strong><small>MANPOWER &amp; STAFFING</small></span></a><p>Industrial manpower, recruitment support and staffing coordination.</p><p class="public-footer-identity">GSTIN 24ACNFA4445J1Z9<br>Kadi, Mahesana, Gujarat 384440</p></div><div class="footer-column"><h2>Jobs &amp; Candidates</h2><a href="jobs/">Browse Jobs</a><a href="candidate/">Candidate Options</a><a href="candidate/register/">Register Interest</a><a href="candidate/portal/login.html">Candidate Portal</a></div><div class="footer-column"><h2>Employers</h2><a href="hire-manpower/">Staffing Solutions</a><a href="hire-manpower/requirement/">Submit Requirement</a><a href="company/login.html">Employer Portal</a><a href="services/">Services</a></div><div class="footer-column"><h2>Contractors</h2><a href="staffing-partner/">Join the Network</a><a href="contractor/register.html">Partner Registration</a><a href="contractor/login.html">Contractor Portal</a><a href="contractor/vacancies.html">Submit Vacancy</a></div><div class="footer-column footer-contact"><h2>Aadhyant</h2><a href="about/">About</a><a href="industries/">Industries</a><a href="contact/">Contact</a><a href="tel:+919586785800">+91 95867 85800</a><a href="mailto:aadhyantmanpowerstaffing@gmail.com">Email Aadhyant</a></div></div><div class="container footer-bottom"><p>© 2026 Aadhyant Manpower &amp; Staffing.</p><nav class="public-legal-links" aria-label="Legal"><a href="privacy/">Privacy Policy</a><a href="terms/">Terms of Use</a><a href="data-deletion/">Data Deletion</a></nav></div></footer>
 </body>
 </html>
