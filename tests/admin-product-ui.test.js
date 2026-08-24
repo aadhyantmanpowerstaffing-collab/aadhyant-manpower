@@ -88,6 +88,13 @@ test('application pipeline and recruitment lists preserve canonical server autho
   assert.doesNotMatch(recruitmentSource, /(?:client|supabase)\.from\s*\(/);
 });
 
+test('requirements are labelled read-only only when no supported action is authorized', () => {
+  assert.equal(recruitment.isModuleReadOnly('recruitmentRequirements', { application_mutation:true }, {}), false);
+  assert.equal(recruitment.isModuleReadOnly('recruitmentRequirements', { application_mutation:false }, { staff_management_access:true }), false);
+  assert.equal(recruitment.isModuleReadOnly('recruitmentRequirements', { application_mutation:false }, {}), true);
+  assert.match(styles, /\.w3-panel\[data-read-only="true"\] \.panel-heading \.admin-eyebrow::after\{content:none\}/);
+});
+
 test('campaign portfolio adds bounded status paging, cancellation and exact eight stages', () => {
   assert.match(campaignSource, /p_status:filter\.value\|\|null,p_limit:25,p_offset:offset/);
   assert.match(campaignSource, /admin_cancel_whatsapp_campaign/);
@@ -121,11 +128,19 @@ test('loading empty error retry and double-submit protections are explicit', () 
 });
 
 test('mobile navigation and responsive table cards preserve actions', () => {
-  assert.match(styles, /@media\(max-width:760px\)/);
+  assert.match(styles, /@media\(max-width:900px\)/);
   assert.match(styles, /\.admin-sidebar\.is-open/);
   assert.match(styles, /\.responsive-table td::before\{content:attr\(data-label\)/);
   assert.match(styles, /\.responsive-table \.table-actions/);
   assert.match(styles, /prefers-reduced-motion/);
+});
+
+test('browser-QA polish keeps tablet navigation compact and touch controls usable', () => {
+  assert.match(styles, /@media\(min-width:1200px\)\{\.campaign-stepper\{grid-template-columns:repeat\(8,minmax\(0,1fr\)\);overflow-x:hidden\}/);
+  assert.match(styles, /\.product-workspace \.section-heading select\{min-width:190px;min-height:42px/);
+  assert.match(styles, /\.staff-role-list label\{min-height:36px/);
+  assert.match(styles, /@media\(max-width:430px\)\{\.quick-action-grid\{grid-template-columns:1fr\}/);
+  assert.doesNotMatch(styles, /@media\(max-width:430px\)\{\.dashboard-metrics/);
 });
 
 test('unsupported audit and W7C conversion projections are documented rather than fabricated', () => {
