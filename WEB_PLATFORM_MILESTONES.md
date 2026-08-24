@@ -1,6 +1,6 @@
 # Web Platform Delivery Roadmap
 
-> W7B local foundation adds requirement-derived Admin vacancy campaigns, frozen/approved audiences, idempotent W7A outbox queue integration, server-owned delivery reconciliation, and bounded campaign projections. Migration/checkpoint runtime validation remains pending; INTERESTED handling and Candidate/Application automation remain deferred to W7C.
+> W7B NONPROD database/runtime validation is complete: migration 028 is installed, corrected checkpoint 031 and W7A regressions 029/030 pass, frontend tests pass 138/138, and synthetic residue is zero. INTERESTED handling and Candidate/Application automation remain deferred to W7C.
 
 Status: proposed sequence. Dates are not commitments. Each milestone requires its own scope, review, tests, backup, and deployment authorization.
 
