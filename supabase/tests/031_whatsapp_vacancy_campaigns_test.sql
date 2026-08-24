@@ -60,9 +60,10 @@ select set_config('w7b.c1',public.upsert_whatsapp_inbound_contact('+919876600001
 select set_config('w7b.c2',public.upsert_whatsapp_inbound_contact('+919876600002')::text,true);
 select set_config('w7b.c7',public.upsert_whatsapp_inbound_contact('+919876600007')::text,true);
 select set_config('w7b.c8',public.upsert_whatsapp_inbound_contact('+919876600008')::text,true);
+reset role;
+-- Owner-only fixture setup preserves the W7A service_role RPC boundary.
 update public.whatsapp_contacts set marketing_consent_status='opted_in',consent_source='synthetic_test',consent_scope='vacancy_campaign',consent_recorded_at=now(),consent_policy_version='w7b-test' where id in (current_setting('w7b.c1')::uuid,current_setting('w7b.c2')::uuid,current_setting('w7b.c8')::uuid);
 update public.whatsapp_contacts set marketing_consent_status='opted_out',opted_out_at=now(),opt_out_source='synthetic_test' where id=current_setting('w7b.c7')::uuid;
-reset role;
 
 select set_config('request.jwt.claim.sub','89600000-0000-0000-0000-000000000002',true);
 set local role authenticated;
@@ -138,7 +139,7 @@ begin
 end $$;
 reset role;
 
-set local role service_role;
+-- Owner-only fixture state transition; application paths still use W7A RPCs.
 update public.whatsapp_outbound_messages set state='sending',send_phase='claimed',lease_owner='w7b-checkpoint',lease_expires_at=now()+interval '5 minutes' where id=current_setting('w7b.outbound')::uuid;
 update public.whatsapp_contacts set candidate_id=null where id=current_setting('w7b.c2')::uuid;
 reset role;
@@ -150,7 +151,6 @@ do $$ begin
 end $$;
 reset role;
 
-set local role service_role;
 update public.whatsapp_contacts set candidate_id='89600000-0000-0000-0002-000000000003',resolution_status='resolved' where id=current_setting('w7b.c2')::uuid;
 reset role;
 set local role authenticated;
@@ -159,7 +159,6 @@ do $$ begin
 end $$;
 reset role;
 
-set local role service_role;
 update public.whatsapp_outbound_messages set state='delivered',send_phase='confirmed',provider_message_id='w7b-provider-safe',sent_at=now(),delivered_at=now(),lease_owner=null,lease_expires_at=null where id=current_setting('w7b.outbound')::uuid;
 update public.whatsapp_outbound_messages o set state=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'read' else 'failed' end,
   send_phase=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'confirmed' else 'terminal' end,provider_message_id=case when cr.candidate_id='89600000-0000-0000-0002-000000000001' then 'w7b-mixed-success' else null end,
@@ -189,14 +188,12 @@ do $$ declare detail jsonb; begin
 end $$;
 reset role;
 
-set local role service_role;
 update public.whatsapp_contacts set marketing_consent_status='opted_in',opted_out_at=null,opt_out_source=null,opt_out_reason_category=null where id=current_setting('w7b.c2')::uuid;
 reset role;
 set local role authenticated;
 select public.admin_queue_whatsapp_campaign(current_setting('w7b.failure')::uuid);
 select set_config('w7b.failed_outbound',(select outbound_message_id::text from public.whatsapp_campaign_recipients where campaign_id=current_setting('w7b.failure')::uuid and recipient_status='queued'),true);
 reset role;
-set local role service_role;
 update public.whatsapp_outbound_messages set state='failed',send_phase='terminal',failed_at=now(),last_error_category='synthetic_terminal',last_error_code='synthetic_terminal' where id=current_setting('w7b.failed_outbound')::uuid;
 reset role;
 set local role authenticated;
