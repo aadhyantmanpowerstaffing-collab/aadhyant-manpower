@@ -352,6 +352,155 @@ Critical gaps: no verified production log retention/access, external error monit
 - [ ] **BLOCKED** Actual previous artifacts, snapshots, DNS/Meta baselines, and restore rehearsal are not captured.
 - [ ] **MANUAL** Assign rollback owner, thresholds, decision authority, and communication channel before launch.
 
+## Privileged read-only production export — 2026-08-24
+
+This export used authenticated management `GET` requests and Supabase's server-enforced `/database/query/read-only` endpoint. The SQL execution context reported `transaction_read_only=on` and role `supabase_read_only_user`. No production write, migration, checkpoint, Auth or Storage mutation, backup/restore, deployment, DNS change, Meta action, or message occurred. Access tokens and secret-valued configuration fields were held only in memory and were not printed or recorded.
+
+### Exact production baseline
+
+- Supabase project `wsuctjhbqiedttfnwjvf` is `ACTIVE_HEALTHY` in `ap-northeast-1`, PostgreSQL 17.6 (platform build 17.6.1.155).
+- The exact application catalog is object-equivalent through migration 015: twelve public tables, the migration-011 public projection, and the migration-015 Company/Contractor projections are present; migration-016 foundation tables and every later Candidate-document/W7 table are absent.
+- `supabase_migrations.schema_migrations` and the entire `supabase_migrations` schema are absent. Production therefore has no authoritative migration ledger. The missing suffix must be proven from catalog preflight and never inferred from a ledger that does not exist.
+- All twelve public application tables have RLS enabled. The catalog contains 40 public policies, 43 public indexes, 12 application triggers, and the expected 007–015 constraints and application function signatures. No application-object name/signature/security-setting drift from the repository 007–015 surface was found. A byte-for-byte function-body or historic execution proof is impossible without a prior catalog fingerprint/ledger, so the deployment preflight must recapture definitions and hashes.
+- All 26 repository application functions in `public`/`private` use explicit `search_path=''`; all externally callable mutation functions are `SECURITY DEFINER` and ACL-scoped as expected. Supabase additionally owns `public.rls_auto_enable()` and the `ensure_rls` event trigger with `search_path=pg_catalog`; this is a platform-managed object, not an application migration.
+- Anonymous access is limited by RLS/policy. `authenticated` has `SELECT` only on `admin_users`, `candidates`, `employer_requirements`, and `interviews`; it has `INSERT, SELECT, UPDATE` on the other eight legacy application tables, still bounded by RLS.
+- Auth has two confirmed email users, one non-orphaned Admin link, one active Company platform account, and no enrolled MFA factors. Email/password signup and email confirmation are enabled. The allowlist is `https://aadhyantmanpower.in/**`. There is no custom SMTP, CAPTCHA, password complexity, breached-password check, session timebox, inactivity timeout, or single-session enforcement. Password minimum length is 6; TOTP capability is enabled but unenrolled; refresh-token rotation is enabled with a 10-second reuse interval; JWT lifetime is 3600 seconds.
+- Storage has zero buckets and zero `storage` RLS policies. The global file limit is 50 MiB. No Candidate document bucket, MIME restriction, object policy, scanning, or quarantine capability exists in production.
+- WAL-G capability is enabled, but PITR is disabled, the physical-backup inventory is empty, and no active backup/PITR add-on is present. No restorable production point is currently proven.
+- Edge Function inventory is empty; `whatsapp-webhook` is not deployed.
+- GitHub Pages is a legacy build from `main` `/`, custom domain `aadhyantmanpower.in`, HTTPS enforcement on. The built deployment is commit `29e0e553d06a0d3039a64053b443f75200feab88`, not release `91041094a58b43b3f85b940e7d7c9e8d9ae72222`. Publishing repository root currently exposes SQL migrations/tests and internal documentation.
+- Database SSL enforcement is off. Network restrictions allow `0.0.0.0/0` and `::/0`. PgBouncer is transaction mode on `db.wsuctjhbqiedttfnwjvf.supabase.co:6543`; the direct database endpoint also uses that hostname. The regional Supavisor/pooler hostname is `aws-1-ap-northeast-1.pooler.supabase.com`.
+
+### Legacy Admin compatibility matrix
+
+| Browser path | Production ACL/RLS result | Classification |
+|---|---|---|
+| `interviews` history `SELECT` | authenticated `SELECT`; Admin RLS policy | Allowed for a linked Admin |
+| `requirement_contractors` and nested `contractors` `SELECT` | authenticated `SELECT`; Admin RLS policies | Allowed for a linked Admin |
+| `candidate_applications` with nested `candidates`/`employer_requirements` `SELECT` | authenticated `SELECT` on all relations; Admin RLS policies | Allowed for a linked Admin |
+| Dynamic `SELECT`/count on requirements, Candidates, Companies, Contractors | authenticated `SELECT`; Admin RLS policies | Allowed for a linked Admin |
+| Company/Contractor membership and nested `platform_users` `SELECT` | authenticated `SELECT`; Admin RLS policies | Allowed for a linked Admin |
+| Post-RPC verification reads on Applications/Interviews | authenticated `SELECT`; Admin RLS policies | Allowed for a linked Admin |
+| Direct `UPDATE` of `candidates(status, internal_notes)` | no authenticated `UPDATE` table grant | Denied |
+| Direct `UPDATE` of `employer_requirements(status, internal_notes)` | no authenticated `UPDATE` table grant | Denied |
+| Admin mutation RPCs present through migration 015 | authenticated execute plus server-side `private.is_admin()` | Allowed only for a linked Admin |
+| Current release Admin workspaces requiring migrations 016–029 | required tables/RPCs absent | Denied/incompatible until controlled migration |
+
+The direct-update compatibility path must be removed rather than widening production table grants. Read paths should also be moved behind safe Admin projections where practical; no remediation may rely on browser-held broad base-table privileges.
+
+## Ordered P0 remediation plan
+
+### P0-A — allowlisted deployment artifact
+
+- **Defect/evidence:** legacy Pages publishes `main` repository root and exposes SQL/tests/docs; deployed commit is divergent from the approved release.
+- **Required change:** create a deterministic `dist/` build from an explicit runtime allowlist and a reviewed GitHub Pages Actions workflow using the Pages artifact/deploy actions. Include only approved HTML, CSS, JavaScript, favicon/data required at runtime, role portals, legal routes, and a generated environment config. Exclude `.git*`, docs, tests, `supabase/`, scripts, package metadata, local environment files, logs, and source-only QA artifacts. Produce an artifact manifest and digest.
+- **Prerequisites:** agree the release branch-to-production promotion rule and archive the current Pages artifact/commit metadata.
+- **Rollback:** redeploy the archived prior artifact by digest; never reset or force-push a branch.
+- **Risk:** high confidentiality/release-integrity risk if allowlist is incomplete or permissive.
+- **Action/approval:** repository change first; changing Pages source/workflow and deploying require separate production deployment approval.
+
+### P0-B — backup/restore proof
+
+- **Defect/evidence:** PITR off, zero backup entries, zero backup add-ons, no proven restore point or drill.
+- **Required change:** select and enable an approved managed backup/PITR tier or create an approved encrypted logical/physical backup process; capture Auth/Storage/Edge/config baselines; restore into a separately named isolated project; verify catalog, row-count/digest invariants, Auth linkage, and private Storage metadata; document retention and RTO/RPO.
+- **Prerequisites:** backup owner, encryption/key custody, retention/legal approval, isolated target and budget.
+- **Rollback:** backup enablement/settings revert only after a successful retained baseline; the drill target is isolated and must not share production credentials or callbacks.
+- **Risk:** critical—migrations must not start without a tested recovery path.
+- **Action/approval:** dashboard/infrastructure action and isolated restore mutation; explicit production backup-setting and separate restore-drill approval required.
+
+### P0-C — production DB catalog/drift proof
+
+- **Defect/evidence:** object boundary is 015 but no migration ledger exists; historic body-level identity cannot be proven.
+- **Required change:** preserve this read-only baseline; add a repository preflight that exports canonical table/column/constraint/index/trigger/policy/ACL/function-definition fingerprints and fails closed unless production matches the approved 015 baseline exactly. Record the missing suffix as 016–029 only after review. Never replay `schema.sql` or 007–015.
+- **Prerequisites:** P0-B recovery proof before any subsequent write; independent review of catalog fingerprints and migration preflights.
+- **Rollback:** read-only preflight has none; catalog mismatch stops the release.
+- **Risk:** critical if drift is ignored; low for the read-only tooling itself.
+- **Action/approval:** repository tooling/documentation; no mutation approval for export, but any corrective migration requires separate production mutation approval.
+
+### P0-D — DB network/TLS hardening
+
+- **Defect/evidence:** database SSL enforcement off; IPv4/IPv6 CIDRs fully open.
+- **Required change:** inventory exact CI/operator egress and supported Supabase pooler/direct requirements; enforce TLS; restrict database CIDRs to approved operator/runner paths; validate transaction-pooler compatibility and emergency access. Do not depend on mutable IPv6 literals.
+- **Prerequisites:** P0-B, P0-C, a tested access path, break-glass owner, and an exported current setting baseline.
+- **Rollback:** restore the exact prior CIDRs/SSL setting only under incident authority; retain dashboard access for recovery.
+- **Risk:** high availability risk from lockout; high security risk if left open.
+- **Action/approval:** Supabase infrastructure mutation; explicit production network/SSL approval required.
+
+### P0-E — environment/config binding
+
+- **Defect/evidence:** tracked production config is the browser default; local safeguards denylist the project ref but omit the direct DB/API/pooler hosts; `config.js` is cached for 600 seconds.
+- **Required change:** generate config during the allowlisted build from an explicit environment manifest; bind expected origin, project ref, API host, and release digest; make local/NONPROD servers refuse production identity unless separately authorized; deliver config atomically with `no-store` or equivalent revalidation. Add all production hosts to the safety guard.
+- **Prerequisites:** P0-A artifact design and exact host inventory below.
+- **Rollback:** redeploy the prior signed config/artifact pair; never mix HTML from one release with config from another.
+- **Risk:** critical environment-crossing risk.
+- **Action/approval:** repository plus hosting/CDN configuration; production delivery requires deployment approval.
+
+### P0-F — web security headers/dependency pinning
+
+- **Defect/evidence:** no CSP, HSTS, MIME, frame, referrer or permissions headers; Supabase JS uses an unpinned CDN major without SRI.
+- **Required change:** select a hosting/CDN control plane that can set reviewed headers and differentiated caching; self-host or pin an exact reviewed Supabase JS build with integrity; create a CSP covering only proven origins; test portals and static pages under the policy.
+- **Prerequisites:** P0-A and P0-E; documented external-host inventory.
+- **Rollback:** versioned header/config policy and prior dependency artifact, with an emergency CSP rollback that does not remove HTTPS.
+- **Risk:** high browser compromise/availability risk from a wrong CSP.
+- **Action/approval:** repository and hosting/CDN action; production header/hosting changes require deployment/infrastructure approval.
+
+### P0-G — Auth production hardening
+
+- **Defect/evidence:** password minimum 6, no complexity/HIBP/CAPTCHA/session expiry/single-session policy/custom SMTP; zero MFA enrollments including the sole Admin.
+- **Required change:** approve exact password/session/rate/CAPTCHA values; configure a verified custom SMTP sender and recovery delivery; keep redirects restricted to the production origin; require named Admin TOTP/MFA before Admin access; define recovery and bootstrap ownership; verify Candidate/Company/Contractor confirmation flows in an isolated controlled account set.
+- **Prerequisites:** P0-A/E/F origin stability, Auth runbook, real named operator approval, and rollback export.
+- **Rollback:** restore the reviewed prior Auth config; do not disable confirmation or MFA merely to bypass an incident.
+- **Risk:** high account takeover and lockout/delivery risk.
+- **Action/approval:** Supabase Auth dashboard mutation plus possible UI/runbook changes; explicit production Auth approval and manual Admin enrollment required.
+
+### P0-H — sensitive-data/document gating
+
+- **Defect/evidence:** production currently has no document bucket/policies/scanning; migration 025 would introduce Candidate documents; deterministic Aadhaar fingerprint and retention/legal posture remain unresolved.
+- **Required change:** keep document/Aadhaar/bank/UAN/ESIC intake server-authoritatively disabled until approved encryption/keying, MIME/magic-byte validation, malware scanning/quarantine, retention/deletion, least-privilege signed access, audit, and legal rules exist. Review whether Aadhaar should be collected at all; replace deterministic unkeyed fingerprinting before enabling that field.
+- **Prerequisites:** privacy/legal decision, threat model, Storage architecture and operational owner.
+- **Rollback:** disable the feature gate and signed-access issuance; preserve audit evidence and do not delete live data without separate approval.
+- **Risk:** critical privacy/regulatory risk.
+- **Action/approval:** repository, database and Storage work; production enablement/mutation requires separate approval.
+
+### P0-I — legacy Admin compatibility/removal
+
+- **Defect/evidence:** two direct browser update paths are denied by current grants; other direct reads rely on broad authenticated base-table grants; current Admin product requires absent 016–029 RPCs.
+- **Required change:** remove both direct table updates and replace them with reviewed Admin-only RPCs; prefer safe projections/RPCs for direct reads and counts; retain server-authoritative role checks and masked projections. Do not widen `authenticated` grants as a compatibility fix.
+- **Prerequisites:** P0-C catalog fingerprints and reviewed RPC contracts coordinated with P0-J.
+- **Rollback:** redeploy prior Admin artifact only against its proven catalog; database privilege rollback must not broaden access.
+- **Risk:** high authorization/data-integrity risk.
+- **Action/approval:** repository/runtime change plus migration where a missing RPC is required; production mutation approval required for DB changes and deployment approval for Admin.
+
+### P0-J — controlled migrations 016–029
+
+- **Defect/evidence:** release needs 016–029; production is 015-equivalent with no migration ledger.
+- **Required change:** after exact preflight, apply only the contiguous suffix in reviewed checkpoints: 016–020, 021–022, 023–025 (with P0-H gates closed), 026–027, 028, then 029. Stop after every checkpoint for catalog/hash/invariant verification. Never execute NONPROD fixture checkpoints or create synthetic production users/data. Install a truthful migration ledger only through a separately reviewed strategy; do not fabricate historic rows.
+- **Prerequisites:** P0-B/C/D/E/H/I complete, approved runner identity, maintenance window, zero-send posture, and exact stop conditions.
+- **Rollback:** transactional rollback for a currently executing migration; forward-fix after commit; restore only from the proven P0-B recovery point for catastrophic failure.
+- **Risk:** critical irreversible schema/data-path risk.
+- **Action/approval:** production database mutation; explicit migration-by-migration production approval required.
+
+### P0-K — zero-send production deployment
+
+- **Defect/evidence:** production serves the obsolete root artifact, has no Edge webhook, and cannot run the approved release against the 015 catalog.
+- **Required change:** deploy the signed allowlisted frontend/Admin artifact and reviewed production Edge receiver only after P0-A–J; keep Meta callback/subscriptions and all provider send workers disabled; run route, Auth-denial, catalog, log, and empty-state smoke checks without messages or real-user actions.
+- **Prerequisites:** P0-A–J remote-closed, artifact/config digests, rollback artifacts, operator checklist, observability, and separate deployment approval.
+- **Rollback:** redeploy the prior signed frontend/Admin artifact and prior Edge version or disable the new receiver route under the approved runbook; database remains forward-fixed/restored only per P0-B/J.
+- **Risk:** high integration risk; WhatsApp/real-user launch remains a separate P1 boundary.
+- **Action/approval:** production deployment/infrastructure action; explicit zero-send production deployment approval required.
+
+### Production denylist host requirements
+
+The guard must match project ref `wsuctjhbqiedttfnwjvf` and reject at least these exact production hosts/origins regardless of URL form, case, port or DNS resolution:
+
+- `wsuctjhbqiedttfnwjvf.supabase.co` — Data API, Auth, Storage and Edge origin;
+- `db.wsuctjhbqiedttfnwjvf.supabase.co` — direct PostgreSQL and project PgBouncer (`5432`/`6543` as applicable);
+- `aws-1-ap-northeast-1.pooler.supabase.com` — regional Supavisor/pooler hostname;
+- `aadhyantmanpower.in` and `www.aadhyantmanpower.in` — production frontend origins; and
+- `aadhyantmanpowerstaffing-collab.github.io` — current GitHub Pages backing host.
+
+The guard must continue to require the approved NONPROD ref/host identity rather than merely checking that the target is absent from this list. Do not pin transient IP addresses as identity.
+
 ## Exact next approval boundary
 
-The next safe boundary is **not deployment**. Obtain explicit approval for a read-only production inventory covering Supabase project/database catalog, Auth/Storage/Edge settings, backup capability, GitHub Pages deployment source/current commit, and DNS/TLS state, with no data mutation and no Meta/message action. Separately authorize remediation of the P0 repository/runtime blockers. Only after those items are reviewed, fixed, retested, and remote-closed should a zero-send production deployment proposal be submitted.
+The first remediation should be **P0-A, the local allowlisted artifact/workflow implementation**, because it can be built and fully reviewed without touching production and closes the currently proven repository-root publication design defect. Authorize that repository-only implementation separately, with no Pages switch or deployment. In parallel, a human infrastructure owner must select the P0-B backup/PITR tier and isolated restore-drill target. Stop before enabling backups/PITR, changing Pages, Auth, Storage, database network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.
