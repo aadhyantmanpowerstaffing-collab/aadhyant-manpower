@@ -1,6 +1,6 @@
 # Recruitment Operations Core — Phase A
 
-Status: Phase A migrations 030 and 031 are installed on approved NONPROD; migration 032 is prepared locally as the narrowly scoped metadata UPDATE-grant correction and is **not applied**. Checkpoint 033 remains pending successful rerun after migration 032.
+Status: Phase A migrations 030, 031, and 032 are installed on approved NONPROD. Checkpoint 033 passed the implemented runtime assertions after the 032 grant correction. This validation did not capture a fresh retained-data baseline fingerprint before execution; no claim of full retained-baseline equivalence is made.
 
 Phase A adds bounded source vocabulary, ownership metadata, next-action/follow-up fields, and derived Admin attention around the canonical Requirements, Candidates, and Contractors. It does not create a recruiter-task table or duplicate any recruitment entity.
 
@@ -26,6 +26,6 @@ All mutation and projection functions are bounded `SECURITY DEFINER` functions w
 - Checkpoint SHA-256: `42d3cabe26fda0ec6e6ce892fc4d7515e3188d72a8a4d98dc5bccf997e88c230`
 - Schema plus migrations 007–030 aggregate SHA-256: `3b7ca82abed1e2d50129657b766c6f5c77ca7ac825d5ff7e62c2155b0d14628f`
 
-The checkpoint is rollback-scoped and must be run only after a separately authorized NONPROD migration application. No production migration or deployment is implied.
+The checkpoint is rollback-scoped and was run only after the separately authorized NONPROD migration applications. A separate post-rollback residue query found no deterministic Phase-A fixture residue. No production migration or deployment is implied.
 
-Checkpoint 033 now creates deterministic Auth/staff, Requirement, Candidate, Application, Interview, Joining and Contractor fixtures inside one transaction and calls the Phase A source, owner, follow-up and attention RPCs with exact expected denials and audit assertions. It remains rollback-scoped; the file itself has not been executed against NONPROD, so runtime outcomes and post-rollback fingerprints are still pending separate migration-application authorization. Replay/idempotency is covered by repeated assignment expectations; true multi-session race testing is not claimed.
+Checkpoint 033 creates deterministic Auth/staff, Requirement, Candidate, Application, Interview, Joining and Contractor fixtures inside one transaction and calls the Phase A source, owner, follow-up and attention RPCs with exact expected denials and audit assertions. It passed after migration 032. Replay/idempotency is covered by repeated assignment expectations; true multi-session race testing is not claimed. Full lifecycle/attention boundary coverage and a fresh retained-data fingerprint remain separate follow-up evidence items and are not overclaimed here.
