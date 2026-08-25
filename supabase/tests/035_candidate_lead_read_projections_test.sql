@@ -38,7 +38,7 @@ do $$ declare row_data record; detail jsonb; begin
   if exists(select 1 from public.admin_list_candidate_leads(null,'admin_manual',null,false,null,null,null,false,null,null,10,0) where candidate_id=row_data.candidate_id) then raise exception 'Candidate source negative failed'; end if;
   if not exists(select 1 from public.admin_list_candidate_leads(null,null,null,true,null,null,null,false,null,null,10,0) where candidate_id=row_data.candidate_id) then raise exception 'Candidate unassigned filter failed'; end if;
   if exists(select 1 from public.admin_list_candidate_leads(null,null,null,false,null,null,'selected',false,null,null,10,0) where candidate_id=row_data.candidate_id) then raise exception 'Candidate stage negative failed'; end if;
-  if (select count(*) from public.admin_list_candidate_leads(null,null,null,false,null,null,null,false,null,null,1,1))<>0 then raise exception 'Candidate pagination offset failed'; end if;
+  if (select count(*) from public.admin_list_candidate_leads('Phase C Candidate',null,null,false,null,null,null,false,null,null,1,1))<>0 then raise exception 'Candidate pagination offset failed'; end if;
   select public.admin_get_candidate_lead_detail('95000000-0000-0000-0001-000000000001') into detail;
   if detail->'candidate'->>'full_name'<>'Phase C Candidate' or detail->'applications'->0->>'application_source'<>'whatsapp_campaign' or detail::text ilike '%mobile%' then raise exception 'Candidate Lead detail/privacy assertion failed'; end if;
 end $$;
