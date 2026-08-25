@@ -59,19 +59,19 @@ function Get-MigrationManifestHash {
             Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-2])_' } |
             Sort-Object Name
     )
-    $expectedNumbers = @(7..32)
+    $expectedNumbers = @(7..33)
     $actualNumbers = @($migrations | ForEach-Object { [int]$_.Name.Substring(0, 3) })
     if (@($actualNumbers | Group-Object | Where-Object Count -ne 1).Count -ne 0) {
-        Stop-Guard 'Duplicate migration number detected in the required 007-032 range.'
+        Stop-Guard 'Duplicate migration number detected in the required 007-033 range.'
     }
     if (@(Compare-Object $expectedNumbers $actualNumbers -SyncWindow 0).Count -ne 0) {
-        Stop-Guard 'Expected exactly one migration for each number 007-032.'
+        Stop-Guard 'Expected exactly one migration for each number 007-033.'
     }
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         $migrations | Select-Object -ExpandProperty FullName
     )
-    if ($files.Count -ne 27) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-032.' }
+    if ($files.Count -ne 28) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-033.' }
 
     $manifestLines = foreach ($file in $files) {
         if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
