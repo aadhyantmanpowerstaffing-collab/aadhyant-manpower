@@ -11,11 +11,16 @@ begin
   if not exists(select 1 from pg_constraint where conname='candidate_applications_source_type_check') then raise exception 'Application source compatibility constraint is missing'; end if;
   if not exists(select 1 from pg_constraint where conname='recruitment_requirement_source_type_check') then raise exception 'Requirement source constraint is missing'; end if;
   if to_regprocedure('public.admin_list_recruitment_attention(integer,integer)') is null then raise exception 'Attention projection is missing'; end if;
+  if to_regprocedure('private.phase_a_sla()') is null then raise exception 'Central Phase A SLA contract is missing'; end if;
+  if not exists(select 1 from pg_trigger where tgname='recruitment_clear_reopened_lost_reason' and tgrelid='public.employer_requirements'::regclass and tgenabled<>'D') then raise exception 'Lost-reason reopen trigger is missing'; end if;
+  if (select count(*) from public.recruitment_source_vocabulary)<>12 then raise exception 'Source vocabulary is not exactly the approved 12 values'; end if;
+  if exists(select 1 from public.recruitment_source_vocabulary where source_type not in ('public_website','candidate_portal','employer_portal','contractor_portal','whatsapp_campaign','admin_manual','referral','campus','iti','csc_vle','field_sourcing','external_job_lead')) then raise exception 'Unexpected source vocabulary value'; end if;
   if to_regprocedure('public.admin_assign_requirement_owner(uuid,uuid)') is null or to_regprocedure('public.admin_set_requirement_follow_up(uuid,text,timestamptz)') is null then raise exception 'Requirement ownership RPCs are missing'; end if;
   if to_regprocedure('public.admin_correct_candidate_source(uuid,text,text,text,text)') is null then raise exception 'Candidate source correction RPC is missing'; end if;
   if pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) not ilike '%security definer%' or pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) not ilike '%set search_path to ''''%' then raise exception 'Attention RPC security posture is invalid'; end if;
   if has_function_privilege('anon','public.admin_list_recruitment_attention(integer,integer)','execute') or not has_function_privilege('authenticated','public.admin_list_recruitment_attention(integer,integer)','execute') then raise exception 'Attention RPC grant boundary is invalid'; end if;
   if exists(select 1 from information_schema.column_privileges where table_schema='public' and table_name in ('employer_requirements','candidates','contractors') and privilege_type='UPDATE' and grantee='authenticated' and column_name in ('source_type','acquisition_source_type','owner_staff_user_id','next_action','follow_up_due_at')) then raise exception 'Browser metadata update grant detected'; end if;
+  if pg_get_functiondef('private.phase_a_sla()'::regprocedure) not ilike '%security definer%' or pg_get_functiondef('private.phase_a_sla()'::regprocedure) not ilike '%set search_path to ''''%' then raise exception 'SLA function security posture is invalid'; end if;
 end $$;
 
 do $$

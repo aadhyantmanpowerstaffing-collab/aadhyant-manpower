@@ -10,7 +10,9 @@ The approved source vocabulary is stored in `recruitment_source_vocabulary`. Fir
 
 ## Ownership and attention
 
-Requirements, Candidates, and Contractors receive staff-owner, assignment, next-action, and follow-up fields. Owner validation requires an active staff profile with a recruitment role. `admin_list_recruitment_attention` derives unassigned, incomplete, aging, approval, follow-up, and joining-pending attention without creating tasks or changing lifecycle state.
+Requirements, Candidates, and Contractors receive staff-owner, assignment, next-action, and follow-up fields. Owner validation requires an active staff profile with a recruitment role; assignment and source corrections are audited with bounded old/new metadata. A follow-up due timestamp is optional, may be in the past, and requires a non-empty bounded next action when present. `lost_reason` is bounded and only valid on the existing terminal requirement stages; a trigger clears it when a requirement reopens. `admin_list_recruitment_attention` derives unassigned, incomplete, aging, approval, follow-up, interview, joining-pending, and contractor-participation attention without creating tasks or changing lifecycle state.
+
+SLA defaults are centralized in `private.phase_a_sla()` (2-day application aging, 72-hour upcoming-interview window, 7-day contractor no-progress threshold). These are server-owned defaults, not frontend timing rules.
 
 ## Security
 
@@ -20,8 +22,8 @@ All mutation and projection functions are bounded `SECURITY DEFINER` functions w
 
 - Migration: `supabase/migrations/030_recruitment_operations_core.sql`
 - Checkpoint: `supabase/tests/033_recruitment_operations_core_test.sql`
-- Migration SHA-256: `6bad0ad8601ab99ab3662b2467526474f2230795ccbf8c6f10c60ba2ce954d03`
-- Checkpoint SHA-256: `7ea6e9f6f394419876989164a261ec88ed32dfc54718bc9bf7685c447d57cfaa`
-- Schema plus migrations 007–030 aggregate SHA-256: `4cd6ae97a160f36d543f989de64f54a8df9d9c00fb9336dbb41535161fdde722`
+- Migration SHA-256: `2f5c13fee45428d6034b6ed9ebfde46fb09f3c6776d0d6ce0e47fda27a0e7552`
+- Checkpoint SHA-256: `42d3cabe26fda0ec6e6ce892fc4d7515e3188d72a8a4d98dc5bccf997e88c230`
+- Schema plus migrations 007–030 aggregate SHA-256: `3b7ca82abed1e2d50129657b766c6f5c77ca7ac825d5ff7e62c2155b0d14628f`
 
 The checkpoint is rollback-scoped and must be run only after a separately authorized NONPROD migration application. No production migration or deployment is implied.
