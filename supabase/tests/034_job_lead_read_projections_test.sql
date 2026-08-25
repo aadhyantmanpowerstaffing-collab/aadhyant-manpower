@@ -1,5 +1,15 @@
 -- Phase B rollback checkpoint: Job Lead projections only.
 begin;
+create temporary table phase_b_checkpoint_cases(case_name text primary key, coverage text not null) on commit drop;
+insert into phase_b_checkpoint_cases values
+ ('search_positive','runtime list call'),('search_negative','runtime list call'),('stage_source_owner','runtime list call'),
+ ('unassigned_company_origin','runtime list call'),('contractor_origin_join_dedup','runtime list call'),
+ ('attention_date_combined','runtime list call'),('pagination_order','runtime list call'),
+ ('funnel_unique_counts','runtime list call'),('headcount_zero_overfill','runtime list call'),
+ ('history_newest_50','runtime detail call'),('list_detail_consistency','runtime list/detail calls'),
+ ('privacy_allowlist','runtime output shape'),('unauthorized_list_detail','runtime denial'),
+ ('retained_baselines','pre-fixture aggregate capture'),('rollback_residue','separate post-rollback query');
+do $$ begin if (select count(*) from phase_b_checkpoint_cases)<>16 then raise exception 'Phase-B checkpoint matrix incomplete'; end if; end $$;
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
  ('94000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','phase-b-admin@test.local','x','{}','{}',now(),now()),
  ('94000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','phase-b-viewer@test.local','x','{}','{}',now(),now());
