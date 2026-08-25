@@ -538,6 +538,13 @@ The guard must continue to require the approved NONPROD ref/host identity rather
 
 All changes in this section are repository/local only. No production, billing, Auth, Storage, Edge, DNS, Meta, WhatsApp, or migration action occurred.
 
+## Free Auth and sensitive-intake preparation (local, non-mutating)
+
+- **P0-G preparation:** repository Auth error handling remains generic and fail-closed; private route `noindex,nofollow` behavior is preserved. Production password policy, CAPTCHA, SMTP, rate limits, session timeouts, and MFA remain dashboard/manual controls and were not changed. The intended repository UX policy is at least 12 characters with upper/lowercase letters and a number, pending provider policy approval.
+- **P0-H gate:** generated production config explicitly sets `sensitiveIntakeEnabled: false`. Candidate onboarding/profile/document-upload/joining-detail initialization is blocked in production artifacts before any RPC, Storage upload, or sensitive form action. Existing schema and data are untouched.
+- Required future controls remain: server authorization, encryption/key management, MIME and magic-byte validation, malware quarantine, retention/deletion, audit, least-privilege signed access, and legal/privacy approval.
+- **P0-D/F preparation:** SSL enforcement, network restrictions, HSTS, response headers, and hosting cache policy remain documented manual infrastructure actions; none were activated.
+
 ## Exact next approval boundary
 
 The cost-minimized next boundary is human selection of Option A, acceptance of the approximately $35/month current-organization baseline, approval of an enforceable all-writer maintenance freeze and encrypted server-side export handling, and naming of recovery owners. After that decision, request a narrowly bounded P0-B production-infrastructure mutation authorization to upgrade the organization to Pro without PITR and wait for a listed daily physical backup. The exact logical export/freeze and fresh-project restore drill remain separately authorized boundaries. If those Option A controls are rejected, select Option B and separately authorize Pro, production Small compute, and seven-day PITR instead. A future Pages switch still requires its own production deployment approval after the remaining P0 prerequisites are closed. Stop before purchasing/upgrading anything without that approval, creating/deleting a restore target, changing Pages, Auth, Storage, production network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.

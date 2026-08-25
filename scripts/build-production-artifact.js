@@ -273,6 +273,7 @@ function renderProductionConfig(publishableKey) {
     `  environment: ${JSON.stringify(values.environment)},`,
     `  expectedOrigin: ${JSON.stringify(values.expectedOrigin)},`,
     `  releaseRevision: ${JSON.stringify(values.releaseRevision)},`,
+    '  sensitiveIntakeEnabled: false,',
     `  supabaseProjectRef: ${JSON.stringify(values.supabaseProjectRef)},`,
     `  supabaseUrl: ${JSON.stringify(values.supabaseUrl)},`,
     `  supabasePublishableKey: ${JSON.stringify(values.supabasePublishableKey)}`,
