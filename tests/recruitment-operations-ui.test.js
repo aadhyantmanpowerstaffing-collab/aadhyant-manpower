@@ -43,6 +43,9 @@ test('viewer permissions keep every mutation control unavailable', () => {
 test('browser module uses only projected W3 RPCs, never direct tables', () => {
   assert.doesNotMatch(source,/(?:client|supabase)\.from\s*\(/);
   ['get_recruitment_permissions','admin_list_job_leads','admin_get_job_lead_detail','list_recruitment_candidates','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
+  assert.match(source,/p_requirement_id:requirementId/);
+  assert.match(source,/activeJobLeadRows\[index\]/);
+  assert.doesNotMatch(source,/window\.alert/);
 });
 
 test('operations UI includes a selected-application joining action', () => {
