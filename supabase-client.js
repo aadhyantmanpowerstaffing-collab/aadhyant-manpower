@@ -1,14 +1,18 @@
 (function initializeSupabaseClient() {
   const config = window.AADHYANT_CONFIG || {};
+  const expectedOriginMatches = !config.expectedOrigin || window.location.origin === config.expectedOrigin;
   const hasPlaceholders = !config.supabaseUrl
     || !config.supabasePublishableKey
     || config.supabaseUrl.includes('YOUR_SUPABASE_')
-    || config.supabasePublishableKey.includes('YOUR_SUPABASE_');
+    || config.supabasePublishableKey.includes('YOUR_SUPABASE_')
+    || !expectedOriginMatches;
 
   const api = {
     client: null,
     isConfigured: false,
-    configurationMessage: 'Online submission is temporarily unavailable. Please use WhatsApp or email instead.'
+    configurationMessage: expectedOriginMatches
+      ? 'Online submission is temporarily unavailable. Please use WhatsApp or email instead.'
+      : 'Online access is unavailable from this site origin.'
   };
 
   if (!hasPlaceholders && window.supabase?.createClient) {

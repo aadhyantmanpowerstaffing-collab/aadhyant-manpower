@@ -226,7 +226,7 @@ Critical gaps: no verified production log retention/access, external error monit
 ### P0 — must fix before any production deployment
 
 1. Authorize and complete read-only production Supabase/Auth/Storage/Edge, hosting/deployed-commit, DNS/TLS, and backup inventory; establish the true production baseline.
-2. Create an allowlisted deployment artifact/workflow. Do not publish the repository root or its internal SQL/tests/docs/scripts.
+2. Repository/local P0-A is implemented and tested. Production remains blocked until Pages is separately switched from repository-root publication to the reviewed `dist/` Actions artifact.
 3. Verify backup/PITR and complete an isolated restore drill; approve the exact missing migration suffix and transactional runner, including migration 020 containment.
 4. Replace default-production local config behavior with explicit environment/host identity binding and cache-safe atomic configuration; complete the production DB-host denylist.
 5. Select/configure a host/CDN capable of the required HTTPS headers and cache controls; pin/self-host Supabase JS or use an exact version with reviewed integrity/CSP.
@@ -264,7 +264,8 @@ Critical gaps: no verified production log retention/access, external error monit
 - [x] **PASS** Branch, local HEAD, remote HEAD, 0/0 divergence, and reviewed release history are exact.
 - [x] **PASS** Tracked tree/index were clean; only `supabase/.temp/` was untracked.
 - [ ] **BLOCKED** Last production-deployed commit and current deployed artifact are not proven.
-- [ ] **BLOCKED** Allowlisted build/deployment artifact and workflow do not exist.
+- [x] **PASS** Repository/local P0-A implementation now builds and validates an explicit allowlisted `dist/` artifact through a manual-only workflow.
+- [ ] **MANUAL** Production Pages still publishes the legacy repository-root source; switching it to GitHub Actions and deploying `dist/` require separate approval.
 
 ### B. Production target identity
 
@@ -399,6 +400,20 @@ The direct-update compatibility path must be removed rather than widening produc
 - **Risk:** high confidentiality/release-integrity risk if allowlist is incomplete or permissive.
 - **Action/approval:** repository change first; changing Pages source/workflow and deploying require separate production deployment approval.
 
+#### P0-A repository/local implementation — 2026-08-25
+
+- **Repository status: PASS. Production switch: BLOCKED/MANUAL.** `scripts/build-production-artifact.js` starts from a verified repository-root `dist/` target, removes only that generated directory, and copies a file-by-file allowlist. `dist/` is ignored and is never committed as source.
+- The allowlist covers all 43 current HTML routes; root runtime `CNAME`, `style.css`, `script.js`, and `supabase-client.js`; the public stylesheet, favicon, Jobs/legal/navigation scripts; the complete Admin runtime; and the Candidate, Company, and Contractor portal CSS/JavaScript. The production `config.js` is generated rather than copied.
+- Unused `assets/js/reference-data.js` and `assets/data/README.md` are not shipped. Repository SQL, `supabase/`, tests, scripts, Markdown documentation, package metadata, source maps, environment/local Auth material, logs, temporary/QA files, and NONPROD-only material are prohibited by both positive inventory and negative assertions.
+- Build command: `npm run build:production`. Verification command: `node scripts/build-production-artifact.js --verify`. Focused regression command: `npm run test:artifact`.
+- The generated configuration is explicitly bound to origin `https://aadhyantmanpower.in`, project ref `wsuctjhbqiedttfnwjvf`, and its exact Supabase URL. Only the already-public browser publishable key is extracted from tracked source; the builder rejects secret/service-role-shaped configuration, NONPROD refs, loopback hosts, and synthetic identities. `supabase-client.js` refuses to initialize the client when a generated artifact is served from any other origin. P0-E still owns atomic release/config cache policy and broader local safety-guard changes.
+- `artifact-manifest.json` records the production target, every payload path in deterministic order, byte length, per-file SHA-256, payload totals, and aggregate payload digest. It also enumerates both metadata files. `artifact-digest.sha256` is the SHA-256 of the canonical manifest. File/directory modes and timestamps are normalized, and two same-HEAD rebuilds must produce byte-identical trees and the same digest.
+- Current local artifact: 66 payload files plus two integrity metadata files, 707,020 total bytes. Manifest SHA-256: `3d36b723e12d9594e9b7b7c31eb985da2191671ae6e6afd5299ef2c0e136ede2`; aggregate payload SHA-256: `e5a561bc85fa03d66543ee44c99ef1672c81f1c721f0b1745f8a5a0aab490d44`.
+- Local HTTP verification serves every current runtime HTML route. Representative internal paths under `supabase/`, migrations/tests, repository tests/scripts, AGENTS, schema/setup, and readiness documentation return 404. The complete tree contains zero prohibited files.
+- `.github/workflows/pages-production.yml` is manual-only. Its build job has only `contents: read`, builds/tests/verifies `dist/`, and uploads exactly `dist`. The deploy job exists for later reviewed use but requires an explicit Boolean input, the exact `web-platform-development` ref, the protected `github-pages` environment, and only `pages: write` plus `id-token: write`. Official Actions are pinned to reviewed immutable commit SHAs. The workflow performs no database, Edge, Meta, messaging, secret, or DNS action.
+- Rollback requires retaining the prior deployed artifact/commit metadata and the new artifact manifest/digest. A later approved switch must be reversible by redeploying the prior captured artifact, never by resetting or force-pushing shared history.
+- GitHub Pages remains configured to publish legacy `main` `/`; no workflow was dispatched, no Pages setting was switched, and no artifact was deployed during P0-A implementation.
+
 ### P0-B — backup/restore proof
 
 - **Defect/evidence:** PITR off, zero backup entries, zero backup add-ons, no proven restore point or drill.
@@ -503,4 +518,4 @@ The guard must continue to require the approved NONPROD ref/host identity rather
 
 ## Exact next approval boundary
 
-The first remediation should be **P0-A, the local allowlisted artifact/workflow implementation**, because it can be built and fully reviewed without touching production and closes the currently proven repository-root publication design defect. Authorize that repository-only implementation separately, with no Pages switch or deployment. In parallel, a human infrastructure owner must select the P0-B backup/PITR tier and isolated restore-drill target. Stop before enabling backups/PITR, changing Pages, Auth, Storage, database network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.
+The next boundary is human review of the local P0-A implementation and its focused commit(s), followed by separate authorization for a normal non-force push if accepted. That review/push must not dispatch the workflow, switch Pages, or deploy. In parallel, a human infrastructure owner must select the P0-B backup/PITR tier and isolated restore-drill target. A future Pages switch requires its own production deployment approval after the remaining P0 prerequisites are closed. Stop before enabling backups/PITR, changing Pages, Auth, Storage, database network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.
