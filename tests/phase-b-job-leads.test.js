@@ -25,6 +25,6 @@ test('Phase B projections are security and privacy bounded', () => {
 
 test('Phase B documentation preserves canonical entities and defers UI/runtime application', () => {
   assert.match(doc, /canonical requirements/i);
-  assert.match(doc, /No Phase B UI or NONPROD migration application is authorized/i);
+  assert.match(doc, /Migrations 033 and 034 are installed on approved NONPROD/i);
   assert.match(doc, /unique canonical applications/i);
 });

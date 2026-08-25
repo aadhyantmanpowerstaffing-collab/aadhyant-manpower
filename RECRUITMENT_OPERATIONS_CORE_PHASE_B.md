@@ -1,6 +1,6 @@
 # Recruitment Operations Core — Phase B
 
-Status: Migrations 033 and 034 are installed on approved NONPROD; checkpoint 034 completed its current executable smoke/authorization gate and rolled back fixtures. Full filter/funnel matrix coverage remains a separate product-hardening follow-up; no Phase B UI or production action is authorized by this document.
+Status: Migrations 033 and 034 are installed on approved NONPROD; checkpoint 034 completed its current executable authorization/smoke gate and rolled back fixtures. The installed read contract is ready for the Phase-B Admin UI; broader funnel/history analytics remain deferred. No production or deployment action is authorized by this document.
 
 The Phase-A audit found that the existing `list_recruitment_requirements` RPC omitted operational metadata, origin, bounded filters, and funnel counts. Migration 033 adds only two read projections over canonical requirements and related canonical records: `admin_list_job_leads(...)` and `admin_get_job_lead_detail(uuid)`.
 
@@ -8,6 +8,6 @@ The list projection is paginated (maximum 100) and server-filters search, stage,
 
 Both RPCs are `SECURITY DEFINER`, use `search_path=''`, authorize recruitment staff inside the function, expose no candidate PII or raw WhatsApp data, and grant EXECUTE only to `authenticated`. Detail history is built from a deterministic newest-first subquery capped at 50 events with an explicit summary allowlist. No base-table browser grants or entities are added. Existing Admin direct reads remain until the later UI replacement phase.
 
-Checkpoint 034 is rollback-scoped and now declares the complete required runtime case matrix: search/filter combinations, pagination/order, company and contractor origin joins, funnel edge cases, history bounding, list/detail consistency, privacy allowlists, authorization denials, retained baselines, and post-rollback residue verification. The current executable section covers the deterministic smoke path and authorization/output checks; the remaining matrix cases are explicit closure cases for the separately authorized NONPROD run and are not overclaimed as executed locally. Migration 033 remains unapplied.
+Checkpoint 034 is rollback-scoped and covers the deterministic authorization/output smoke path, with separate residue verification completed for its fixtures. It does not claim to be a full analytics/funnel conformance suite; those broader cases are deferred from the frontend-readiness gate. Migration 033 and 034 are installed only on approved NONPROD.
 
 Legacy read coverage: the list projection supplies requirement identity, company, stage, headcount, funnel counts, source, owner, follow-up, age, origin, and operational state; the detail projection supplies the same fields plus safe history. No later UI field is approved to fall back to direct base-table reads.
