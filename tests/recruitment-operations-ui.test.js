@@ -57,6 +57,8 @@ test('Candidate Leads uses bounded Phase-C filters and privacy-safe on-demand de
   });
   assert.match(source,/admin_get_candidate_lead_detail/);
   assert.match(source,/Candidate Lead Detail/);
+  assert.match(source,/candidateLeads.*openCandidateLeadDetail/s);
+  assert.match(source,/closest\('\[data-panel="recruitmentRequirements"\]'\)/);
   assert.doesNotMatch(source,/\bmobile\b.*candidate-lead-detail|candidate-lead-detail.*\bmobile\b/i);
 });
 
