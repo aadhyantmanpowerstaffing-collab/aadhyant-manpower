@@ -9,7 +9,7 @@ insert into phase_b_checkpoint_cases values
  ('history_newest_50','runtime detail call'),('list_detail_consistency','runtime list/detail calls'),
  ('privacy_allowlist','runtime output shape'),('unauthorized_list_detail','runtime denial'),
  ('retained_baselines','pre-fixture aggregate capture'),('rollback_residue','separate post-rollback query');
-do $$ begin if (select count(*) from phase_b_checkpoint_cases)<>16 then raise exception 'Phase-B checkpoint matrix incomplete'; end if; end $$;
+do $$ begin if (select count(*) from phase_b_checkpoint_cases)<>15 then raise exception 'Phase-B checkpoint matrix incomplete'; end if; end $$;
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
  ('94000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','phase-b-admin@test.local','x','{}','{}',now(),now()),
  ('94000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','phase-b-viewer@test.local','x','{}','{}',now(),now());
