@@ -42,7 +42,7 @@ language sql stable security definer set search_path = '' as $$
       least(greatest(coalesce(p_limit,25),1),100) lim,
       greatest(coalesce(p_offset,0),0) off
   ), base as (
-    select r.*, c.name as resolved_company_name,
+    select r.*, coalesce(c.trade_name,c.legal_name) as resolved_company_name,
       exists(select 1 from public.requirement_contractors rc where rc.requirement_id=r.id and rc.origin_type='contractor_submission' and rc.submission_status in ('submitted','under_review','approved')) as has_contractor_origin,
       (select count(*) from public.requirement_contractors rc where rc.requirement_id=r.id) as contractor_total,
       (select count(*) from public.candidate_applications a where a.requirement_id=r.id) as apps,
@@ -71,7 +71,7 @@ language sql stable security definer set search_path = '' as $$
     and (p_from_date is null or b.created_at::date>=p_from_date)
     and (p_to_date is null or b.created_at::date<=p_to_date)
     and (not coalesce(p_attention_only,false) or (b.follow_up_due_at is not null and b.follow_up_due_at<clock_timestamp()) or b.owner_staff_user_id is null or b.requirement_stage='draft')
-  order by b.created_at desc,b.id limit a.lim offset a.off;
+  order by b.created_at desc,b.id limit (select lim from args) offset (select off from args);
 $$;
 
 create function public.admin_get_job_lead_detail(p_requirement_id uuid)
