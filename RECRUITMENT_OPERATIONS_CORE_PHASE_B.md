@@ -2,6 +2,14 @@
 
 Status: Migrations 033 and 034 are installed on approved NONPROD; checkpoint 034 completed its current executable authorization/smoke gate and rolled back fixtures. The installed read contract is ready for the Phase-B Admin UI; broader funnel/history analytics remain deferred. No production or deployment action is authorized by this document.
 
+## Admin Job Leads frontend slice
+
+The Admin Recruitment workspace now presents the canonical `employer_requirements` projection as **Job Leads**. It uses the bounded `admin_list_job_leads(...)` contract for server-side search, stage/source/owner, unassigned, company, contractor-origin, attention, and date filters with bounded pagination. Candidate, phone, document, WhatsApp payload, and other sensitive fields are not part of the list projection.
+
+Job Lead detail remains read/view-first and is intended to use `admin_get_job_lead_detail(uuid)` on demand. Owner and follow-up mutations are deliberately deferred until their reviewed mutation contract is exposed to this UI; no direct base-table writes are permitted. The existing Requirement workspace is extended rather than replaced by a second CRM/navigation tree.
+
+Validation for this slice covers RPC-name/contract usage, filter argument mapping, bounded paging, read-only scope, privacy-safe rendering, and the existing Phase-A/W7 regression suites. Human browser review of the local Admin surface remains the next review boundary; no production or NONPROD mutation is part of frontend implementation.
+
 The Phase-A audit found that the existing `list_recruitment_requirements` RPC omitted operational metadata, origin, bounded filters, and funnel counts. Migration 033 adds only two read projections over canonical requirements and related canonical records: `admin_list_job_leads(...)` and `admin_get_job_lead_detail(uuid)`.
 
 The list projection is paginated (maximum 100) and server-filters search, stage, source, owner, unassigned, company, contractor origin, attention, and creation date. Funnel semantics use unique canonical applications, linked interviews, selected-equivalent application stages, joined/left joining outcomes, authoritative filled positions, and `max(required_headcount-filled_positions,0)`. Fulfillment percentage is bounded to 0–100 using required headcount as denominator.

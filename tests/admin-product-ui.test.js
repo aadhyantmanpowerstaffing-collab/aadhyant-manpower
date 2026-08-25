@@ -58,7 +58,7 @@ test('candidate, requirement and application filters map to bounded server RPC a
   assert.deepEqual(JSON.parse(JSON.stringify(recruitment.argsFor('recruitmentCandidates', { search:'Asha',state:'Odisha',district:'Khordha',qualification:'ITI',candidateType:'Experienced',status:'shortlisted' }, 25))), {
     p_search:'Asha',p_state:'Odisha',p_district:'Khordha',p_qualification:'ITI',p_candidate_type:'Experienced',p_status:'shortlisted',p_limit:25,p_offset:25
   });
-  assert.deepEqual(JSON.parse(JSON.stringify(recruitment.argsFor('recruitmentRequirements', { search:'fitter',stage:'open' }, 50))), { p_search:'fitter',p_stage:'open',p_limit:25,p_offset:50 });
+  assert.deepEqual(JSON.parse(JSON.stringify(recruitment.argsFor('recruitmentRequirements', { search:'fitter',stage:'open' }, 50))), { p_search:'fitter',p_stage:'open',p_source_type:null,p_owner_staff_user_id:null,p_unassigned:false,p_company_id:null,p_contractor_origin:null,p_attention_only:false,p_from_date:null,p_to_date:null,p_limit:25,p_offset:50 });
   assert.deepEqual(JSON.parse(JSON.stringify(recruitment.argsFor('recruitmentApplications', { search:'REQ-1',stage:'screening' }, 0))), { p_stage:'screening',p_search:'REQ-1',p_limit:25,p_offset:0 });
   assert.match(recruitmentSource, /No actions available/);
 });

@@ -13,7 +13,7 @@ const moduleApi = window.aadhyantRecruitmentOperations;
 
 test('W3 navigation exposes the six approved recruitment modules', () => {
   assert.deepEqual(Array.from(moduleApi.definitions, (item) => Array.from(item).slice(0, 2)), [
-    ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Requirements / Vacancies'],
+    ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Job Leads'],
     ['recruitmentCandidates','Candidates'],['recruitmentApplications','Applications'],
     ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joinings']
   ]);
@@ -42,7 +42,7 @@ test('viewer permissions keep every mutation control unavailable', () => {
 
 test('browser module uses only projected W3 RPCs, never direct tables', () => {
   assert.doesNotMatch(source,/(?:client|supabase)\.from\s*\(/);
-  ['get_recruitment_permissions','list_recruitment_candidates','list_recruitment_requirements','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
+  ['get_recruitment_permissions','admin_list_job_leads','admin_get_job_lead_detail','list_recruitment_candidates','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
 });
 
 test('operations UI includes a selected-application joining action', () => {

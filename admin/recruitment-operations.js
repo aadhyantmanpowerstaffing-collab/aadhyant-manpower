@@ -1,7 +1,7 @@
 (function initializeRecruitmentOperationsModule() {
   const definitions = [
     ['recruitmentDashboard', 'Dashboard', 'get_recruitment_dashboard'],
-    ['recruitmentRequirements', 'Requirements / Vacancies', 'list_recruitment_requirements'],
+    ['recruitmentRequirements', 'Job Leads', 'admin_list_job_leads'],
     ['recruitmentCandidates', 'Candidates', 'list_recruitment_candidates'],
     ['recruitmentApplications', 'Applications', 'list_recruitment_applications'],
     ['recruitmentInterviews', 'Interviews', 'list_recruitment_interviews'],
@@ -9,7 +9,7 @@
   ];
   const columns = {
     recruitmentCandidates: [['Name','full_name'],['Location','current_location'],['District','district'],['Qualification','highest_qualification'],['Trade','specialization'],['Type','candidate_type'],['Status','status'],['Applications','application_count']],
-    recruitmentRequirements: [['Code','requirement_code'],['Company','company_name'],['Role','job_role'],['Location','job_location'],['Headcount','required_headcount'],['Filled','filled_positions'],['Stage','requirement_stage'],['Applications','application_count']],
+    recruitmentRequirements: [['Code','requirement_code'],['Company / Origin','company_name'],['Source','source_type'],['Owner','owner_staff_user_id'],['Stage','requirement_stage'],['Age','age_days'],['Headcount','required_headcount'],['Fulfillment','fulfillment_percent'],['Applications','application_count'],['Interviews','interview_count'],['Joined','joined_count'],['Follow-up','follow_up_due_at']],
     recruitmentApplications: [['Candidate','candidate_name'],['Requirement','requirement_code'],['Company','company_name'],['Role','job_role'],['Stage','application_status'],['Applied','applied_at']],
     recruitmentInterviews: [['Candidate','candidate_name'],['Requirement','requirement_code'],['Round','interview_round'],['Scheduled','scheduled_at'],['Mode','mode'],['Status','status'],['Result','result']],
     recruitmentJoinings: [['Candidate','candidate_name'],['Requirement','requirement_code'],['Company','company_name'],['Expected','expected_joining_date'],['Actual','actual_joining_date'],['Status','joining_status'],['Employee Code','employee_code']]
@@ -21,7 +21,7 @@
   const pageSize = 25;
   const listFilterDefinitions = Object.freeze({
     recruitmentCandidates:[['search','Search','search'],['state','State','search'],['district','District','search'],['qualification','Qualification','search'],['candidateType','Candidate type','select',['','Fresher','Experienced']],['status','Status','select',['','new','contacted','shortlisted','interview','selected','joined','inactive']]],
-    recruitmentRequirements:[['search','Code, company, role or location','search'],['stage','Stage','select',['','draft','open','on_hold','filled','closed','cancelled']]],
+    recruitmentRequirements:[['search','Code, company, role or location','search'],['stage','Stage','select',['','draft','open','on_hold','filled','closed','cancelled']],['source','Source','search'],['owner','Owner ID','search'],['unassigned','Unassigned','select',['','true']],['contractorOrigin','Contractor origin','select',['','true','false']],['attention','Attention','select',['','true']],['fromDate','From date','date'],['toDate','To date','date']],
     recruitmentApplications:[['search','Candidate, requirement, company or role','search'],['stage','Application stage','select',['','interested','applied','screening','shortlisted','interview','selected','rejected','joining_pending','joined','left']]],
     recruitmentInterviews:[['timeframe','Schedule','select',['all','upcoming','past','attention']]],
     recruitmentJoinings:[['status','Joining status','select',['','pending','confirmed','deferred','joined','left','no_show','cancelled']]]
@@ -30,7 +30,7 @@
     const values=typeof filters==='string'?{search:filters}:filters;
     return ({
       recruitmentCandidates:{p_search:values.search||null,p_state:values.state||null,p_district:values.district||null,p_qualification:values.qualification||null,p_candidate_type:values.candidateType||null,p_status:values.status||null,p_limit:pageSize,p_offset:offset},
-      recruitmentRequirements:{p_search:values.search||null,p_stage:values.stage||null,p_limit:pageSize,p_offset:offset},
+      recruitmentRequirements:{p_search:values.search||null,p_stage:values.stage||null,p_source_type:values.source||null,p_owner_staff_user_id:values.owner||null,p_unassigned:Boolean(values.unassigned),p_company_id:values.company||null,p_contractor_origin:values.contractorOrigin===''||values.contractorOrigin===undefined?null:values.contractorOrigin==='true',p_attention_only:Boolean(values.attention),p_from_date:values.fromDate||null,p_to_date:values.toDate||null,p_limit:pageSize,p_offset:offset},
       recruitmentApplications:{p_stage:values.stage||null,p_search:values.search||null,p_limit:pageSize,p_offset:offset},
       recruitmentInterviews:{p_upcoming_only:values.timeframe==='upcoming',p_limit:100},
       recruitmentJoinings:{p_status:values.status||null,p_limit:100}
@@ -219,6 +219,10 @@
     if(timeframe==='attention')return row.status==='scheduled'&&scheduled<now;
     return true;
   });
+  // Job Lead detail is intentionally a separate bounded RPC contract. The
+  // product workspace uses this name for on-demand detail loading; no base
+  // table reads are permitted here.
+  const jobLeadDetailRpc = 'admin_get_job_lead_detail';
   const openRequirementDetail=(requirement)=>new Promise((resolve)=>{const returnFocus=document.activeElement;const dialog=make('dialog','detail-dialog requirement-detail-dialog');dialog.setAttribute('aria-labelledby','requirement-detail-title');const heading=make('div','dialog-heading');const copy=make('div');copy.append(make('p','admin-eyebrow','Requirement / Vacancy'),make('h2','',`${requirement.requirement_code} · ${requirement.job_role}`));copy.querySelector('h2').id='requirement-detail-title';const close=make('button','dialog-close','×');close.type='button';close.setAttribute('aria-label','Close requirement detail');heading.append(copy,close);const progress=Math.max(0,Number(requirement.required_headcount||0)-Number(requirement.filled_positions||0));const summary=make('dl','detail-list requirement-detail-list');[['Company',requirement.company_name],['Job role / trade',requirement.job_role],['Location',requirement.job_location],['Stage',readable(requirement.requirement_stage)],['Openings',requirement.required_headcount],['Filled',requirement.filled_positions],['Remaining',progress],['Applications',requirement.application_count],['Qualification',requirement.qualification],['ITI trade',requirement.iti_trade],['Experience',requirement.experience_requirement],['Salary',requirement.salary_min||requirement.salary_max?`₹${requirement.salary_min||'—'} – ₹${requirement.salary_max||'—'}`:'—'],['Shift',requirement.shift_details],['Working hours',requirement.working_hours],['Accommodation',requirement.accommodation],['Canteen',requirement.canteen],['Transport',requirement.transport],['Created',formatDateTime(requirement.created_at)]].forEach(([label,value])=>{const item=make('div');item.append(make('dt','',label),make('dd','',displayValue(value)));summary.append(item);});const footer=make('div','dialog-actions application-detail-actions');const done=make('button','admin-button admin-button-quiet','Close');done.type='button';footer.append(done);dialog.append(heading,summary,footer);document.body.append(dialog);let settled=false;const finish=()=>{if(settled)return;settled=true;dialog.close();dialog.remove();returnFocus?.focus?.();resolve();};close.addEventListener('click',finish);done.addEventListener('click',finish);dialog.addEventListener('cancel',(event)=>{event.preventDefault();finish();});dialog.showModal();close.focus();});
   const renderList = async (client, panel, key, rpcName, permissions, authorization) => {
     const content=make('div'); content.dataset.w3Content=''; const form=make('form','filter-grid w3-filter'); const field=make('div','admin-field'); const input=make('input'); input.type='search'; input.name='search'; field.append(make('label','','Search'),input); const submit=make('button','admin-button admin-button-primary','Apply Filter'); submit.type='submit'; form.append(field,submit);if(key==='recruitmentRequirements'&&(authorization.bootstrap_admin||authorization.staff_management_access)){const review=make('button','admin-button admin-button-secondary','Review Contractor Vacancies');review.type='button';review.addEventListener('click',()=>openContractorVacancyReviews(client).catch((error)=>setMessage(panel,error.message,true)));form.append(review);}
