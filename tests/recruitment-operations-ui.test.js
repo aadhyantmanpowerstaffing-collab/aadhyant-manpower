@@ -46,6 +46,9 @@ test('browser module uses only projected W3 RPCs, never direct tables', () => {
   assert.match(source,/p_requirement_id:requirementId/);
   assert.match(source,/activeJobLeadRows\[index\]/);
   assert.doesNotMatch(source,/window\.alert/);
+  assert.match(source,/\['source','Source','select'/);
+  assert.match(source,/public_website/);
+  assert.match(source,/Owner ID/);
 });
 
 test('operations UI includes a selected-application joining action', () => {

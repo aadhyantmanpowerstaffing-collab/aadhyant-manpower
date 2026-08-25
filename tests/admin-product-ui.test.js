@@ -143,6 +143,13 @@ test('browser-QA polish keeps tablet navigation compact and touch controls usabl
   assert.doesNotMatch(styles, /@media\(max-width:430px\)\{\.dashboard-metrics/);
 });
 
+test('Job Leads keeps actions reachable and attention compact by default', () => {
+  assert.match(recruitmentSource, /job-leads-workspace/);
+  assert.match(styles, /job-leads-workspace[\s\S]*position:sticky/);
+  assert.match(page, /phase-a-attention-details/);
+  assert.match(page, /Open attention queue/);
+});
+
 test('unsupported audit and W7C conversion projections are documented rather than fabricated', () => {
   assert.doesNotMatch(page, />Audit(?:\s*\/\s*Activity)?</);
   assert.match(phaseDocument, /does not return the W7C recipient\/application foreign keys/);
