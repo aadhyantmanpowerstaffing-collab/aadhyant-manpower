@@ -9,7 +9,8 @@ begin
      or to_regclass('public.contractors') is null
      or to_regclass('public.candidate_applications') is null
      or to_regclass('public.staff_profiles') is null
-     or to_regprocedure('private.can_manage_recruitment()') is null
+     or to_regprocedure('private.can_manage_candidates()') is null
+     or to_regprocedure('private.can_manage_joinings()') is null
      or to_regprocedure('private.set_updated_at()') is null then
     raise exception 'Phase A prerequisites are missing';
   end if;
@@ -21,6 +22,12 @@ begin
   end if;
 end;
 $$;
+
+create or replace function private.can_manage_recruitment_operations()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select (select private.can_manage_candidates()) or (select private.can_manage_joinings());
+$$;
+revoke all on function private.can_manage_recruitment_operations() from public, anon, authenticated;
 
 create table public.recruitment_source_vocabulary (
   source_type text primary key check (source_type in (
@@ -130,7 +137,7 @@ create or replace function public.admin_assign_requirement_owner(p_requirement_i
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_owner uuid;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if p_owner_staff_user_id is not null and not (select private.recruitment_owner_allowed(p_owner_staff_user_id)) then raise exception 'Owner must be an active recruitment staff member'; end if;
   select owner_staff_user_id into old_owner from public.employer_requirements where id=p_requirement_id;
   if not found then raise exception 'Requirement was not found'; end if;
@@ -142,7 +149,7 @@ create or replace function public.admin_assign_candidate_owner(p_candidate_id uu
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_owner uuid;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if p_owner_staff_user_id is not null and not (select private.recruitment_owner_allowed(p_owner_staff_user_id)) then raise exception 'Owner must be an active recruitment staff member'; end if;
   select owner_staff_user_id into old_owner from public.candidates where id=p_candidate_id;
   if not found then raise exception 'Candidate was not found'; end if;
@@ -154,7 +161,7 @@ create or replace function public.admin_assign_contractor_owner(p_contractor_id 
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_owner uuid;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if p_owner_staff_user_id is not null and not (select private.recruitment_owner_allowed(p_owner_staff_user_id)) then raise exception 'Owner must be an active recruitment staff member'; end if;
   select owner_staff_user_id into old_owner from public.contractors where id=p_contractor_id;
   if not found then raise exception 'Contractor was not found'; end if;
@@ -165,7 +172,7 @@ end; $$;
 create or replace function public.admin_set_requirement_follow_up(p_requirement_id uuid,p_next_action text,p_follow_up_due_at timestamptz)
 returns boolean language plpgsql security definer set search_path = '' as $$
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if length(coalesce(btrim(p_next_action),''))>240 then raise exception 'Next action is too long'; end if;
   if p_follow_up_due_at is not null and length(btrim(coalesce(p_next_action,'')))=0 then raise exception 'A follow-up due date requires a next action'; end if;
   update public.employer_requirements set next_action=nullif(btrim(coalesce(p_next_action,'')),''),follow_up_due_at=p_follow_up_due_at,operational_updated_at=clock_timestamp() where id=p_requirement_id;
@@ -175,7 +182,7 @@ end; $$;
 create or replace function public.admin_set_candidate_follow_up(p_candidate_id uuid,p_next_action text,p_follow_up_due_at timestamptz)
 returns boolean language plpgsql security definer set search_path = '' as $$
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if length(coalesce(btrim(p_next_action),''))>240 then raise exception 'Next action is too long'; end if;
   if p_follow_up_due_at is not null and length(btrim(coalesce(p_next_action,'')))=0 then raise exception 'A follow-up due date requires a next action'; end if;
   update public.candidates set next_action=nullif(btrim(coalesce(p_next_action,'')),''),follow_up_due_at=p_follow_up_due_at where id=p_candidate_id;
@@ -185,7 +192,7 @@ end; $$;
 create or replace function public.admin_set_contractor_follow_up(p_contractor_id uuid,p_next_action text,p_follow_up_due_at timestamptz)
 returns boolean language plpgsql security definer set search_path = '' as $$
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if length(coalesce(btrim(p_next_action),''))>240 then raise exception 'Next action is too long'; end if;
   if p_follow_up_due_at is not null and length(btrim(coalesce(p_next_action,'')))=0 then raise exception 'A follow-up due date requires a next action'; end if;
   update public.contractors set next_action=nullif(btrim(coalesce(p_next_action,'')),''),follow_up_due_at=p_follow_up_due_at where id=p_contractor_id;
@@ -242,7 +249,7 @@ create or replace function public.admin_correct_requirement_source(p_requirement
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_source_type text; old_source_detail text; old_source_reference text;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if not exists(select 1 from public.recruitment_source_vocabulary where source_type=p_source_type and active) then raise exception 'Unsupported source type'; end if;
   if length(coalesce(btrim(p_reason),'')) not between 1 and 500 then raise exception 'Correction reason is required'; end if;
   select source_type,source_detail,source_reference into old_source_type,old_source_detail,old_source_reference from public.employer_requirements where id=p_requirement_id;
@@ -256,7 +263,7 @@ create or replace function public.admin_correct_candidate_source(p_candidate_id 
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_source_type text; old_source_detail text; old_source_reference text;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if not exists(select 1 from public.recruitment_source_vocabulary where source_type=p_source_type and active) then raise exception 'Unsupported source type'; end if;
   if length(coalesce(btrim(p_reason),'')) not between 1 and 500 then raise exception 'Correction reason is required'; end if;
   select acquisition_source_type,acquisition_source_detail,acquisition_source_reference into old_source_type,old_source_detail,old_source_reference from public.candidates where id=p_candidate_id;
@@ -270,7 +277,7 @@ create or replace function public.admin_correct_contractor_source(p_contractor_i
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare actor uuid := (select auth.uid()); old_source_type text; old_source_detail text; old_source_reference text;
 begin
-  if not (select private.can_manage_recruitment()) then raise exception 'Recruitment access is required'; end if;
+  if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
   if not exists(select 1 from public.recruitment_source_vocabulary where source_type=p_source_type and active) then raise exception 'Unsupported source type'; end if;
   if length(coalesce(btrim(p_reason),'')) not between 1 and 500 then raise exception 'Correction reason is required'; end if;
   select acquisition_source_type,acquisition_source_detail,acquisition_source_reference into old_source_type,old_source_detail,old_source_reference from public.contractors where id=p_contractor_id;
