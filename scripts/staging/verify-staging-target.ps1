@@ -56,7 +56,7 @@ function Get-MigrationManifestHash {
     $rootPrefix = $RepositoryRoot.TrimEnd('\') + '\'
     $migrations = @(
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
-            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-2])_' } |
+            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-3])_' } |
             Sort-Object Name
     )
     $expectedNumbers = @(7..33)
