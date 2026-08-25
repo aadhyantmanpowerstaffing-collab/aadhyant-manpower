@@ -1,6 +1,6 @@
 # Recruitment Operations Core — Phase B
 
-Status: Migration 033 and checkpoint 034 are prepared locally only. No Phase B UI or NONPROD migration application is authorized by this document.
+Status: Migrations 033 and 034 are installed on approved NONPROD; checkpoint 034 completed its current executable smoke/authorization gate and rolled back fixtures. Full filter/funnel matrix coverage remains a separate product-hardening follow-up; no Phase B UI or production action is authorized by this document.
 
 The Phase-A audit found that the existing `list_recruitment_requirements` RPC omitted operational metadata, origin, bounded filters, and funnel counts. Migration 033 adds only two read projections over canonical requirements and related canonical records: `admin_list_job_leads(...)` and `admin_get_job_lead_detail(uuid)`.
 
