@@ -9,7 +9,7 @@ const DIST_ROOT = path.join(REPOSITORY_ROOT, 'dist');
 const FIXED_TIMESTAMP = new Date('2000-01-01T00:00:00.000Z');
 const PINNED_SUPABASE_JS = Object.freeze({
   version: '2.112.4',
-  integrity: 'sha384-ysv13JVP3fufiEXfjML9OdCa/rRbMJvUBOWyor82wfuK8INNZAvmbxHgKIHi+oqz'
+  integrity: 'sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV'
 });
 const MANIFEST_PATH = 'artifact-manifest.json';
 const DIGEST_PATH = 'artifact-digest.sha256';
