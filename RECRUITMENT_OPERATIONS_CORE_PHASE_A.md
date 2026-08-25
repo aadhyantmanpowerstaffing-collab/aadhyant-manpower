@@ -1,6 +1,6 @@
 # Recruitment Operations Core — Phase A
 
-Status: Phase A migration 030 is installed on approved NONPROD; migration 031 is prepared locally as the narrowly scoped RPC grant correction and is **not applied**. Checkpoint 033 remains pending successful rerun after migration 031.
+Status: Phase A migrations 030 and 031 are installed on approved NONPROD; migration 032 is prepared locally as the narrowly scoped metadata UPDATE-grant correction and is **not applied**. Checkpoint 033 remains pending successful rerun after migration 032.
 
 Phase A adds bounded source vocabulary, ownership metadata, next-action/follow-up fields, and derived Admin attention around the canonical Requirements, Candidates, and Contractors. It does not create a recruiter-task table or duplicate any recruitment entity.
 
