@@ -13,8 +13,9 @@ The future guard must receive these values from an approved local secret store o
 - `AADHYANT_STAGING_DB_URL`
 - `AADHYANT_PRODUCTION_DENYLIST_PROJECT_REFS`
 - `AADHYANT_PRODUCTION_DENYLIST_DB_HOSTS`
+- `AADHYANT_PRODUCTION_DENYLIST_API_HOSTS`
 
-The allowlist must contain exactly one approved staging project reference and one canonical staging database host. The production denylists must contain every known production project reference and database host. Empty values, wildcard values, URLs with embedded ambiguity, and multiple staging targets are invalid.
+The allowlist must contain exactly one approved staging project reference and one canonical staging database host. The production denylists must contain every known production project reference, database host, and Data API/Edge host. Empty values, wildcard values, URLs with embedded ambiguity, and multiple staging targets are invalid.
 
 ## Mandatory checks
 
@@ -28,6 +29,7 @@ Before any mutating database operation, the guard must perform all checks in thi
 6. Require canonical, case-insensitive exact equality between actual and expected staging database host.
 7. Require that neither actual nor expected project reference appears in the production project-reference denylist.
 8. Require that neither actual nor expected host appears in the production database-host denylist.
+9. Require that the staging API/Edge host is absent from the production API-host denylist.
 9. Confirm the target project name/environment metadata visibly identifies `aadhyant-web-platform-staging-nonprod` or an explicitly approved successor.
 10. Confirm the reviewed Git commit and migration checksums before reset or migration execution.
 

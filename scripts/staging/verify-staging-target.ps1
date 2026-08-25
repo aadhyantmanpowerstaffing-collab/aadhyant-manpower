@@ -111,6 +111,7 @@ $stagingUrlText = Require-Value $values 'AADHYANT_STAGING_URL'
 $dbUrlText = Require-Value $values 'AADHYANT_STAGING_DB_URL'
 $productionProjectRefs = Split-IdentityList (Require-Value $values 'AADHYANT_PRODUCTION_DENYLIST_PROJECT_REFS')
 $productionDbHosts = Split-IdentityList (Require-Value $values 'AADHYANT_PRODUCTION_DENYLIST_DB_HOSTS')
+$productionApiHosts = Split-IdentityList (Require-Value $values 'AADHYANT_PRODUCTION_DENYLIST_API_HOSTS')
 $approvedCommit = (Require-Value $values 'AADHYANT_STAGING_APPROVED_GIT_COMMIT').ToLowerInvariant()
 $approvedManifestHash = (Require-Value $values 'AADHYANT_STAGING_APPROVED_MIGRATION_MANIFEST_SHA256').ToLowerInvariant()
 
@@ -126,6 +127,7 @@ try { $dbUri = [Uri]$dbUrlText } catch { Stop-Guard 'Staging DB URL is malformed
 if ($stagingUri.Scheme -ne 'https' -or $stagingUri.Host -ne "$expectedProjectRef.supabase.co") {
     Stop-Guard 'Staging URL does not exactly match the expected project ref.'
 }
+if ($productionApiHosts -contains $stagingUri.Host.ToLowerInvariant()) { Stop-Guard 'Production API/Edge host detected.' }
 if ($dbUri.Scheme -notin @('postgres', 'postgresql')) { Stop-Guard 'DB URL is not PostgreSQL.' }
 if ($dbUri.Host.ToLowerInvariant() -ne $expectedDbHost) { Stop-Guard 'DB URL host is not the staging allowlist host.' }
 

@@ -175,10 +175,11 @@ test('generated config is production-bound and loopback serving cannot initializ
   let productionCreateCalls = 0;
   const productionWindow = {
     location: { origin: PRODUCTION_BINDING.expectedOrigin, pathname: '/candidate/portal/' },
+    URL,
     supabase: { createClient: () => { productionCreateCalls += 1; return {}; } }
   };
-  vm.runInNewContext(config, { window: productionWindow });
-  vm.runInNewContext(client, { window: productionWindow });
+  vm.runInNewContext(config, { window: productionWindow, URL });
+  vm.runInNewContext(client, { window: productionWindow, URL });
   assert.equal(productionCreateCalls, 1);
   assert.equal(productionWindow.aadhyantSupabase.isConfigured, true);
 });

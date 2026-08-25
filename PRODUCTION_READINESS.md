@@ -527,6 +527,17 @@ The guard must match project ref `wsuctjhbqiedttfnwjvf` and reject at least thes
 
 The guard must continue to require the approved NONPROD ref/host identity rather than merely checking that the target is absent from this list. Do not pin transient IP addresses as identity.
 
+## Free P0 remediation phase (local, non-mutating)
+
+- **P0-C:** existing strictly read-only inventory remains the source of truth: production is 015-equivalent, with no migration ledger and W7 objects absent. Remaining catalog/RLS/grant/function gaps requiring privileged inspection remain blocked.
+- **Denylist:** staging guards now require `AADHYANT_PRODUCTION_DENYLIST_API_HOSTS` and reject the verified production Data API/Edge host plus direct and pooler DB hosts.
+- **P0-E:** generated production artifacts bind to `https://aadhyantmanpower.in` and project `wsuctjhbqiedttfnwjvf`; the browser client rejects origin/project-host mismatches and `config.js` is cache-keyed within the deterministic artifact.
+- **P0-F:** runtime HTML carries a restrictive CSP meta policy; authenticated/Admin routes are `noindex,nofollow`; Supabase JS is pinned to `2.112.4` with SRI. Hosting-level HSTS and response/cache headers remain manual because Pages is unchanged.
+- **P0-H:** sensitive document/Aadhaar/bank/UAN/ESIC intake remains **BLOCKED** pending server-authoritative gating, scanning/quarantine, retention, keying, and legal approval.
+- **P0-I:** the Admin detail update uses existing safe RPCs (`update_recruitment_candidate` and `set_company_requirement_stage`); unsupported requirement notes fail closed. Existing direct Admin reads remain a documented compatibility risk pending production grant/projection proof.
+
+All changes in this section are repository/local only. No production, billing, Auth, Storage, Edge, DNS, Meta, WhatsApp, or migration action occurred.
+
 ## Exact next approval boundary
 
 The cost-minimized next boundary is human selection of Option A, acceptance of the approximately $35/month current-organization baseline, approval of an enforceable all-writer maintenance freeze and encrypted server-side export handling, and naming of recovery owners. After that decision, request a narrowly bounded P0-B production-infrastructure mutation authorization to upgrade the organization to Pro without PITR and wait for a listed daily physical backup. The exact logical export/freeze and fresh-project restore drill remain separately authorized boundaries. If those Option A controls are rejected, select Option B and separately authorize Pro, production Small compute, and seven-day PITR instead. A future Pages switch still requires its own production deployment approval after the remaining P0 prerequisites are closed. Stop before purchasing/upgrading anything without that approval, creating/deleting a restore target, changing Pages, Auth, Storage, production network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.

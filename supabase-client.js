@@ -1,11 +1,23 @@
 (function initializeSupabaseClient() {
   const config = window.AADHYANT_CONFIG || {};
-  const expectedOriginMatches = !config.expectedOrigin || window.location.origin === config.expectedOrigin;
+  const expectedOriginMatches = typeof config.expectedOrigin === 'string'
+    && window.location.origin === config.expectedOrigin;
+  let supabaseBindingMatches = false;
+  try {
+    const parsedUrl = new URL(config.supabaseUrl);
+    supabaseBindingMatches = parsedUrl.protocol === 'https:'
+      && parsedUrl.hostname === `${config.supabaseProjectRef}.supabase.co`
+      && /^[a-z0-9]{20}$/.test(config.supabaseProjectRef || '')
+      && (parsedUrl.pathname === '' || parsedUrl.pathname === '/');
+  } catch (_error) {
+    supabaseBindingMatches = false;
+  }
   const hasPlaceholders = !config.supabaseUrl
     || !config.supabasePublishableKey
     || config.supabaseUrl.includes('YOUR_SUPABASE_')
     || config.supabasePublishableKey.includes('YOUR_SUPABASE_')
-    || !expectedOriginMatches;
+    || !expectedOriginMatches
+    || !supabaseBindingMatches;
 
   const api = {
     client: null,

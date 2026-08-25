@@ -7,6 +7,8 @@
 
   const employerStatuses = ['new', 'contacted', 'in_progress', 'fulfilled', 'closed'];
   const candidateStatuses = ['new', 'contacted', 'shortlisted', 'interview', 'selected', 'joined', 'inactive'];
+  const employerStageForStatus = (status) => ({ new: 'draft', contacted: 'open', in_progress: 'open', fulfilled: 'filled', closed: 'closed' }[status] || 'draft');
+  const employerVisibilityForStatus = (status) => status === 'contacted' || status === 'in_progress' || status === 'fulfilled' ? 'assigned' : 'private';
   const pages = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const pageCounts = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
   const loadVersions = { employers: 0, candidates: 0, candidateInterests: 0, companies: 0, companyRequirements: 0, contractors: 0 };
@@ -756,10 +758,18 @@
     document.querySelector('[data-detail-form]').addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget; const button = form.querySelector('button[type="submit"]');
-      const type = form.elements.recordType.value; const table = type === 'employers' ? 'employer_requirements' : 'candidates';
+      const type = form.elements.recordType.value;
       const detailMessage = document.querySelector('[data-detail-message]');
+      if (type === 'employers' && form.elements.internalNotes.value.trim()) {
+        showMessage(detailMessage, 'Internal notes are unavailable in the safe requirement workflow; no write was attempted.', 'error');
+        return;
+      }
       button.disabled = true; button.textContent = 'Saving…'; showMessage(detailMessage, '');
-      const { error: updateError } = await client.from(table).update({ status: form.elements.status.value, internal_notes: form.elements.internalNotes.value.trim() || null }).eq('id', form.elements.recordId.value);
+      const record = recordsById.get(`${type}:${form.elements.recordId.value}`) || {};
+      const updateResult = type === 'employers'
+        ? await client.rpc('set_company_requirement_stage', { p_requirement_id: form.elements.recordId.value, p_requirement_stage: employerStageForStatus(form.elements.status.value), p_requirement_visibility: employerVisibilityForStatus(form.elements.status.value) })
+        : await client.rpc('update_recruitment_candidate', { p_candidate_id: form.elements.recordId.value, p_status: form.elements.status.value, p_interview_available: record.interview_available === 'Yes' ? 'Yes' : 'No', p_internal_notes: form.elements.internalNotes.value.trim() || null, p_correlation_id: crypto.randomUUID() });
+      const updateError = updateResult.error;
       button.disabled = false; button.textContent = 'Save Status & Notes';
       if (updateError) { showMessage(detailMessage, 'The update could not be saved. Check your connection and try again.', 'error'); return; }
       showMessage(detailMessage, 'Status and internal notes saved.', 'success');
