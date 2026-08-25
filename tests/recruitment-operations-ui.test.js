@@ -13,7 +13,7 @@ const moduleApi = window.aadhyantRecruitmentOperations;
 
 test('W3 navigation exposes the six approved recruitment modules', () => {
   assert.deepEqual(Array.from(moduleApi.definitions, (item) => Array.from(item).slice(0, 2)), [
-    ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Job Leads'],
+    ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Job Leads'],['candidateLeads','Candidate Leads'],
     ['recruitmentCandidates','Candidates'],['recruitmentApplications','Applications'],
     ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joinings']
   ]);
@@ -42,13 +42,22 @@ test('viewer permissions keep every mutation control unavailable', () => {
 
 test('browser module uses only projected W3 RPCs, never direct tables', () => {
   assert.doesNotMatch(source,/(?:client|supabase)\.from\s*\(/);
-  ['get_recruitment_permissions','admin_list_job_leads','admin_get_job_lead_detail','list_recruitment_candidates','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
+  ['get_recruitment_permissions','admin_list_job_leads','admin_get_job_lead_detail','admin_list_candidate_leads','admin_get_candidate_lead_detail','list_recruitment_candidates','list_recruitment_applications','list_recruitment_interviews','list_recruitment_joinings'].forEach((rpc)=>assert.match(source,new RegExp(rpc)));
   assert.match(source,/p_requirement_id:requirementId/);
   assert.match(source,/activeJobLeadRows\[index\]/);
   assert.doesNotMatch(source,/window\.alert/);
   assert.match(source,/\['source','Source','select'/);
   assert.match(source,/public_website/);
   assert.match(source,/Owner ID/);
+});
+
+test('Candidate Leads uses bounded Phase-C filters and privacy-safe on-demand detail', () => {
+  assert.deepEqual({...moduleApi.argsFor('candidateLeads',{search:'A',source:'whatsapp_campaign',readiness:'complete',state:'applied',stage:'applied',unassigned:'true',attention:'true',fromDate:'2026-01-01',toDate:'2026-01-31'},25)}, {
+    p_search:'A',p_source_type:'whatsapp_campaign',p_owner_staff_user_id:null,p_unassigned:true,p_profile_readiness:'complete',p_operational_state:'applied',p_application_stage:'applied',p_attention_only:true,p_from_date:'2026-01-01',p_to_date:'2026-01-31',p_limit:25,p_offset:25
+  });
+  assert.match(source,/admin_get_candidate_lead_detail/);
+  assert.match(source,/Candidate Lead Detail/);
+  assert.doesNotMatch(source,/\bmobile\b.*candidate-lead-detail|candidate-lead-detail.*\bmobile\b/i);
 });
 
 test('operations UI includes a selected-application joining action', () => {
