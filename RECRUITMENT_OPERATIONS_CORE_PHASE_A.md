@@ -27,3 +27,5 @@ All mutation and projection functions are bounded `SECURITY DEFINER` functions w
 - Schema plus migrations 007–030 aggregate SHA-256: `3b7ca82abed1e2d50129657b766c6f5c77ca7ac825d5ff7e62c2155b0d14628f`
 
 The checkpoint is rollback-scoped and must be run only after a separately authorized NONPROD migration application. No production migration or deployment is implied.
+
+Checkpoint 033 now carries an explicit deterministic fixture/case matrix for authorization denials, source/owner/follow-up/lost-reason behavior, SLA boundaries, attention coverage across canonical tables, privacy allowlists, preservation and rollback residue. The file itself has not been executed against NONPROD: runtime fixture outcomes, replay/idempotency, and zero-residue evidence remain pending the separate migration-application authorization. True multi-session race testing is not claimed; only replay/idempotency should be claimed after the operator executes the prescribed cases.

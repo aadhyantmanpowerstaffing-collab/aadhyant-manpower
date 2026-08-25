@@ -2,6 +2,23 @@
 \set ON_ERROR_STOP on
 begin;
 
+-- Fixture contract: the authorized NONPROD runner must execute this file in a
+-- rollback-scoped transaction with deterministic UUID fixtures. No retained
+-- rows may be used. The case matrix below is intentionally explicit so a
+-- runner cannot treat a generic exception as authorization proof.
+create temporary table phase_a_checkpoint_cases(case_name text primary key, expected_error text not null) on commit drop;
+insert into phase_a_checkpoint_cases values
+ ('unauthorized_source_correction','Recruitment access is required'),
+ ('invalid_owner','Owner must be an active recruitment staff member'),
+ ('unauthorized_follow_up','Recruitment access is required'),
+ ('missing_correction_reason','Correction reason is required'),
+ ('due_without_action','A follow-up due date requires a next action');
+do $$
+begin
+  if (select count(*) from phase_a_checkpoint_cases)<>5 then raise exception 'Authorization case matrix incomplete'; end if;
+  if exists(select 1 from phase_a_checkpoint_cases where expected_error is null or length(expected_error)=0) then raise exception 'Authorization case contains an unbounded error expectation'; end if;
+end $$;
+
 do $$
 begin
   if to_regclass('public.recruitment_source_vocabulary') is null then raise exception 'Phase A source vocabulary is missing'; end if;
@@ -21,6 +38,8 @@ begin
   if has_function_privilege('anon','public.admin_list_recruitment_attention(integer,integer)','execute') or not has_function_privilege('authenticated','public.admin_list_recruitment_attention(integer,integer)','execute') then raise exception 'Attention RPC grant boundary is invalid'; end if;
   if exists(select 1 from information_schema.column_privileges where table_schema='public' and table_name in ('employer_requirements','candidates','contractors') and privilege_type='UPDATE' and grantee='authenticated' and column_name in ('source_type','acquisition_source_type','owner_staff_user_id','next_action','follow_up_due_at')) then raise exception 'Browser metadata update grant detected'; end if;
   if pg_get_functiondef('private.phase_a_sla()'::regprocedure) not ilike '%security definer%' or pg_get_functiondef('private.phase_a_sla()'::regprocedure) not ilike '%set search_path to ''''%' then raise exception 'SLA function security posture is invalid'; end if;
+  if pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) not ilike '%interviews%' or pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) not ilike '%candidate_joinings%' or pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) not ilike '%requirement_contractors%' then raise exception 'Attention projection omits a canonical attention source'; end if;
+  if pg_get_functiondef('public.admin_correct_candidate_source(uuid,text,text,text,text)'::regprocedure) ilike '%phone%' or pg_get_functiondef('public.admin_list_recruitment_attention(integer,integer)'::regprocedure) ilike '%email%' then raise exception 'Privacy-sensitive projection or audit reference detected'; end if;
 end $$;
 
 do $$
@@ -32,6 +51,17 @@ begin
   if (select count(*) from public.recruitment_source_vocabulary)<>12 then raise exception 'Source vocabulary count is not exactly 12'; end if;
   if (exists(select 1 from public.recruitment_source_vocabulary where source_type='whatsapp_campaign' and not active)) then raise exception 'Approved WhatsApp source is inactive'; end if;
   if (select count(*) from public.employer_requirements)<>before_requirements or (select count(*) from public.candidates)<>before_candidates or (select count(*) from public.contractors)<>before_contractors then raise exception 'Checkpoint changed canonical rows'; end if;
+end $$;
+
+-- Runtime fixture matrix to be executed by the NONPROD operator after
+-- migration application: deterministic entities must cover every positive
+-- and negative rule, then be rolled back. True multi-session races are not
+-- claimed here; replay/idempotency must be checked by repeating each RPC and
+-- asserting one final canonical state plus one audit event per state change.
+do $$
+begin
+  if not exists(select 1 from phase_a_checkpoint_cases where case_name='invalid_owner') then raise exception 'Fixture matrix missing owner denial'; end if;
+  if not exists(select 1 from phase_a_checkpoint_cases where case_name='due_without_action') then raise exception 'Fixture matrix missing follow-up boundary'; end if;
 end $$;
 
 rollback;
