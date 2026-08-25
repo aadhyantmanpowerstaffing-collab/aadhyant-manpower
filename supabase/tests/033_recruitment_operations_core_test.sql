@@ -32,8 +32,8 @@ values('93000000-0000-0000-0002-000000000001','Phase A Company','Phase A Contact
 insert into public.contractors(id,agency_name,owner_name,account_status,verification_status) values('93000000-0000-0000-0003-000000000001','Phase A Contractor','Phase A Owner','pending','pending');
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status,created_at,updated_at)
 values('93000000-0000-0000-0004-000000000001','93000000-0000-0000-0001-000000000001','93000000-0000-0000-0002-000000000001','direct','applied',clock_timestamp()-interval '3 days',clock_timestamp()-interval '3 days');
-insert into public.interviews(id,application_id,scheduled_at,status,result,created_by) values
- ('93000000-0000-0000-0005-000000000001','93000000-0000-0000-0004-000000000001',clock_timestamp()+interval '24 hours','scheduled','pending','93000000-0000-0000-0000-000000000001');
+insert into public.interviews(id,application_id,scheduled_at,interview_round,status,result,created_by) values
+ ('93000000-0000-0000-0005-000000000001','93000000-0000-0000-0004-000000000001',clock_timestamp()+interval '24 hours',1,'scheduled','pending','93000000-0000-0000-0000-000000000001');
 insert into public.candidate_joinings(id,application_id,expected_joining_date,joining_status,created_by) values
  ('93000000-0000-0000-0006-000000000001','93000000-0000-0000-0004-000000000001',current_date+5,'pending','93000000-0000-0000-0000-000000000001');
 do $$
