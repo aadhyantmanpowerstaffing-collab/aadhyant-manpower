@@ -32,16 +32,16 @@ Official Supabase documentation and the project's read-only add-on inventory est
 | Capability | Current availability | Retention or cost posture | Project decision |
 | --- | --- | --- | --- |
 | Automatic daily physical backup | Pro, Team, and Enterprise | Pro: 7 days; Team: 14 days; Enterprise: up to 30 days | Free does not meet the gate |
-| Point-in-Time Recovery | Paid-plan add-on; at least Small compute required | 7 days: $100/month; 14 days: $200/month; 28 days: $400/month; billed hourly and outside Spend Cap | Recommend 7 days for launch |
+| Point-in-Time Recovery | Paid-plan add-on; at least Small compute required | 7 days: $100/month; 14 days: $200/month; 28 days: $400/month; billed hourly and outside Spend Cap | Enhanced Option B; not required if conditional Option A passes |
 | Small compute | Available add-on/current paid-project prerequisite for PITR | Read-only inventory: approximately $15/month | Required with PITR unless checkout proves an equivalent or larger active compute |
 | Restore to a New Project | Paid plan with physical backups enabled; currently documented as Beta | New project mirrors source compute/disk attributes and incurs separate project costs | Use for the isolated drill |
-| Manual logical dump | Supabase CLI or `pg_dump` | Operator-managed storage, encryption, retention, and restore burden | Defense in depth only; not the sole P0-B proof |
+| Manual logical dump | Supabase CLI `db dump` roles/schema/data bundle, with separate `auth,storage` schema-change capture | Operator-managed storage, encryption, retention, and restore burden | Accepted for the cost-minimized gate only after an exact isolated restore drill and enforced write freeze |
 
 Paid daily backups are provider-scheduled; the reviewed capability exposes no customer-selected daily schedule or safe manual physical-snapshot trigger. Enabling PITR replaces daily backups because PITR provides the finer-grained recovery chain. The valid recovery interval is the earliest/latest recovery point displayed by the provider, not the add-on enablement time. A selected timestamp is usable only after the provider exposes it inside that interval.
 
 The supported isolated recovery path is **Restore to a New Project** from a physical backup or PITR point. No evidence establishes that a Supabase preview branch is an eligible substitute for this provider backup restore, so a branch is not accepted as the P0-B recovery target.
 
-The organization plan currently costs nothing. Moving to Pro, selecting Small compute, and enabling 7-day PITR creates paid recurring usage. Supabase's current example is approximately $25/month for Pro, $15/month for Small compute, $100/month for 7-day PITR, less the plan's applicable compute credit. That example is not an Aadhyant quote. The organization already has production and NONPROD projects, and the drill creates another temporary billed project, so the Dashboard checkout estimate, taxes, disk, compute, and all active-project charges require human acceptance before any change.
+The organization plan currently costs nothing. Option A is expected to cost approximately $35/month for the current two active projects: $25 Pro plus about $20 total Micro/Nano-billed-as-Micro compute, less one $10 compute credit. Option B is expected to cost approximately $140/month: the same organization, production Small compute, the other active Micro/Nano project, the compute credit, and $100 seven-day PITR. These are not Aadhyant quotes. The temporary drill project, taxes, disk, compute, egress, storage, and all actual active-project charges require human acceptance of the Dashboard estimate before any change.
 
 Current provider references, reviewed 25 August 2026:
 
@@ -49,25 +49,65 @@ Current provider references, reviewed 25 August 2026:
 - Database-backup feature/RPO summary: <https://supabase.com/features/database-backups>
 - PITR usage and pricing: <https://supabase.com/docs/guides/platform/manage-your-usage/point-in-time-recovery>
 - Restore to a new project: <https://supabase.com/docs/guides/platform/clone-project>
+- CLI backup/restore: <https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore>
+- Compute billing: <https://supabase.com/docs/guides/platform/manage-your-usage/compute>
 - Production checklist: <https://supabase.com/docs/guides/deployment/going-into-prod>
 - Pricing: <https://supabase.com/pricing>
 
 Provider capability, prices, and Beta behavior must be rechecked in the Dashboard immediately before approval; this document is not a price guarantee or provider SLA.
 
+## Cost-minimized recovery alternative review
+
+### Option A — Pro daily backup plus tested logical export
+
+1. **Mechanism:** upgrade the organization to Pro, wait for a provider daily physical backup, and create an explicit pre-migration bundle with the version-pinned Supabase CLI: `roles.sql` (`--role-only`), `schema.sql`, and `data.sql` (`--data-only --use-copy`). Capture custom `auth`/`storage` schema changes separately through Supabase's documented `db diff --schema auth,storage` procedure from an explicitly production-bound, production-through-015 baseline—not the current NONPROD-linked workspace. Production currently has no migration ledger, so no historic migration rows may be fabricated.
+2. **Database/Auth recovery:** provider daily physical clone includes database schemas/data, roles, permissions, Auth users/hashed passwords, and the encryption root key. The CLI bundle preserves application schema/data/roles and Auth user data under the supported restore procedure, but managed `auth`/`storage` schema definitions come from the target; custom changes require the separate diff. Auth settings/API keys are not restored. Custom login-role passwords are not retained. Vault/encrypted-column use must be proven absent or its provider key-copy procedure separately approved.
+3. **Storage:** neither database mechanism restores Storage objects/settings. Current production has zero buckets, but this ceases to be sufficient once document storage is enabled.
+4. **Isolated target:** supported. A daily physical backup can use Dashboard Restore to a New Project. The exact logical bundle must be tested through the documented CLI/`psql --single-transaction --variable ON_ERROR_STOP=1` restore into a separately created fresh Supabase project.
+5. **RPO:** daily physical fallback can lose up to about 24 hours. For the migration itself, the tested logical bundle can provide zero data loss relative to its captured snapshot only when an enforceable all-writer maintenance freeze begins before export and remains through migration/postflight. Without that freeze, the logical path has an unbounded write-after-dump gap and fails this gate.
+6. **RTO:** initial internal objective eight hours because target creation, manual roles/schema/data restore, custom Auth/Storage change application, fingerprinting, and service reconfiguration are operator-run. The drill must replace this estimate with measured evidence.
+7. **Rollback confidence:** high for the database at the frozen export boundary after the exact bundle restores cleanly; lower than PITR for writes outside that boundary and for non-database configuration. Committed migrations still prefer forward-fix unless incident authority selects restore.
+8. **Recurring cost:** expected current-organization baseline is approximately $35/month before tax/overage: $25 Pro plus two active Micro/Nano-billed-as-Micro projects at about $10 each, less one $10 monthly compute credit. No $100 PITR line item.
+9. **Drill cost:** a temporary Micro target is about $0.01344/hour (roughly $0.11 for eight billed hours), plus disk/usage and secure-runner/encrypted-backup storage costs. Actual cost continues until the exact target is separately approved for deletion.
+10. **Complexity:** high. It requires a pinned CLI/PostgreSQL toolchain, secure non-laptop artifact storage, checksums, a write freeze, target bootstrap, ordered restore, special Auth/Storage handling, and sanitized evidence.
+11. **Privacy:** higher exposure surface because roles/schema/data files contain production data and Auth records outside the managed source project. Artifacts must be encrypted in an approved restricted server-side location, never committed, never placed on a local laptop, and destroyed only under the approved retention schedule.
+12. **P0-B result:** **PASS-capable, conditionally.** It satisfies the pre-migration gate only after a paid daily backup exists, the exact logical bundle has been restored and verified in isolation, the freeze control is proven, fingerprints match, owners/RPO/RTO are accepted, and the bundle remains available for the migration window.
+
+### Option B — Pro, Small compute, and seven-day PITR
+
+1. **Mechanism:** upgrade to Pro or higher, move production to at least Small compute, enable seven-day PITR, and use the provider's physical backup plus WAL chain.
+2. **Database/Auth recovery:** Restore to a New Project includes database schema/data/indexes, roles/permissions/users, Auth users/hashed passwords, and the encryption root key. Auth settings/API keys still require manual reconfiguration.
+3. **Storage:** Storage objects/settings are not included, exactly as in Option A.
+4. **Isolated target:** supported directly from a selected timestamp through Dashboard Restore to a New Project.
+5. **RPO:** provider documentation describes about two minutes worst case; use five minutes as the conservative internal operational objective. No export-to-migration writer freeze is required to preserve a recovery point, although a migration maintenance window is still required.
+6. **RTO:** initial internal objective four hours; the drill must measure it.
+7. **Rollback confidence:** highest of the two database options because a precise pre-incident timestamp can be selected from the active recovery interval and the restore is provider-managed.
+8. **Recurring cost:** expected current-organization baseline is approximately $140/month before tax/overage: $25 Pro, $15 production Small, about $10 for the other active project, minus $10 compute credit, plus $100 seven-day PITR. PITR is billed hourly.
+9. **Drill cost:** a temporary Small target is about $0.0206/hour (roughly $0.08 for four billed hours), plus disk/usage until separately deleted.
+10. **Complexity:** medium. Recovery is provider-managed, but target containment, fingerprints, non-database configuration, owner/runbook, and deletion approval remain manual.
+11. **Privacy:** lower export exposure than Option A because production rows stay inside provider-managed projects; the restored project still contains real database/Auth data and must be tightly isolated.
+12. **P0-B result:** **PASS-capable.** It satisfies the gate after PITR exposes a valid interval and an exact isolated restore/fingerprint drill passes.
+
+### Cost-minimized recommendation
+
+Choose **Option A** for the current small, pre-launch dataset, provided the business accepts a controlled write outage and the security owner approves encrypted server-side handling of the logical bundle. It saves approximately $105/month under the current two-project organization posture while still producing a genuinely tested recovery path.
+
+PITR is not technically required solely to apply migrations 016–029. It becomes required if Aadhyant cannot enforce the all-writer freeze, cannot securely retain/restore the logical bundle, needs continuous recovery between daily backups, needs the five-minute operational RPO outside the maintenance window, or the logical drill exposes an Auth/Vault/extension restoration gap.
+
 ## Required target posture
 
 Before migration 016 can be considered, P0-B requires all of the following:
 
-1. The organization is on an approved paid plan and production uses at least Small compute.
-2. Production has 7-day PITR enabled and the provider shows a valid earliest/latest recovery interval.
-3. A recovery timestamp immediately before the migration window is recorded inside that interval.
-4. A provider-managed restore from that source point has completed into a separate project, never over production.
+1. The organization is on an approved paid plan and a provider daily physical backup is present.
+2. One recovery posture is explicitly selected: Option A with Micro-or-higher compute and an exact tested logical bundle, or Option B with Small-or-higher compute and an active PITR interval.
+3. The exact pre-migration recovery boundary is recorded: the write-frozen logical snapshot/manifest for Option A or a selectable PITR timestamp for Option B.
+4. The selected recovery path has completed successfully into a separate project, never over production.
 5. The restored catalog, security objects, aggregate data posture, and Auth linkage match the source fingerprint captured at the recovery timestamp.
 6. Storage scope is recorded separately. A database restore does not restore Storage files or operational configuration.
 7. A named backup operator, rollback decision owner, alternate owner, and incident communication channel are recorded.
 8. The measured drill establishes an accepted RPO/RTO and a usable recovery runbook.
 
-A daily physical backup plus a successful clone would prove basic recoverability, but it can be nearly a day old. That is not the recommended launch posture for real account and recruitment data. Seven-day PITR is the minimum recommended production posture for this release. Fourteen or 28 days may be selected only after the business owner accepts the higher retention and cost.
+For this pre-launch dataset, the approved cost-minimized posture is Option A only with a proven writer freeze and exact logical restore drill. A daily backup without that explicit tested export remains insufficient because it can be nearly a day old. Seven-day PITR remains the safer operational posture and is mandatory if the Option A conditions cannot be satisfied.
 
 ## Approval and execution sequence
 
@@ -76,25 +116,25 @@ Every mutation below requires an explicit approval that names the target and exa
 ### Gate 1 — billing and ownership
 
 1. Record the billing owner and accept the complete organization checkout estimate, including existing projects and the temporary drill project.
-2. Approve Pro (or a higher plan), at least Small production compute, and the chosen PITR retention.
+2. Select Option A or Option B. Approve Pro (or higher), the resulting compute posture, and PITR retention only if Option B is selected.
 3. Approve the data-retention implications of the recovery window.
 4. Name the backup operator, rollback decision owner, alternate, and incident channel.
 5. Record launch-time RPO and RTO acceptance.
 
 Stop if any owner, cost, retention decision, or authority is missing.
 
-### Gate 2 — backup/PITR mutation
+### Gate 2 — paid backup activation
 
 Under a separate production-infrastructure mutation approval:
 
 1. Reverify exact organization, production project ref, region, PostgreSQL version, and current add-ons.
 2. Capture the current billing/add-on settings without secret values.
-3. Upgrade the organization and compute only as explicitly approved.
-4. Enable only the approved PITR retention on `wsuctjhbqiedttfnwjvf`.
+3. Upgrade the organization and compute only as explicitly approved. Option A does not require Small compute; the existing Nano may remain but is billed at the Micro rate on a paid organization.
+4. Under Option A, do not enable PITR. Wait until a production daily physical backup is listed and selectable. Under Option B, enable only the approved PITR retention on `wsuctjhbqiedttfnwjvf` and wait for a valid recovery interval.
 5. Do not migrate, deploy, change Auth/Storage/network/DNS/Meta, or send messages.
-6. Wait until the provider exposes a valid recovery interval. Record earliest/latest points and a candidate source timestamp without private row data.
+6. Record the daily backup identifier/time for Option A or earliest/latest PITR points and a candidate timestamp for Option B, without private row data.
 
-Stop if the project identity differs, checkout differs materially, PITR cannot be enabled cleanly, the recovery interval is absent, or project health degrades.
+Stop if the project identity differs, checkout differs materially, the selected backup mechanism does not become usable, or project health degrades.
 
 ### Gate 3 — source fingerprint
 
@@ -110,21 +150,33 @@ Before the drill and again immediately before migrations, capture through a serv
 
 Raw application rows, Auth identities, credentials, and private fields must not enter logs or evidence files.
 
+For Option A, create the exact export only through a separately authorized, pinned, non-interactive runner after the writer freeze is proven:
+
+```text
+supabase db dump --db-url "$PRODUCTION_DB_URL" -f roles.sql --role-only
+supabase db dump --db-url "$PRODUCTION_DB_URL" -f schema.sql
+supabase db dump --db-url "$PRODUCTION_DB_URL" -f data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+```
+
+The current workspace is linked to approved NONPROD and its migrations extend beyond production, so it must **not** use `--linked` to capture production `auth`/`storage` changes. Build that adjunct from a separately reviewed production-through-015 baseline worktree with an explicit production DB URL, following Supabase's documented `db diff --schema auth,storage` procedure, and compare it to the existing read-only production catalog fingerprint before acceptance.
+
+The connection material must remain in a secret manager/in-memory environment and never enter output. Pin the Supabase CLI and compatible PostgreSQL image/client, normalize a manifest containing tool versions, file byte counts, SHA-256 values, source database identity, freeze start, export start/end, and source fingerprints, then store the bundle encrypted in the approved restricted server-side location. Recheck source fingerprints after export; any write or schema drift invalidates the bundle and stops the migration.
+
 ### Gate 4 — isolated restore mutation
 
-Under a separate restore-drill approval, use Dashboard **Restore to a New Project**:
+Under a separate restore-drill approval, use the selected supported isolated restore path:
 
-1. Source: exact production project `wsuctjhbqiedttfnwjvf` and an approved timestamp inside the recorded PITR interval.
-2. Target: a new disposable project named for the drill, in the provider-selected same region. Never select in-place restore.
-3. Record the source ref, source timestamp/timezone, recovery interval, target ref, operator, start/end times, compute/disk posture, and displayed cost in an ignored sanitized evidence manifest.
+1. Source: exact production project `wsuctjhbqiedttfnwjvf`; use the exact Option A logical-bundle manifest or an approved Option B timestamp inside the recorded PITR interval.
+2. Target: a new disposable project named for the drill in the same region. Under Option A, create a clean target and use the documented single-transaction CLI/`psql` restore. Under Option B, use Dashboard Restore to a New Project. Never select in-place restore.
+3. Record the source ref, export or PITR timestamp/timezone, bundle/interval identity, target ref, operator, start/end times, compute/disk posture, and displayed cost in an ignored sanitized evidence manifest.
 4. Do not bind the target to Aadhyant domains, GitHub Pages, production applications, Meta, WhatsApp, SMTP, webhooks, workers, or any real-user workflow.
 5. Treat the target as production-sensitive from creation. Limit Dashboard and database access to the named drill operators.
-6. The clone inherits source compute/disk, SSL-enforcement, and database network-restriction settings. Because the current source has SSL enforcement off and open database CIDRs, the drill approval must include immediate target-only TLS/network containment before verification. This does not authorize changing production.
+6. A physical clone inherits source compute/disk, SSL-enforcement, and database network-restriction settings; a manually created Option A target has its own initial settings. In either case, the drill approval must include immediate target-only TLS/network containment before verification. This does not authorize changing production.
 7. Do not publish generated API keys or URLs. Disable external signup/recovery/email behavior on the target before any Auth testing; do not sign in as a real user.
 8. Before verification, identify and disable target-side `pg_net`, `pg_cron`, wrappers, database webhooks, or other external-operation mechanisms if any exist. Edge Functions are not copied and must remain undeployed.
 9. Use only server-enforced read-only catalog and aggregate queries for the drill verification.
 
-The provider describes this clone as database-only. It includes database schemas/data, roles/permissions, Auth schema records, and the database encryption root key. It does **not** copy Storage objects/settings, Edge Functions, Auth settings/API keys, Realtime settings, or read replicas. These omissions are part of the recovery result and must not be silently treated as restored services.
+The provider describes the physical clone as database-only. It includes database schemas/data, roles/permissions, Auth schema records, and the database encryption root key. It does **not** copy Storage objects/settings, Edge Functions, Auth settings/API keys, Realtime settings, or read replicas. The Option A logical restore is more manual: managed target schemas/settings are not replaced wholesale, custom `auth`/`storage` changes need the separate reviewed diff, and encryption-key handling must fail closed if Vault/encrypted columns are present. These omissions are part of the recovery result and must not be silently treated as restored services.
 
 ### Gate 5 — read-only verification
 
@@ -132,7 +184,7 @@ The drill passes only when all checks succeed:
 
 1. Provider operation reports success and the target is healthy.
 2. Target PostgreSQL major version is compatible with the source PostgreSQL 17.6 posture.
-3. Recorded source timestamp is inside the provider recovery interval and is the exact source used.
+3. The exact Option A export manifest/freeze boundary or Option B provider recovery timestamp is recorded and is the source actually restored.
 4. Expected production-through-015 surface exists: twelve public application tables, 40 public policies, 43 public indexes, 12 application triggers, 26 repository application functions, and the migration-011/015 projections.
 5. Migration-016 and later application objects remain absent.
 6. Catalog/security fingerprints match the source capture, including RLS, policies, grants, function security, and `search_path`.
@@ -163,28 +215,30 @@ Deletion of the drill project is destructive and is **not** implicit in restore 
 
 ## RPO and RTO
 
-### Recommended launch RPO: five minutes
+### Option A migration RPO: frozen export boundary
 
-Supabase describes PITR recovery selection with second-level granularity and documents a worst-case RPO of approximately two minutes. Aadhyant should use a more conservative **five-minute operational RPO** for launch. This is a target, not a contractual SLA. The actual earliest/latest recovery interval must be observed before every migration, and a quiet-database latest point can appear behind wall-clock time without omitting a transaction.
+Option A can target **zero loss relative to the accepted write-freeze/export snapshot**, not zero continuous data loss. All external and operator writers must remain blocked from before the export until migration/postflight releases the freeze. The daily physical fallback alone can lose up to approximately 24 hours. If the freeze cannot be made enforceable, Option A fails and Option B is required.
 
-Daily backups alone imply an RPO of up to approximately 24 hours and therefore do not meet this recommendation without explicit risk acceptance, a write freeze, and an additional approved immediate backup mechanism.
+### Option B operational RPO: five minutes
 
-### Recommended launch RTO: four hours
+Supabase describes PITR recovery selection with second-level granularity and documents a worst-case RPO of approximately two minutes. Use a more conservative **five-minute operational RPO** for Option B. This is an internal target, not a contractual SLA. The actual earliest/latest recovery interval must be observed before every migration.
 
-Use **four hours from recovery declaration to a verified isolated database** as the initial internal RTO for the current small production dataset. Supabase does not guarantee that duration; provisioning and restore time depend on data size and platform conditions. The first drill must measure:
+### RTO objectives
+
+Use **eight hours for Option A** and **four hours for Option B**, measured from recovery declaration to a verified isolated database, as the initial internal objectives for the current small dataset. Supabase does not guarantee either duration; provisioning, manual logical restore work, and data size affect completion. The selected drill must measure:
 
 - time from restore submission to healthy target;
 - time from healthy target to completed verification; and
 - operator decision/coordination time.
 
-If the measured drill exceeds four hours, the RTO must be revised and explicitly accepted, or the recovery process must be improved before launch. This database RTO excludes DNS, frontend, Edge, Auth-setting, Storage-object, Meta, and messaging recovery.
+If the measured drill exceeds the selected objective, the RTO must be revised and explicitly accepted, or the recovery process must be improved before launch. These database RTOs exclude DNS, frontend, Edge, Auth-setting, Storage-object, Meta, and messaging recovery.
 
 ## Migration gate
 
 **NO migration 016–029 may be applied unless every condition below is PASS at the same approved release boundary:**
 
-- paid backup posture and selected PITR retention are active;
-- a usable provider recovery interval and exact pre-migration recovery timestamp are recorded;
+- Option A has at least one listed daily physical backup, or Option B has an active provider recovery interval;
+- Option A has an enforced writer freeze, a complete checksum-manifested encrypted bundle, and an exact successful restore of that mechanism, or Option B has active PITR and a selectable pre-migration timestamp;
 - isolated restore proof has passed against that backup mechanism;
 - backup operator, rollback decision owner, alternate, and incident channel are named;
 - RPO/RTO are accepted and the drill measurement is recorded;
@@ -201,13 +255,14 @@ PITR is recovery protection, not permission to run a migration. An in-progress t
 | --- | --- | --- |
 | Current plan/add-on inventory | PASS | Authenticated read-only evidence recorded without secrets |
 | Backup/PITR design | PASS | Document complete and internally reviewed; listed human choices remain MANUAL |
-| Paid plan/compute | BLOCKED | Approved plan and at least Small compute active |
-| PITR | BLOCKED | Approved retention active with valid recovery interval |
-| Usable recovery point | BLOCKED | Exact source point recorded and selectable |
+| Paid plan/compute | BLOCKED | Pro or higher active; Micro-or-higher for Option A or Small-or-higher for Option B |
+| Recovery mode | MANUAL | Human selects conditional Option A or enhanced Option B |
+| PITR decision | MANUAL | Not required for accepted Option A; approved interval required for Option B |
+| Usable recovery point | BLOCKED | Option A bundle/freeze or Option B timestamp recorded and restorable |
 | Restore target | BLOCKED | Separately approved isolated target created and contained |
 | Restore verification | BLOCKED | All catalog/data/Auth aggregate checks pass |
 | Privacy controls | MANUAL | Named access list and evidence location approved |
-| RPO/RTO | MANUAL | Human owner accepts values after measured drill |
+| RPO/RTO | MANUAL | Human accepts Option A frozen-boundary/eight-hour or Option B five-minute/four-hour targets after drill |
 | Rollback ownership | MANUAL | Primary, alternate, authority, and channel named |
 | Migration gate | PASS | Explicit fail-closed rule documented above |
 
@@ -216,18 +271,18 @@ PITR is recovery protection, not permission to run a migration. An in-progress t
 Before requesting any P0-B mutation, humans must decide and record:
 
 1. billing owner and maximum approved monthly/temporary drill spend;
-2. Pro versus a higher organization plan;
-3. production compute size, at least Small;
-4. PITR retention: recommended 7 days, or approved 14/28 days;
+2. Option A or Option B, with explicit acceptance that Option A requires a complete all-writer freeze and higher manual/privacy burden;
+3. Pro versus a higher organization plan and production compute: Micro-or-higher for Option A, at least Small for Option B;
+4. no PITR for Option A, or PITR retention of 7/14/28 days for Option B;
 5. privacy/legal acceptance of the recovery retention window;
-6. five-minute RPO and four-hour initial RTO, subject to drill measurement;
+6. Option A frozen-snapshot RPO/eight-hour initial RTO or Option B five-minute RPO/four-hour initial RTO, subject to drill measurement;
 7. backup operator, rollback decision owner, alternate, and incident channel;
 8. exact isolated restore-project naming, access list, and cost approval;
-9. authorization for target-only isolation/configuration changes required immediately after cloning;
-10. sanitized evidence location and retention period;
+9. authorization for the Option A writer freeze and encrypted server-side export location, if selected;
+10. authorization for target-only isolation/configuration changes and the sanitized evidence location/retention period;
 11. separate restore-drill execution authority; and
 12. later separate destructive cleanup authority for the exact drill target.
 
 ## Exact next approval boundary
 
-After human acceptance of the decisions above, request a narrowly bounded **P0-B Gate 2 production-infrastructure mutation authorization** to upgrade the organization/compute as approved and enable only the selected PITR retention on `wsuctjhbqiedttfnwjvf`. Stop again after a valid recovery interval is proven. Creating and containing the isolated restore target remains a second, separately authorized mutation boundary. No migration, deployment, Auth/Storage/network production change, DNS/Meta action, or message is included.
+The cost-minimized next boundary is human selection of **Option A**, acceptance of the expected approximately $35/month current-organization baseline, approval of the all-writer freeze and encrypted export handling, and naming of recovery owners. After that decision, request a narrowly bounded P0-B production-infrastructure mutation authorization to upgrade the organization to Pro without PITR and wait for one listed daily physical backup. The exact logical export/write freeze and isolated restore drill remain separately authorized boundaries. If the Option A controls are rejected, request Option B authorization for Pro, production Small compute, and seven-day PITR instead. No migration, deployment, Auth/Storage/network production change, DNS/Meta action, or message is included.

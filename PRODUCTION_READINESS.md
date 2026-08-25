@@ -277,7 +277,7 @@ Critical gaps: no verified production log retention/access, external error monit
 ### C. Backup
 
 - [x] **PASS** Current Free-plan, zero-backup/PITR capability and the P0-B target plan are documented in `PRODUCTION_BACKUP_RESTORE_PLAN.md`.
-- [ ] **BLOCKED** No usable production backup or PITR recovery interval currently exists; paid plan/compute/retention approval is pending.
+- [ ] **BLOCKED** No usable production backup exists; paid plan and conditional Option A versus PITR Option B approval is pending.
 - [ ] **BLOCKED** Isolated restore drill has not been evidenced.
 - [ ] **MANUAL** Approve billing, retention, RPO/RTO, restore target/access, and named rollback ownership before any P0-B mutation.
 - [ ] **MANUAL** Capture DB, Storage, Auth settings, Edge, Meta, DNS, hosting, and prior artifact baselines.
@@ -429,8 +429,9 @@ The direct-update compatibility path must be removed rather than widening produc
 
 - **Planning status: PASS. Recovery proof: BLOCKED.** The authenticated read-only organization endpoint reports the Free plan. Production has zero selected add-ons; the backup endpoint still reports WAL-G enabled, PITR disabled, and no physical backup entries.
 - Current project add-on inventory offers PITR retention of 7/14/28 days at $100/$200/$400 per month. Current Supabase documentation requires a paid plan and at least Small compute for PITR; the read-only inventory prices Small at approximately $15/month. Exact organization/project/temporary-clone charges require Dashboard checkout approval.
-- The project-specific recommendation is Pro or higher, at least Small compute, 7-day PITR, a valid recovery interval, and a provider database-only restore into a separately authorized same-region disposable project. The target must never overwrite production and must be isolated before read-only verification.
-- The full sequence, privacy boundary, verification checks, five-minute operational RPO, four-hour initial RTO, human decisions, and fail-closed migration gate are in `PRODUCTION_BACKUP_RESTORE_PLAN.md`.
+- The cost-minimized review concludes that PITR is not inherently required for migrations 016–029. Conditional Option A—Pro daily physical backup plus an exact, encrypted, write-frozen Supabase CLI logical bundle restored successfully into a fresh isolated project—can satisfy P0-B for the current small pre-launch dataset. It fails closed to Option B if the writer freeze, secure export, Auth/Vault/extension recovery, or exact restore proof cannot be established.
+- Expected current-organization recurring baselines are approximately $35/month for Option A and $140/month for Option B before taxes/overages, based on two active projects and the current provider pricing/compute credit. Dashboard checkout remains authoritative.
+- The full comparison, privacy boundary, Option A frozen-snapshot/eight-hour RTO posture, Option B five-minute/four-hour posture, human decisions, and fail-closed migration gate are in `PRODUCTION_BACKUP_RESTORE_PLAN.md`.
 - No plan/add-on was purchased, no PITR or backup was enabled, no backup was triggered, and no restore/project mutation occurred during planning.
 
 ### P0-C — production DB catalog/drift proof
@@ -528,4 +529,4 @@ The guard must continue to require the approved NONPROD ref/host identity rather
 
 ## Exact next approval boundary
 
-The next boundary is human review of `PRODUCTION_BACKUP_RESTORE_PLAN.md` and acceptance of its billing ceiling, paid plan/compute, PITR retention, privacy window, RPO/RTO, and named recovery owners. After that review, request a narrowly bounded P0-B Gate 2 production-infrastructure mutation authorization to upgrade only the approved plan/compute and enable only the approved PITR retention on `wsuctjhbqiedttfnwjvf`; stop again when a valid recovery interval is proven. Creating/containing the isolated restore target is a second, separately authorized mutation boundary. A future Pages switch still requires its own production deployment approval after the remaining P0 prerequisites are closed. Stop before enabling backups/PITR without that approval, creating/deleting a restore target, changing Pages, Auth, Storage, production network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.
+The cost-minimized next boundary is human selection of Option A, acceptance of the approximately $35/month current-organization baseline, approval of an enforceable all-writer maintenance freeze and encrypted server-side export handling, and naming of recovery owners. After that decision, request a narrowly bounded P0-B production-infrastructure mutation authorization to upgrade the organization to Pro without PITR and wait for a listed daily physical backup. The exact logical export/freeze and fresh-project restore drill remain separately authorized boundaries. If those Option A controls are rejected, select Option B and separately authorize Pro, production Small compute, and seven-day PITR instead. A future Pages switch still requires its own production deployment approval after the remaining P0 prerequisites are closed. Stop before purchasing/upgrading anything without that approval, creating/deleting a restore target, changing Pages, Auth, Storage, production network/TLS, applying migrations, deploying Edge/frontend/Admin, changing DNS/Meta, or sending any message.
