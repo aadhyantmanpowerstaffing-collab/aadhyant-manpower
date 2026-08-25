@@ -40,3 +40,12 @@ test('production sensitive intake is fail-closed', () => {
   assert.match(candidate, /data-upload-form/);
   assert.match(candidate, /Sensitive profile, document, and joining-detail intake is temporarily unavailable/);
 });
+
+test('Phase A Admin surface exposes derived recruitment attention without a second CRM', () => {
+  const html = fs.readFileSync(path.join(root, 'admin/index.html'), 'utf8');
+  const admin = fs.readFileSync(path.join(root, 'admin/admin.js'), 'utf8');
+  assert.match(html, /data-phase-a-attention/);
+  assert.match(html, /My Work \/ Attention/);
+  assert.match(admin, /admin_list_recruitment_attention/);
+  assert.doesNotMatch(admin, /recruiter_tasks|create table/i);
+});

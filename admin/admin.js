@@ -490,6 +490,19 @@
     document.querySelector('[data-count="company-pending"]').textContent = companyPending;
   };
 
+  const loadPhaseAAttention = async () => {
+    const body = document.querySelector('[data-phase-a-body]'); const empty = document.querySelector('[data-phase-a-empty]'); const message = document.querySelector('[data-phase-a-message]');
+    if (!body || !empty || !message) return;
+    body.replaceChildren(); message.textContent = 'Loading derived attention…';
+    try {
+      const result = await client.rpc('admin_list_recruitment_attention', { p_limit: 50, p_offset: 0 });
+      if (result.error) throw result.error;
+      const values = result.data || []; empty.hidden = Boolean(values.length);
+      values.forEach((record) => { const row = document.createElement('tr'); [record.entity_type, record.reference || '—', record.reason, record.severity, `${record.age_days} days`, record.owner_staff_user_id ? 'Assigned' : 'Unassigned'].forEach((value, index) => { const cell = document.createElement('td'); cell.dataset.label = ['Area','Reference','Reason','Severity','Age','Owner'][index]; cell.textContent = String(value ?? '—'); row.append(cell); }); body.append(row); });
+      message.textContent = '';
+    } catch (_error) { empty.hidden = false; empty.textContent = 'Recruitment attention is unavailable until Phase A migration 030 is applied and authorized.'; message.textContent = ''; }
+  };
+
   const openDetails = (type, record, focusStatus = false) => {
     if (!record) return;
     const dialog = document.querySelector('[data-detail-dialog]');
@@ -812,6 +825,8 @@
       if (JSON.stringify(current) !== authorizationSignature) window.location.reload();
     }, './login.html');
     showMessage(dashboardMessage, '');
+    document.querySelector('[data-phase-a-refresh]')?.addEventListener('click', loadPhaseAAttention);
+    loadPhaseAAttention();
   };
 
   if (pageType === 'login') initializeLogin();

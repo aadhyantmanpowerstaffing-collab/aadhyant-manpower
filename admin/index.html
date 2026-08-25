@@ -70,6 +70,13 @@
         <article><span>Pending Company Reviews</span><strong data-count="company-pending">—</strong></article>
       </section>
 
+      <section class="record-panel phase-a-attention" data-phase-a-attention aria-labelledby="phase-a-attention-title">
+        <div class="panel-heading"><div><p class="admin-eyebrow">Recruitment Operations</p><h2 id="phase-a-attention-title">My Work / Attention</h2><p>Derived, privacy-safe lead attention from Requirements, Candidates, Contractors and Applications.</p></div><button class="admin-button admin-button-secondary" type="button" data-phase-a-refresh>Refresh Attention</button></div>
+        <div class="admin-message" data-phase-a-message role="status" aria-live="polite"></div>
+        <div class="table-wrap responsive-table"><table><thead><tr><th>Area</th><th>Reference</th><th>Source</th><th>Next action</th><th>Due</th><th>Reason</th><th>Severity</th><th>Age</th><th>Owner</th></tr></thead><tbody data-phase-a-body></tbody></table></div>
+        <p class="empty-records" data-phase-a-empty hidden>No recruitment attention items are currently derived.</p>
+      </section>
+
       <section class="record-panel staff-management-panel" id="staff-panel" role="tabpanel" aria-labelledby="staff-tab" data-panel="staff" hidden>
         <div class="panel-heading"><div><h2>Internal Staff</h2><p>Create profiles for existing Supabase Auth users and manage least-privilege roles.</p></div><button class="admin-button admin-button-secondary" type="button" data-refresh-staff>Refresh Staff</button></div>
         <form class="staff-create-form" data-create-staff-form>
