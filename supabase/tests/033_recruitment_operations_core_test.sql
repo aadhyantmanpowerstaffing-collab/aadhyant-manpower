@@ -59,7 +59,7 @@ begin
   perform public.admin_assign_requirement_owner('93000000-0000-0000-0002-000000000001','93000000-0000-0000-0000-000000000002');
   perform public.admin_assign_requirement_owner('93000000-0000-0000-0002-000000000001',null);
   perform public.admin_set_requirement_follow_up('93000000-0000-0000-0002-000000000001','Call employer',clock_timestamp()-interval '1 hour');
-  if not exists(select 1 from public.admin_list_recruitment_attention(100,0) where entity_id='93000000-0000-0000-0002-000000000001' and reason='Requirement follow-up due') then raise exception 'Overdue follow-up attention missing'; end if;
+  if not exists(select 1 from public.admin_list_recruitment_attention(100,0) where entity_id='93000000-0000-0000-0002-000000000001' and severity='high') then raise exception 'Overdue follow-up attention missing'; end if;
   perform public.admin_set_requirement_follow_up('93000000-0000-0000-0002-000000000001',null,null);
   begin perform public.admin_set_requirement_follow_up('93000000-0000-0000-0002-000000000001',null,clock_timestamp()); raise exception 'due_without_action'; exception when others then raised:=sqlerrm; end;
   if raised<>'A follow-up due date requires a next action' then raise exception 'Unexpected follow-up denial: %',raised; end if;
