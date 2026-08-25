@@ -35,7 +35,7 @@ returns table(
   operational_state text
 )
 language sql stable security definer set search_path = '' as $$
-  with args as (
+  with authz as (select private.can_manage_recruitment_operations() allowed), args as (
     select nullif(btrim(p_search),'') search_term,
       nullif(lower(btrim(p_stage)),'') stage_term,
       nullif(lower(btrim(p_source_type)),'') source_term,
@@ -59,8 +59,9 @@ language sql stable security definer set search_path = '' as $$
     b.apps,b.interviews,b.selected,b.joined,greatest(0,(extract(epoch from (clock_timestamp()-b.created_at))/86400)::integer),
     (b.follow_up_due_at is not null and b.follow_up_due_at<clock_timestamp()),
     case when b.requirement_stage='draft' then 'qualification' when b.requirement_stage='open' and b.joined>0 then 'fulfillment' when b.requirement_stage='open' then 'active_vacancy' when b.requirement_stage='filled' then 'fulfilled' when b.requirement_stage='cancelled' then 'cancelled_lost' else b.requirement_stage end
-  from base b cross join args a
-  where (a.search_term is null or b.requirement_code ilike '%'||a.search_term||'%' or b.company_name ilike '%'||a.search_term||'%' or b.job_role ilike '%'||a.search_term||'%' or coalesce(b.job_location,b.company_location) ilike '%'||a.search_term||'%')
+  from base b cross join args a cross join authz z
+  where z.allowed
+    and (a.search_term is null or b.requirement_code ilike '%'||a.search_term||'%' or b.company_name ilike '%'||a.search_term||'%' or b.job_role ilike '%'||a.search_term||'%' or coalesce(b.job_location,b.company_location) ilike '%'||a.search_term||'%')
     and (a.stage_term is null or lower(b.requirement_stage)=a.stage_term)
     and (a.source_term is null or lower(b.source_type)=a.source_term)
     and (p_owner_staff_user_id is null or b.owner_staff_user_id=p_owner_staff_user_id)
@@ -78,7 +79,7 @@ returns jsonb language plpgsql stable security definer set search_path = '' as $
 declare result jsonb;
 begin
   if not (select private.can_manage_recruitment_operations()) then raise exception 'Recruitment access is required'; end if;
-  select jsonb_build_object('requirement',to_jsonb(x), 'history', coalesce((select jsonb_agg(jsonb_build_object('action',l.action,'actor_type',l.actor_type,'created_at',l.created_at,'summary',case when l.action like 'recruitment.source_%' then 'Source attribution corrected' when l.action='recruitment.owner_changed' then 'Owner changed' else 'Operational activity' end) order by l.created_at desc) from public.audit_logs l where l.entity_id=p_requirement_id and l.entity_type='employer_requirement' and l.action like 'recruitment.%' limit 50),'[]'::jsonb)) into result
+  select jsonb_build_object('requirement',to_jsonb(x), 'history', coalesce((select jsonb_agg(jsonb_build_object('action',h.action,'actor_type',h.actor_type,'created_at',h.created_at,'summary',h.summary) order by h.created_at desc,h.audit_id desc) from (select l.id audit_id,l.action,l.actor_type,l.created_at,case when l.action like 'recruitment.source_%' then 'Source attribution corrected' when l.action='recruitment.owner_changed' then 'Owner changed' when l.action like 'recruitment.%follow%' then 'Follow-up updated' else 'Operational activity' end summary from public.audit_logs l where l.entity_id=p_requirement_id and l.entity_type='employer_requirement' and l.action like 'recruitment.%' order by l.created_at desc,l.id desc limit 50) h),'[]'::jsonb)) into result
   from public.admin_list_job_leads(null,null,null,null,false,null,null,false,null,null,1,0) x where x.requirement_id=p_requirement_id;
   if result is null then raise exception 'Job Lead was not found'; end if;
   return result;
