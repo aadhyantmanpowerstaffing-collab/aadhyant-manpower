@@ -1,0 +1,43 @@
+name: Build and deploy isolated staging Pages artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_staging:
+        description: Deploy the reviewed artifact to isolated staging
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Check out reviewed revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Build staging artifact
+        env:
+          STAGING_EXPECTED_ORIGIN: https://aadhyant-web-platform-staging.pages.dev
+          STAGING_SUPABASE_PROJECT_REF: zrluniaccvcdrvfwgrmj
+          STAGING_SUPABASE_URL: https://zrluniaccvcdrvfwgrmj.supabase.co
+          STAGING_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+          STAGING_RELEASE_REVISION: ${{ github.sha }}
+        run: node scripts/build-staging-artifact.js
+      - name: Test staging artifact
+        run: node --test tests/staging-artifact.test.js
+      - name: Frontend regression
+        run: npm test
+      - name: Deploy staging artifact
+        if: ${{ inputs.deploy_staging == true }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy dist-staging --project-name aadhyant-web-platform-staging
