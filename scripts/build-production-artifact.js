@@ -231,7 +231,7 @@ function listFiles(root) {
 }
 
 function listRepositoryHtml() {
-  const ignoredRoots = new Set(['.git', '.github', 'dist', 'node_modules', 'scripts', 'supabase', 'tests']);
+  const ignoredRoots = new Set(['.git', '.github', 'dist', 'dist-staging', 'node_modules', 'scripts', 'supabase', 'tests']);
   const files = [];
   function walk(current) {
     for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((a, b) => comparePaths(a.name, b.name))) {
