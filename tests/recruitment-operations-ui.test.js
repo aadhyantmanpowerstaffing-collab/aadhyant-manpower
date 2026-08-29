@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '..', 'admin', 'recruitment-operations.js'), 'utf8');
 const adminSource = fs.readFileSync(path.join(__dirname, '..', 'admin', 'admin.js'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'admin', 'index.html'), 'utf8');
+const recruitmentMigration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '018_recruitment_operations_foundation.sql'), 'utf8');
 const window = {};
 vm.runInNewContext(source, { window, document: {}, crypto: { randomUUID: () => 'correlation' }, Date, String, Array, Object });
 const moduleApi = window.aadhyantRecruitmentOperations;
@@ -60,6 +61,32 @@ test('Candidate Leads uses bounded Phase-C filters and privacy-safe on-demand de
   assert.match(source,/candidateLeads.*openCandidateLeadDetail/s);
   assert.match(source,/closest\('\[data-panel="recruitmentRequirements"\]'\)/);
   assert.doesNotMatch(source,/\bmobile\b.*candidate-lead-detail|candidate-lead-detail.*\bmobile\b/i);
+});
+
+test('candidate and application workspaces distinguish candidate workflow status from application stage', () => {
+  assert.match(source, /Candidate Workflow Status','status'/);
+  assert.match(source, /Candidate workflow status','select'/);
+  assert.match(source, /Application Stage','application_status'/);
+  assert.match(source, /Candidate workflow status is a candidate-level operational field\. Each job application keeps its own separate stage\./);
+  assert.match(source, /Each row is one candidate–requirement application\. Application stage applies only to that specific application\./);
+  assert.match(source, /Candidate workflow status',readable\(detail\.status\)/);
+  assert.match(source, /Application History'.*Application stage.*detail\.applications\|\|\[\]/s);
+  assert.match(source, /Current application stage',readable\(detail\.application_status\)/);
+});
+
+test('candidate and application filters remain bound to their separate canonical fields', () => {
+  assert.equal(moduleApi.argsFor('recruitmentCandidates', { status: 'shortlisted' }, 0).p_status, 'shortlisted');
+  assert.equal(moduleApi.argsFor('recruitmentApplications', { stage: 'screening' }, 0).p_stage, 'screening');
+  const candidateProjection = recruitmentMigration.slice(
+    recruitmentMigration.indexOf('create function public.list_recruitment_candidates'),
+    recruitmentMigration.indexOf('create function public.get_recruitment_candidate')
+  );
+  const applicationProjection = recruitmentMigration.slice(
+    recruitmentMigration.indexOf('create function public.list_recruitment_applications'),
+    recruitmentMigration.indexOf('create function public.get_recruitment_application')
+  );
+  assert.match(candidateProjection, /c\.status=lower\(btrim\(p_status\)\)/);
+  assert.match(applicationProjection, /a\.application_status=lower\(btrim\(p_stage\)\)/);
 });
 
 test('operations UI includes a selected-application joining action', () => {
@@ -117,7 +144,7 @@ test('candidate picker maps duplicate, eligibility, requirement, authorization, 
 test('application stages use a controlled transition dialog without free-text stage entry', () => {
   assert.doesNotMatch(source, /Enter validated next stage|prompt\([^)]*(?:stage|Current:)/i);
   assert.match(source, /application-transition-dialog/);
-  assert.match(source, /Current stage/);
+  assert.match(source, /Current application stage/);
   assert.match(source, /Confirm Change/);
 });
 
@@ -365,8 +392,8 @@ test('application view uses a projected read-only modal instead of an alert summ
   assert.match(source,/application-detail-dialog/);
   assert.match(source,/get_recruitment_application'.*p_application_id:application\.id/);
   assert.match(source,/Application Detail/);
-  assert.match(source,/Current stage/);
-  assert.match(source,/Stage History/);
+  assert.match(source,/Current application stage/);
+  assert.match(source,/Application Stage History/);
   assert.match(source,/Interview History/);
   assert.match(source,/detail\.stage_history\|\|\[\]/);
   assert.doesNotMatch(source,/History: \$\{detail\.stage_history|if \(key === 'recruitmentApplications'\).*window\.alert/);
@@ -414,12 +441,12 @@ test('candidate view uses an accessible projected detail modal instead of alert'
 
 test('candidate detail renders projected core fields and related histories', () => {
   const detailSection=source.slice(source.indexOf('const openCandidateDetail'),source.indexOf('const openApplicationDetail'));
-  for (const label of ['Candidate','Location','District','State','Qualification','Trade / specialization','Candidate type','Status','Interview availability']) assert.match(detailSection,new RegExp(label));
+  for (const label of ['Candidate','Location','District','State','Qualification','Trade / specialization','Candidate type','Candidate workflow status','Interview availability']) assert.match(detailSection,new RegExp(label));
   assert.match(detailSection,/Application History/);
   assert.match(detailSection,/Interview History/);
   assert.match(detailSection,/detail\.applications\|\|\[\]/);
   assert.match(detailSection,/detail\.interviews\|\|\[\]/);
-  assert.match(detailSection,/Requirement.*Company.*Role.*Stage.*Applied/);
+  assert.match(detailSection,/Requirement.*Company.*Role.*Application stage.*Applied/);
   assert.match(detailSection,/Scheduled.*Mode.*Status.*Result/);
 });
 
