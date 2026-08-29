@@ -91,7 +91,7 @@ test('candidate and application filters remain bound to their separate canonical
 
 test('operations UI includes a selected-application joining action', () => {
   assert.match(source,/Start Joining/);
-  assert.match(source,/upsert_recruitment_joining/);
+  assert.match(source,/create_recruitment_joining/);
   assert.match(source,/permissions\.joining_mutation/);
 });
 
@@ -329,10 +329,14 @@ test('joining permissions expose management only to approved roles', () => {
   assert.equal(moduleApi.canManageJoining({joining_status:'left'},manager),false);
 });
 
-test('joining dialogs use only the existing RPC and preserve server synchronization', () => {
-  assert.match(source,/call\(client,'upsert_recruitment_joining',joiningRpcArgs/);
+test('joining dialogs use strict versioned RPCs and preserve server synchronization', () => {
+  assert.match(source,/call\(client,'create_recruitment_joining',createJoiningArgs/);
+  assert.match(source,/call\(client,'transition_recruitment_joining',transitionJoiningArgs/);
+  assert.match(source,/call\(client,'update_recruitment_joining_details',updateJoiningArgs/);
   assert.doesNotMatch(source,/client\.from\(['"]candidate_joinings|client\.from\(['"]candidate_applications/);
-  assert.match(source,/p_application_id:row\.application_id\|\|row\.id/);
+  assert.match(source,/p_expected_status:joining\.joining_status/);
+  assert.match(source,/p_expected_updated_at:joining\.updated_at/);
+  assert.match(source,/const operationId=crypto\.randomUUID\(\)/);
   assert.match(source,/const nextStatus=action\.value==='update_expected'\?joining\.joining_status:action\.value/);
   assert.doesNotMatch(source,/joining_pending.*transition_recruitment_application|transition_recruitment_application.*joining_pending/);
 });
@@ -341,13 +345,26 @@ test('mark joined requires an actual date and joined can only move to left', () 
   assert.match(source,/action\.value==='joined'&&!actualDate/);
   assert.match(source,/Enter the candidate\\'s actual joining date/);
   assert.equal(JSON.stringify(moduleApi.getJoiningActions('joined')),JSON.stringify([{value:'left',label:'Mark Left'}]));
-  assert.match(source,/joiningRpcArgs\(joining,status,expectedDate,actualDate\)/);
+  assert.match(source,/input\.max=indiaOperationalDate\(\)/);
+  assert.match(source,/actualDate>indiaOperationalDate\(\)/);
+});
+
+test('consequential joining outcomes require a reason and employee code remains optional', () => {
+  assert.match(source,/\['no_show','cancelled','left'\]\.includes\(action\.value\)/);
+  assert.match(source,/input\.name='operationalReason'/);
+  assert.match(source,/input\.required=true/);
+  assert.match(source,/Enter an operational reason for this outcome/);
+  assert.match(source,/Employee Code \(optional\)/);
+  assert.match(source,/employee\.maxLength=200/);
 });
 
 test('joining errors are business-facing and success refreshes related workspaces', () => {
   assert.match(moduleApi.friendlyJoiningError({message:'new joining requires a selected application'}),/no longer selected|already exists/i);
   assert.match(moduleApi.friendlyJoiningError({message:'joined status requires an actual joining date'}),/actual joining date/i);
   assert.match(moduleApi.friendlyJoiningError({message:'terminal joining status cannot change'}),/already final/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'Joining state changed; refresh and try again'}),/changed elsewhere/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'This joining outcome requires an operational reason'}),/operational reason/i);
+  assert.match(moduleApi.friendlyJoiningError({message:'Requirement has no remaining joining capacity'}),/no remaining joining capacity/i);
   assert.match(moduleApi.friendlyJoiningError({message:'joining management access is required'}),/not authorized/i);
   assert.match(moduleApi.friendlyJoiningError({message:'Failed to fetch'}),/connection/i);
   assert.match(source,/Joining \/ Placement refreshed; Applications, Dashboard, and Candidate context will refresh when opened/);

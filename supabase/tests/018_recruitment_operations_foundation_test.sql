@@ -131,9 +131,10 @@ do $$ declare p record; app uuid; joining uuid; begin
     where a.candidate_id='82000000-0000-0000-0001-000000000001';
   if app is null then raise exception 'Operations projected application context failed'; end if;
   if (select count(*) from public.list_recruitment_candidates())<>1 then raise exception 'Operations selected scope failed'; end if;
-  joining:=public.upsert_recruitment_joining(app,current_date+7,null,'confirmed',null,'Confirmed',null);
-  if joining is null then raise exception 'Operations joining create failed'; end if;
-  perform public.upsert_recruitment_joining(app,current_date+7,current_date+7,'joined','W3-EMP-1','Joined',null);
+  joining:=public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null);
+  if joining is null then raise exception 'Operations Pending joining create failed'; end if;
+  perform public.upsert_recruitment_joining(app,current_date+7,null,'confirmed',null,'Confirmed',null);
+  perform public.upsert_recruitment_joining(app,current_date+7,(clock_timestamp() at time zone 'Asia/Kolkata')::date,'joined','W3-EMP-1','Joined',null);
   begin perform public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null); raise exception 'Joined placement regressed to pending';
   exception when raise_exception then if sqlerrm='Joined placement regressed to pending' then raise; end if; end;
   begin perform public.update_recruitment_candidate('82000000-0000-0000-0001-000000000001','selected','Yes',null,null); raise exception 'Operations mutated candidate';
