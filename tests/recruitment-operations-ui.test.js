@@ -95,6 +95,7 @@ test('only open requirements and eligible candidates are actionable', () => {
   assert.equal(moduleApi.canMatchRequirement({ requirement_stage: 'draft' }, { application_mutation: true }), false);
   assert.match(source, /canMatchRequirement\(row,permissions\)/);
 });
+test('company-origin draft Job Leads expose a server-authorized publish review action',()=>{assert.match(source,/Approve & Publish/);assert.match(source,/set_company_requirement_stage/);assert.match(source,/p_requirement_stage:'open',p_requirement_visibility:'public'/);assert.match(source,/requirement_stage==='draft'.*requirement_visibility==='private'/);assert.match(source,/!requirement\.contractor_origin/);assert.match(source,/window\.confirm/);assert.match(source,/job-lead-changed/);assert.match(source,/dispatchEvent\(new Event\('submit'/);});
 
 test('matching confirmation uses the existing application RPC and refreshes the requirement list', () => {
   assert.match(source, /Confirm Match/);
