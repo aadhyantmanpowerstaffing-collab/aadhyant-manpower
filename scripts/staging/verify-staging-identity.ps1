@@ -67,8 +67,11 @@ function Invoke-AssertionTests {
     $cases = @(
         @{ Name = 'approved pooler user and postgres backend role'; Mutate = {}; Pass = $true },
         @{ Name = 'wrong connection user'; Mutate = { param($v) $v.ConfiguredUser = 'postgres.wrongprojectref0000' }; Pass = $false },
+        @{ Name = 'service-role connection identity'; Mutate = { param($v) $v.ConfiguredUser = 'service_role' }; Pass = $false },
+        @{ Name = 'configured host outside allowlist'; Mutate = { param($v) $v.ConfiguredHost = 'unexpected.pooler.supabase.com' }; Pass = $false },
         @{ Name = 'unexpected backend role'; Mutate = { param($v) $v.Actual.database_user = 'unexpected_role' }; Pass = $false },
         @{ Name = 'production denylist conflict'; Mutate = { param($v) $v.ProductionProjectRefs = @($v.ExpectedProjectRef) }; Pass = $false },
+        @{ Name = 'production host denylist conflict'; Mutate = { param($v) $v.ProductionHosts = @($v.ExpectedHost) }; Pass = $false },
         @{ Name = 'read-only disabled'; Mutate = { param($v) $v.Actual.transaction_read_only = 'off' }; Pass = $false },
         @{ Name = 'wrong database and port'; Mutate = { param($v) $v.Actual.database_name = 'other'; $v.Actual.server_port = '6543' }; Pass = $false }
     )

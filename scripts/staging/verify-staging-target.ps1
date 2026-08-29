@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$EnvFile
+    [string]$EnvFile,
+    [switch]$RunAssertionTests
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,6 +10,16 @@ Set-StrictMode -Version Latest
 function Stop-Guard {
     param([Parameter(Mandatory)][string]$Message)
     throw "STAGING GUARD REFUSED: $Message"
+}
+
+function Assert-ApprovedCommit {
+    param(
+        [Parameter(Mandatory)][string]$ApprovedCommit,
+        [Parameter(Mandatory)][string]$Head
+    )
+    if ($ApprovedCommit -notmatch '^[0-9a-f]{40}$' -or $ApprovedCommit -cne $Head) {
+        Stop-Guard 'Git HEAD does not equal the approved staging-test commit.'
+    }
 }
 
 function Read-GuardEnvironment {
@@ -56,22 +67,22 @@ function Get-MigrationManifestHash {
     $rootPrefix = $RepositoryRoot.TrimEnd('\') + '\'
     $migrations = @(
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
-            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-5])_' } |
+            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-6])_' } |
             Sort-Object Name
     )
-    $expectedNumbers = @(7..35)
+    $expectedNumbers = @(7..36)
     $actualNumbers = @($migrations | ForEach-Object { [int]$_.Name.Substring(0, 3) })
     if (@($actualNumbers | Group-Object | Where-Object Count -ne 1).Count -ne 0) {
-        Stop-Guard 'Duplicate migration number detected in the required 007-035 range.'
+        Stop-Guard 'Duplicate migration number detected in the required 007-036 range.'
     }
     if (@(Compare-Object $expectedNumbers $actualNumbers -SyncWindow 0).Count -ne 0) {
-        Stop-Guard 'Expected exactly one migration for each number 007-035.'
+        Stop-Guard 'Expected exactly one migration for each number 007-036.'
     }
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         $migrations | Select-Object -ExpandProperty FullName
     )
-    if ($files.Count -ne 30) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-035.' }
+    if ($files.Count -ne 31) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-036.' }
 
     $manifestLines = foreach ($file in $files) {
         if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
@@ -85,6 +96,70 @@ function Get-MigrationManifestHash {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant() }
     finally { $sha.Dispose() }
+}
+
+function Assert-GuardRefusal {
+    param(
+        [Parameter(Mandatory)][scriptblock]$Action,
+        [Parameter(Mandatory)][string]$ExpectedMessage
+    )
+    $actualMessage = $null
+    try { & $Action }
+    catch { $actualMessage = $_.Exception.Message }
+    if ([string]::IsNullOrWhiteSpace($actualMessage) -or $actualMessage -notlike "*$ExpectedMessage*") {
+        throw "Guard assertion did not refuse as expected: $ExpectedMessage"
+    }
+}
+
+function Invoke-GuardAssertionTests {
+    $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+    $fixtureRoot = [IO.Path]::GetFullPath((Join-Path $temporaryRoot "aadhyant-staging-guard-$([Guid]::NewGuid().ToString('N'))"))
+    if (-not $fixtureRoot.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Guard assertion fixture escaped the system temporary directory.'
+    }
+    try {
+        $migrationRoot = Join-Path $fixtureRoot 'supabase\migrations'
+        [void](New-Item -ItemType Directory -Path $migrationRoot -Force)
+        [IO.File]::WriteAllText((Join-Path $fixtureRoot 'supabase\schema.sql'), 'schema')
+        foreach ($number in 7..36) {
+            [IO.File]::WriteAllText((Join-Path $migrationRoot ("{0:D3}_fixture.sql" -f $number)), "migration-$number")
+        }
+
+        $firstHash = Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
+        $secondHash = Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
+        if ($firstHash -cne $secondHash) { throw 'Migration manifest hash is not deterministic.' }
+
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '037_future.sql'), 'future-migration')
+        if ((Get-MigrationManifestHash -RepositoryRoot $fixtureRoot) -cne $firstHash) {
+            throw 'Migration 037 was not excluded from the approved manifest.'
+        }
+
+        [IO.File]::Delete((Join-Path $migrationRoot '036_fixture.sql'))
+        Assert-GuardRefusal -ExpectedMessage 'Expected exactly one migration for each number 007-036.' -Action {
+            Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
+        }
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '036_fixture.sql'), 'migration-36')
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '036_duplicate.sql'), 'duplicate-migration-36')
+        Assert-GuardRefusal -ExpectedMessage 'Duplicate migration number detected in the required 007-036 range.' -Action {
+            Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
+        }
+
+        $approved = '239b1cce97391f914eefd55ac1ebdb347051c0da'
+        Assert-ApprovedCommit -ApprovedCommit $approved -Head $approved
+        Assert-GuardRefusal -ExpectedMessage 'Git HEAD does not equal the approved staging-test commit.' -Action {
+            Assert-ApprovedCommit -ApprovedCommit $approved -Head '5580bd5c28753fd827ac9529f4419ac67f8c20f0'
+        }
+        Write-Output 'STAGING STATIC GUARD ASSERTION TESTS PASSED'
+    } finally {
+        if (Test-Path -LiteralPath $fixtureRoot) {
+            Remove-Item -LiteralPath $fixtureRoot -Recurse -Force
+        }
+    }
+}
+
+if ($RunAssertionTests) {
+    Invoke-GuardAssertionTests
+    exit 0
 }
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
@@ -117,9 +192,7 @@ $approvedManifestHash = (Require-Value $values 'AADHYANT_STAGING_APPROVED_MIGRAT
 
 if ($expectedProjectRef -notmatch '^[a-z0-9]{20}$') { Stop-Guard 'Expected staging project ref is malformed.' }
 if ($expectedDbHost -notmatch '^[a-z0-9.-]+$') { Stop-Guard 'Expected staging DB host is malformed.' }
-if ($approvedCommit -notmatch '^[0-9a-f]{40}$' -or $approvedCommit -ne $head) {
-    Stop-Guard 'Git HEAD does not equal the approved staging-test commit.'
-}
+Assert-ApprovedCommit -ApprovedCommit $approvedCommit -Head $head
 if ($approvedManifestHash -notmatch '^[0-9a-f]{64}$') { Stop-Guard 'Approved migration manifest hash is malformed.' }
 
 try { $stagingUri = [Uri]$stagingUrlText } catch { Stop-Guard 'Staging URL is malformed.' }
