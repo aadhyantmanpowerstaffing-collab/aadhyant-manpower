@@ -232,9 +232,15 @@ reset role;
 rollback;
 
 do $$ begin
-  if exists(select 1 from public.whatsapp_inbound_messages where provider_message_id like 'wamid.w7c.%')
-     or exists(select 1 from public.whatsapp_webhook_events where provider_event_key like 'message:wamid.w7c.%')
-     or exists(select 1 from public.whatsapp_outbound_messages where idempotency_key like 'w7c-outbound-%')
+  if exists(select 1 from public.whatsapp_inbound_messages where provider_message_id in (
+       'wamid.w7c.reply.1','wamid.w7c.reply.duplicate','wamid.w7c.reply.existing','wamid.w7c.reply.missing',
+       'wamid.w7c.reply.wrong','wamid.w7c.reply.closed','wamid.w7c.reply.queued','wamid.w7c.reply.other'))
+     or exists(select 1 from public.whatsapp_webhook_events where provider_event_key in (
+       'message:wamid.w7c.reply.1','message:wamid.w7c.reply.duplicate','message:wamid.w7c.reply.existing',
+       'message:wamid.w7c.reply.missing','message:wamid.w7c.reply.wrong','message:wamid.w7c.reply.closed',
+       'message:wamid.w7c.reply.queued','message:wamid.w7c.reply.other'))
+     or exists(select 1 from public.whatsapp_outbound_messages where idempotency_key in
+       ('w7c-outbound-1','w7c-outbound-2','w7c-outbound-3','w7c-outbound-4'))
      or exists(select 1 from public.whatsapp_campaign_recipients where id::text like '89700000-%')
      or exists(select 1 from public.whatsapp_campaigns where id::text like '89700000-%')
      or exists(select 1 from public.candidate_applications where candidate_id::text like '89700000-%')

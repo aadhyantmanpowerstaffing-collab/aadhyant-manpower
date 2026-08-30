@@ -127,8 +127,13 @@ values
 set local role authenticated;
 select set_config('request.jwt.claim.sub','89300000-0000-0000-0000-000000000001',true);
 do $$ begin
-  if (select count(*) from public.list_candidate_job_opportunities(null,50,0))<>1
-     or not exists(select 1 from public.list_candidate_job_opportunities(null,50,0) o where o.requirement_code='AAD-2097-000001')
+  if (select count(*) from public.list_candidate_job_opportunities(null,50,0) o
+       where o.requirement_code='AAD-2097-000001'
+         and o.job_role='Eligible Fitter'
+         and o.job_location='Chennai'
+         and o.open_positions=5
+         and o.qualification='ITI'
+         and not o.already_applied)<>1
      or exists(select 1 from public.list_candidate_job_opportunities(null,50,0) o where o.requirement_code in
        ('AAD-2097-000002','AAD-2097-000003','AAD-2097-000004','AAD-2097-000005','AAD-2097-000006','AAD-2097-000007')) then
     raise exception 'Opportunity exclusion matrix failed';

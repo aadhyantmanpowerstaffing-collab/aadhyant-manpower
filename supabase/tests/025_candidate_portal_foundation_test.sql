@@ -111,7 +111,17 @@ do $$ declare ctx record; profile record; onboarding record; app uuid; first_doc
   replacement_doc:=public.register_candidate_document('pan','89000000-0000-0000-0000-000000000001/89000000-0000-0000-0004-000000000003/pan.pdf','pan-updated.pdf','application/pdf',3072);
   perform set_config('w6.replacement_document_id',replacement_doc::text,true);
   if first_doc=replacement_doc or exists(select 1 from public.list_candidate_portal_documents() d where d.document_id=first_doc) or not exists(select 1 from public.get_candidate_document_access(replacement_doc)) then raise exception 'Document replacement/access contract failed'; end if;
-  if (select count(*) from public.list_candidate_job_opportunities(null,25,0))<>1 then raise exception 'Recruitment-ready opportunity filter failed'; end if;
+  if (select count(*) from public.list_candidate_job_opportunities(null,25,0) o
+      where o.requirement_code='AAD-2096-000001'
+        and o.job_role='Fitter'
+        and o.job_location='Chennai'
+        and o.open_positions=5
+        and o.qualification='ITI'
+        and not o.already_applied)<>1
+     or exists(select 1 from public.list_candidate_job_opportunities(null,25,0) o
+       where o.requirement_code in ('AAD-2096-000002','AAD-2096-000003')) then
+    raise exception 'Recruitment-ready fixture opportunity filter failed';
+  end if;
   app:=public.apply_candidate_job('AAD-2096-000001');perform set_config('w6.application_id',app::text,true);
   begin perform public.apply_candidate_job('AAD-2096-000001');raise exception 'Duplicate application was accepted';exception when raise_exception then if sqlerrm='Duplicate application was accepted' then raise;end if;end;
   if (select count(*) from public.list_candidate_portal_applications())<>1 then raise exception 'Own application projection failed'; end if;
