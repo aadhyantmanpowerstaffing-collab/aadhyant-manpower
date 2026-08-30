@@ -43,28 +43,51 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',true);
-create temporary table created_a as select * from public.create_company_requirement('Production','Fitter','Ahmedabad',10,'ITI','Both','Any',18,45,18000,24000,'Day','8 hours','As applicable','Yes','Yes','No','Ahmedabad',now() + interval '7 days','Local test A');
+-- Migration 015 made the full-row function owner-only. Browser Company users
+-- must use the role-aware portal wrapper.
+do $$
+declare denied boolean := false;
+begin
+  begin
+    perform public.create_company_requirement('Production','Fitter','Ahmedabad',10,'ITI','Both','Any',18,45,18000,24000,'Day','8 hours','As applicable','Yes','Yes','No','Ahmedabad',now() + interval '7 days','Local test A');
+  exception when insufficient_privilege then denied := true;
+  end;
+  if not denied then raise exception 'Legacy Company requirement create remained browser-executable'; end if;
+end $$;
+create temporary table created_a as select * from public.manage_company_portal_requirement('create',null,'Production','Fitter','Ahmedabad',10,'ITI','Both','Any',18,45,18000,24000,'Day','8 hours','As applicable','Yes','Yes','No','Ahmedabad',now() + interval '7 days','Local test A');
 do $$ begin
-  if not exists (select 1 from created_a where company_id='20000000-0000-0000-0000-000000000002' and created_by_user_id='10000000-0000-0000-0000-000000000002' and requirement_code is not null and filled_positions=0 and requirement_stage='draft') then raise exception 'Company A ownership/default creation test failed'; end if;
-  if (select count(*) from public.employer_requirements) <> 1 then raise exception 'Company A isolation SELECT failed'; end if;
+  if not exists (select 1 from created_a where requirement_code is not null and requirement_stage='draft' and requirement_visibility='private') then raise exception 'Company A ownership/default creation test failed'; end if;
+  if (select count(*) from public.list_company_portal_requirements() where id=(select id from created_a) and job_role='Fitter' and required_headcount=10 and filled_positions=0 and requirement_stage='draft') <> 1 then raise exception 'Company A safe projection failed'; end if;
 end $$;
 -- No direct write policy: spoofing/protected update/delete attempts affect zero rows or are denied.
-update public.employer_requirements set company_id='20000000-0000-0000-0000-000000000003', created_by_user_id='10000000-0000-0000-0000-000000000003', requirement_code='SPOOF', filled_positions=9;
-do $$ begin if exists(select 1 from public.employer_requirements where requirement_code='SPOOF' or company_id<>'20000000-0000-0000-0000-000000000002') then raise exception 'Protected direct UPDATE unexpectedly succeeded'; end if; if has_table_privilege('authenticated','public.employer_requirements','delete') then raise exception 'Company DELETE privilege unexpectedly exists'; end if; end $$;
-select public.update_company_requirement((select id from created_a),'Operations','Senior Fitter','Ahmedabad',12,'ITI','Experienced','Any',21,50,22000,28000,'Day','8 hours','Paid','Yes','Yes','No','Ahmedabad',now()+interval '8 days','Edited locally');
+do $$
+declare denied boolean := false;
+begin
+  begin
+    update public.employer_requirements set company_id='20000000-0000-0000-0000-000000000003', created_by_user_id='10000000-0000-0000-0000-000000000003', requirement_code='SPOOF', filled_positions=9;
+  exception when insufficient_privilege then denied := true;
+  end;
+  if not denied then raise exception 'Protected direct UPDATE unexpectedly remained executable'; end if;
+  if exists(select 1 from public.list_company_portal_requirements() where requirement_code='SPOOF') then raise exception 'Protected direct UPDATE unexpectedly succeeded'; end if;
+  if has_table_privilege('authenticated','public.employer_requirements','delete') then raise exception 'Company DELETE privilege unexpectedly exists'; end if;
+end $$;
+select public.manage_company_portal_requirement('update',(select id from created_a),'Operations','Senior Fitter','Ahmedabad',12,'ITI','Experienced','Any',21,50,22000,28000,'Day','8 hours','Paid','Yes','Yes','No','Ahmedabad',now()+interval '8 days','Edited locally');
 
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',true);
-create temporary table created_b as select * from public.create_company_requirement('Assembly','Welder','Surat',4,null,'Both','Any',null,null,null,null,null,null,null,'Not Applicable','Not Applicable','Not Applicable',null,null,'Local test B');
-do $$ begin if (select count(*) from public.employer_requirements) <> 1 then raise exception 'Company B isolation SELECT failed'; end if; end $$;
-select public.update_company_requirement((select id from created_b),'Assembly','Welder','Surat',5,null,'Both','Any',null,null,null,null,null,null,null,'Not Applicable','Not Applicable','Not Applicable',null,null,'B edit');
+create temporary table created_b as select * from public.manage_company_portal_requirement('create',null,'Assembly','Welder','Surat',4,null,'Both','Any',null,null,null,null,null,null,null,'Not Applicable','Not Applicable','Not Applicable',null,null,'Local test B');
+do $$ begin
+  if (select count(*) from public.list_company_portal_requirements() where id=(select id from created_b) and job_role='Welder' and required_headcount=4 and requirement_stage='draft') <> 1
+     or exists(select 1 from public.list_company_portal_requirements() where id=(select id from created_a)) then raise exception 'Company B isolation SELECT failed'; end if;
+end $$;
+select public.manage_company_portal_requirement('update',(select id from created_b),'Assembly','Welder','Surat',5,null,'Both','Any',null,null,null,null,null,null,null,'Not Applicable','Not Applicable','Not Applicable',null,null,'B edit');
 
 -- Pending, suspended, and non-company creation all reject.
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',true);
-do $$ begin perform public.create_company_requirement('X','X','X',1); raise exception 'Pending create unexpectedly succeeded'; exception when others then if sqlerrm='Pending create unexpectedly succeeded' then raise; end if; end $$;
+do $$ begin perform public.manage_company_portal_requirement('create',null,'X','X','X',1); raise exception 'Pending create unexpectedly succeeded'; exception when raise_exception then if sqlerrm='Pending create unexpectedly succeeded' then raise; elsif sqlerrm<>'Company requirement management access is required' then raise exception 'Unexpected pending Company denial: %',sqlerrm; end if; end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',true);
-do $$ begin perform public.create_company_requirement('X','X','X',1); raise exception 'Suspended create unexpectedly succeeded'; exception when others then if sqlerrm='Suspended create unexpectedly succeeded' then raise; end if; end $$;
+do $$ begin perform public.manage_company_portal_requirement('create',null,'X','X','X',1); raise exception 'Suspended create unexpectedly succeeded'; exception when raise_exception then if sqlerrm='Suspended create unexpectedly succeeded' then raise; elsif sqlerrm<>'Company requirement management access is required' then raise exception 'Unexpected suspended Company denial: %',sqlerrm; end if; end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000006',true);
-do $$ begin perform public.create_company_requirement('X','X','X',1); raise exception 'Non-company create unexpectedly succeeded'; exception when others then if sqlerrm='Non-company create unexpectedly succeeded' then raise; end if; end $$;
+do $$ begin perform public.manage_company_portal_requirement('create',null,'X','X','X',1); raise exception 'Non-company create unexpectedly succeeded'; exception when raise_exception then if sqlerrm='Non-company create unexpectedly succeeded' then raise; elsif sqlerrm<>'Company requirement management access is required' then raise exception 'Unexpected non-Company denial: %',sqlerrm; end if; end $$;
 
 -- Admin reads all rows and controls operational stage; non-admin cannot call admin RPC.
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',true);
@@ -76,9 +99,9 @@ do $$ begin if not exists(select 1 from public.employer_requirements where id=(s
 
 -- Company close preserves history and company cannot make open rows editable.
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',true);
-select public.close_company_requirement((select id from created_a));
-do $$ begin if not exists(select 1 from public.employer_requirements where id=(select id from created_a) and requirement_stage='closed' and closed_at is not null) then raise exception 'Company close failed'; end if; end $$;
-do $$ begin perform public.update_company_requirement((select id from created_a),'X','X','X',1); raise exception 'Closed edit unexpectedly succeeded'; exception when others then if sqlerrm='Closed edit unexpectedly succeeded' then raise; end if; end $$;
+select public.manage_company_portal_requirement('close',(select id from created_a));
+do $$ begin if (select count(*) from public.list_company_portal_requirements() where id=(select id from created_a) and requirement_stage='closed' and requirement_visibility='private') <> 1 then raise exception 'Company close failed'; end if; end $$;
+do $$ begin perform public.manage_company_portal_requirement('update',(select id from created_a),'X','X','X',1); raise exception 'Closed edit unexpectedly succeeded'; exception when others then if sqlerrm='Closed edit unexpectedly succeeded' then raise; end if; end $$;
 
 -- Database constraints prevent invalid headcount, age/salary ordering, and negative open balance.
 reset role;

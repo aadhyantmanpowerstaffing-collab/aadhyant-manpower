@@ -48,17 +48,33 @@ do $$ begin perform public.assign_requirement_contractor('33000000-0000-0000-000
 create temporary table assign_b as select * from public.assign_requirement_contractor('33000000-0000-0000-0000-000000000001',(select id from public.contractors where main_email='m8c-contractor-b@test.local'),30,'B target');
 
 select set_config('request.jwt.claim.sub','31000000-0000-0000-0000-000000000004',true);
-do $$ begin if (select count(*) from public.requirement_contractors)<>1 or (select count(*) from public.employer_requirements)<>1 then raise exception 'Contractor A read isolation failed';end if;end $$;
-select public.respond_requirement_assignment((select id from assign_a),'accepted',null);
-do $$ begin if not exists(select 1 from public.requirement_contractors where id=(select id from assign_a) and assignment_status='accepted' and accepted_at is not null) then raise exception 'Accept failed';end if;end $$;
+do $$ begin
+  if (select count(*) from public.get_staffing_partner_assignments() where id=(select id from assign_a)
+      and assigned_headcount=40 and assignment_status='assigned' and requirement_code is not null
+      and job_role='Fitter' and job_location='Ahmedabad' and requirement_stage='open')<>1
+     or exists(select 1 from public.get_staffing_partner_assignments() where id=(select id from assign_b)
+       or requirement_code in (select requirement_code from public.employer_requirements where id in ('33000000-0000-0000-0000-000000000002','33000000-0000-0000-0000-000000000003'))) then
+    raise exception 'Contractor A read isolation failed';
+  end if;
+end $$;
+do $$
+declare denied boolean := false;
+begin
+  begin perform public.respond_requirement_assignment((select id from assign_a),'accepted',null);
+  exception when insufficient_privilege then denied := true;
+  end;
+  if not denied then raise exception 'Legacy assignment response remained browser-executable'; end if;
+end $$;
+select public.staffing_partner_respond_requirement_assignment((select id from assign_a),'accepted',null);
+do $$ begin if (select count(*) from public.get_staffing_partner_assignments() where id=(select id from assign_a) and assignment_status='accepted' and accepted_at is not null)<>1 then raise exception 'Accept failed';end if;end $$;
 update public.requirement_contractors set assigned_headcount=99,contractor_id=(select contractor_id from assign_b),requirement_id='33000000-0000-0000-0000-000000000002';
 do $$ begin if exists(select 1 from public.requirement_contractors where id=(select id from assign_a) and assigned_headcount=99) then raise exception 'Protected update succeeded';end if;if has_table_privilege('authenticated','public.requirement_contractors','delete') then raise exception 'Delete privilege exists';end if;end $$;
-do $$ begin perform public.respond_requirement_assignment((select id from assign_a),'declined','late');raise exception 'Invalid transition succeeded';exception when others then if sqlerrm='Invalid transition succeeded' then raise;end if;end $$;
+do $$ begin perform public.staffing_partner_respond_requirement_assignment((select id from assign_a),'declined','late');raise exception 'Invalid transition succeeded';exception when others then if sqlerrm='Invalid transition succeeded' then raise;end if;end $$;
 
 select set_config('request.jwt.claim.sub','31000000-0000-0000-0000-000000000005',true);
-do $$ begin perform public.respond_requirement_assignment((select id from assign_a),'declined','cross tenant');raise exception 'Cross response succeeded';exception when others then if sqlerrm='Cross response succeeded' then raise;end if;end $$;
-select public.respond_requirement_assignment((select id from assign_b),'declined','capacity unavailable');
-do $$ begin if not exists(select 1 from public.requirement_contractors where id=(select id from assign_b) and assignment_status='declined' and declined_at is not null) then raise exception 'Decline failed';end if;end $$;
+do $$ begin perform public.staffing_partner_respond_requirement_assignment((select id from assign_a),'declined','cross tenant');raise exception 'Cross response succeeded';exception when others then if sqlerrm='Cross response succeeded' then raise;end if;end $$;
+select public.staffing_partner_respond_requirement_assignment((select id from assign_b),'declined','capacity unavailable');
+do $$ begin if (select count(*) from public.get_staffing_partner_assignments() where id=(select id from assign_b) and assignment_status='declined' and declined_at is not null)<>1 then raise exception 'Decline failed';end if;end $$;
 
 select set_config('request.jwt.claim.sub','31000000-0000-0000-0000-000000000001',true);
 do $$ begin if (select count(*) from public.requirement_contractors)<>(select n+2 from m8c_baseline) then raise exception 'Admin assignment read failed';end if;end $$;

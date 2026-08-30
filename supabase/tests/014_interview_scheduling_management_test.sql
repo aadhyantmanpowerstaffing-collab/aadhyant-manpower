@@ -14,13 +14,18 @@ insert into public.platform_users(user_id,account_type,display_name,email,accoun
 ('61000000-0000-0000-0000-000000000003','contractor','R13 Partner','r13-partner@test.local','active');
 
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,filled_positions,consent,job_location,requirement_stage,requirement_visibility,published_at)
-values('62000000-0000-0000-0000-000000000001','R13 Company','R13 Contact','9876530001','Ahmedabad','R13 Operator',10,1,true,'Ahmedabad','open','public',now());
+values('62000000-0000-0000-0000-000000000001','R13 Company','R13 Contact','9876530001','Ahmedabad','R13 Operator',10,1,true,'Ahmedabad','open','public',now()),
+('62000000-0000-0000-0000-000000000002','R13 Company','R13 Contact','9876530001','Ahmedabad','R13 Joining Matrix',10,0,true,'Ahmedabad','open','private',now());
 insert into public.candidates(id,full_name,age,gender,mobile,current_location,district,state,highest_qualification,candidate_type,interview_available,consent) values
 ('63000000-0000-0000-0000-000000000001','R13 Candidate',26,'Male','9876530002','Kadi','Mahesana','Gujarat','ITI','Experienced','Yes',true),
-('63000000-0000-0000-0000-000000000002','R13 Terminal Candidate',27,'Female','9876530003','Sanand','Ahmedabad','Gujarat','Diploma','Experienced','Yes',true);
+('63000000-0000-0000-0000-000000000002','R13 Terminal Candidate',27,'Female','9876530003','Sanand','Ahmedabad','Gujarat','Diploma','Experienced','Yes',true),
+('63000000-0000-0000-0000-000000000003','R13 Joining Candidate',28,'Male','9876530004','Kadi','Mahesana','Gujarat','ITI','Experienced','Yes',true),
+('63000000-0000-0000-0000-000000000004','R13 Cancelled Candidate',29,'Female','9876530005','Sanand','Ahmedabad','Gujarat','Diploma','Experienced','Yes',true);
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status) values
 ('64000000-0000-0000-0000-000000000001','63000000-0000-0000-0000-000000000001','62000000-0000-0000-0000-000000000001','direct','interested'),
-('64000000-0000-0000-0000-000000000002','63000000-0000-0000-0000-000000000002','62000000-0000-0000-0000-000000000001','direct','selected');
+('64000000-0000-0000-0000-000000000002','63000000-0000-0000-0000-000000000002','62000000-0000-0000-0000-000000000001','direct','selected'),
+('64000000-0000-0000-0000-000000000003','63000000-0000-0000-0000-000000000003','62000000-0000-0000-0000-000000000002','direct','selected'),
+('64000000-0000-0000-0000-000000000004','63000000-0000-0000-0000-000000000004','62000000-0000-0000-0000-000000000002','direct','selected');
 
 create temporary table r13_candidate_before as select * from public.candidates where id='63000000-0000-0000-0000-000000000001';
 create temporary table r13_requirement_before as select * from public.employer_requirements where id='62000000-0000-0000-0000-000000000001';
@@ -59,7 +64,9 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','61000000-0000-0000-0000-000000000001',true);
 do $$
-declare first_id uuid; replacement_id uuid; second_round_id uuid; cancelled_id uuid; old_applied timestamptz; terminal_status text;
+declare first_id uuid; replacement_id uuid; second_round_id uuid; cancelled_id uuid; old_applied timestamptz;
+  terminal_status text; joining_id uuid; joining_row public.candidate_joinings%rowtype;
+  india_today date := (clock_timestamp() at time zone 'Asia/Kolkata')::date;
 begin
   select applied_at into old_applied from public.candidate_applications where id='64000000-0000-0000-0000-000000000001';
   first_id := public.admin_schedule_candidate_interview(
@@ -85,11 +92,41 @@ begin
   exception when raise_exception then if sqlerrm='Invalid status accepted' then raise; end if; end;
   begin perform public.admin_update_candidate_interview(second_round_id,'completed',null,repeat('x',4001)); raise exception 'Oversized result note accepted';
   exception when raise_exception then if sqlerrm='Oversized result note accepted' then raise; end if; end;
-  foreach terminal_status in array array['selected','rejected','joining_pending','joined','left','cancelled'] loop
-    perform public.admin_update_candidate_application('64000000-0000-0000-0000-000000000002',terminal_status,null);
-    begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000002',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Terminal application scheduled';
-    exception when raise_exception then if sqlerrm='Terminal application scheduled' then raise; end if; end;
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000002',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Selected application scheduled';
+  exception when raise_exception then if sqlerrm='Selected application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected selected scheduling denial: %',sqlerrm; end if; end;
+
+  foreach terminal_status in array array['joining_pending','joined','left','cancelled'] loop
+    begin
+      perform public.admin_update_candidate_application('64000000-0000-0000-0000-000000000002',terminal_status,null);
+      raise exception 'Legacy joining-owned transition succeeded';
+    exception when raise_exception then
+      if sqlerrm='Legacy joining-owned transition succeeded' then raise;
+      elsif sqlerrm<>'Joining-owned application stage must be changed through the joining workflow' then raise exception 'Unexpected joining-owned denial: %',sqlerrm;
+      end if;
+    end;
   end loop;
+
+  perform public.admin_update_candidate_application('64000000-0000-0000-0000-000000000002','rejected',null);
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000002',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Rejected application scheduled';
+  exception when raise_exception then if sqlerrm='Rejected application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected rejected scheduling denial: %',sqlerrm; end if; end;
+
+  joining_id:=public.create_recruitment_joining('64000000-0000-0000-0000-000000000003',india_today+2,null,null,'65000000-0000-0000-0000-000000000001');
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000003',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Joining-pending application scheduled';
+  exception when raise_exception then if sqlerrm='Joining-pending application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected joining-pending scheduling denial: %',sqlerrm; end if; end;
+  select * into joining_row from public.candidate_joinings where id=joining_id;
+  perform public.transition_recruitment_joining(joining_id,'pending',joining_row.updated_at,'joined',joining_row.expected_joining_date,india_today,null,null,'65000000-0000-0000-0000-000000000002');
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000003',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Joined application scheduled';
+  exception when raise_exception then if sqlerrm='Joined application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected joined scheduling denial: %',sqlerrm; end if; end;
+  select * into joining_row from public.candidate_joinings where id=joining_id;
+  perform public.transition_recruitment_joining(joining_id,'joined',joining_row.updated_at,'left',joining_row.expected_joining_date,null,joining_row.employee_code,'Candidate left','65000000-0000-0000-0000-000000000003');
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000003',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Left application scheduled';
+  exception when raise_exception then if sqlerrm='Left application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected left scheduling denial: %',sqlerrm; end if; end;
+
+  joining_id:=public.create_recruitment_joining('64000000-0000-0000-0000-000000000004',india_today+2,null,null,'65000000-0000-0000-0000-000000000004');
+  select * into joining_row from public.candidate_joinings where id=joining_id;
+  perform public.transition_recruitment_joining(joining_id,'pending',joining_row.updated_at,'cancelled',joining_row.expected_joining_date,null,null,'Placement withdrawn','65000000-0000-0000-0000-000000000005');
+  begin perform public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000004',now()+interval '1 day','onsite',null,null,null,null,null); raise exception 'Cancelled application scheduled';
+  exception when raise_exception then if sqlerrm='Cancelled application scheduled' then raise; elsif sqlerrm<>'Candidate application is not eligible for interview scheduling' then raise exception 'Unexpected cancelled scheduling denial: %',sqlerrm; end if; end;
 
   if not public.admin_update_candidate_application('64000000-0000-0000-0000-000000000001','interview','R12 still works') then raise exception 'R12 RPC regression'; end if;
   cancelled_id := public.admin_schedule_candidate_interview('64000000-0000-0000-0000-000000000001',now()+interval '4 days','other','Reception',null,null,null,null);
