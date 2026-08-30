@@ -94,7 +94,11 @@ do $$ declare p record; app uuid; interview uuid; begin
   select * into p from public.get_recruitment_permissions();
   if not p.view_access or not p.candidate_mutation or not p.application_mutation or not p.interview_mutation or p.joining_mutation then
     raise exception 'Recruiter permission matrix failed'; end if;
-  if (select count(*) from public.list_recruitment_candidates())<>1 then raise exception 'Recruiter candidate read failed'; end if;
+  if (select count(*) from public.list_recruitment_candidates() c
+      where c.id='82000000-0000-0000-0001-000000000001'
+        and c.full_name='W3 Candidate' and c.status='new' and c.application_count=0)<>1 then
+    raise exception 'Recruiter candidate read failed';
+  end if;
   perform public.update_recruitment_candidate('82000000-0000-0000-0001-000000000001','contacted','Yes','Safe note',null);
   app:=public.create_recruitment_application('82000000-0000-0000-0001-000000000001','82000000-0000-0000-0002-000000000001','manual',null);
   begin perform public.create_recruitment_application('82000000-0000-0000-0001-000000000001','82000000-0000-0000-0002-000000000001',null,null); raise exception 'Duplicate application succeeded';
@@ -130,7 +134,11 @@ do $$ declare p record; app uuid; joining uuid; begin
   select a.id into app from public.list_recruitment_applications('selected',null,25,0) a
     where a.candidate_id='82000000-0000-0000-0001-000000000001';
   if app is null then raise exception 'Operations projected application context failed'; end if;
-  if (select count(*) from public.list_recruitment_candidates())<>1 then raise exception 'Operations selected scope failed'; end if;
+  if (select count(*) from public.list_recruitment_candidates() c
+      where c.id='82000000-0000-0000-0001-000000000001'
+        and c.full_name='W3 Candidate' and c.status='contacted' and c.application_count=1)<>1 then
+    raise exception 'Operations selected scope failed';
+  end if;
   joining:=public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null);
   if joining is null then raise exception 'Operations Pending joining create failed'; end if;
   perform public.upsert_recruitment_joining(app,current_date+7,null,'confirmed',null,'Confirmed',null);
@@ -143,8 +151,14 @@ end $$;
 reset role;
 
 do $$ declare interview uuid; begin
-  select id into interview from public.interviews where status='completed' limit 1;
-  if interview is null then raise exception 'Completed interview fixture missing'; end if;
+  if (select count(*) from public.interviews i
+      join public.candidate_applications a on a.id=i.application_id
+      where a.candidate_id='82000000-0000-0000-0001-000000000001' and i.status='completed')<>1 then
+    raise exception 'Completed interview fixture missing or duplicated';
+  end if;
+  select i.id into interview from public.interviews i
+    join public.candidate_applications a on a.id=i.application_id
+    where a.candidate_id='82000000-0000-0000-0001-000000000001' and i.status='completed';
   perform set_config('request.jwt.claim.sub','82000000-0000-0000-0000-000000000004',true);
   begin perform public.update_recruitment_interview(interview,'cancelled','selected',null,null); raise exception 'Final interview accepted contradictory result';
   exception when raise_exception then if sqlerrm='Final interview accepted contradictory result' then raise; end if; end;
