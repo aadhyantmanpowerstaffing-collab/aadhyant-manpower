@@ -67,22 +67,22 @@ function Get-MigrationManifestHash {
     $rootPrefix = $RepositoryRoot.TrimEnd('\') + '\'
     $migrations = @(
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
-            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-7])_' } |
+            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-8])_' } |
             Sort-Object Name
     )
-    $expectedNumbers = @(7..37)
+    $expectedNumbers = @(7..38)
     $actualNumbers = @($migrations | ForEach-Object { [int]$_.Name.Substring(0, 3) })
     if (@($actualNumbers | Group-Object | Where-Object Count -ne 1).Count -ne 0) {
-        Stop-Guard 'Duplicate migration number detected in the required 007-037 range.'
+        Stop-Guard 'Duplicate migration number detected in the required 007-038 range.'
     }
     if (@(Compare-Object $expectedNumbers $actualNumbers -SyncWindow 0).Count -ne 0) {
-        Stop-Guard 'Expected exactly one migration for each number 007-037.'
+        Stop-Guard 'Expected exactly one migration for each number 007-038.'
     }
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         $migrations | Select-Object -ExpandProperty FullName
     )
-    if ($files.Count -ne 32) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-037.' }
+    if ($files.Count -ne 33) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-038.' }
 
     $manifestLines = foreach ($file in $files) {
         if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
@@ -121,7 +121,7 @@ function Invoke-GuardAssertionTests {
         $migrationRoot = Join-Path $fixtureRoot 'supabase\migrations'
         [void](New-Item -ItemType Directory -Path $migrationRoot -Force)
         [IO.File]::WriteAllText((Join-Path $fixtureRoot 'supabase\schema.sql'), 'schema')
-        foreach ($number in 7..37) {
+        foreach ($number in 7..38) {
             [IO.File]::WriteAllText((Join-Path $migrationRoot ("{0:D3}_fixture.sql" -f $number)), "migration-$number")
         }
 
@@ -129,25 +129,25 @@ function Invoke-GuardAssertionTests {
         $secondHash = Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         if ($firstHash -cne $secondHash) { throw 'Migration manifest hash is not deterministic.' }
 
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '038_future.sql'), 'future-migration')
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '039_future.sql'), 'future-migration')
         if ((Get-MigrationManifestHash -RepositoryRoot $fixtureRoot) -cne $firstHash) {
-            throw 'Migration 038 was not excluded from the approved manifest.'
+            throw 'Migration 039 was not excluded from the approved manifest.'
         }
 
-        [IO.File]::Delete((Join-Path $migrationRoot '037_fixture.sql'))
-        Assert-GuardRefusal -ExpectedMessage 'Expected exactly one migration for each number 007-037.' -Action {
+        [IO.File]::Delete((Join-Path $migrationRoot '038_fixture.sql'))
+        Assert-GuardRefusal -ExpectedMessage 'Expected exactly one migration for each number 007-038.' -Action {
             Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         }
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '037_fixture.sql'), 'migration-37')
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '037_duplicate.sql'), 'duplicate-migration-37')
-        Assert-GuardRefusal -ExpectedMessage 'Duplicate migration number detected in the required 007-037 range.' -Action {
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '038_fixture.sql'), 'migration-38')
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '038_duplicate.sql'), 'duplicate-migration-38')
+        Assert-GuardRefusal -ExpectedMessage 'Duplicate migration number detected in the required 007-038 range.' -Action {
             Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         }
 
-        $approved = 'f1bac2ee3cf42c489b6876a71b7dff584e4f4e7f'
+        $approved = '0d63e3e5d8a59e3494b9d0eb47b5be77dc1b7ec5'
         Assert-ApprovedCommit -ApprovedCommit $approved -Head $approved
         Assert-GuardRefusal -ExpectedMessage 'Git HEAD does not equal the approved staging-test commit.' -Action {
-            Assert-ApprovedCommit -ApprovedCommit $approved -Head '2f52257836c8bc4236ff00b9dc517936373d90ea'
+            Assert-ApprovedCommit -ApprovedCommit $approved -Head 'b1e55be95b388db90aec1ca7ebc33b08bf501fa1'
         }
         Write-Output 'STAGING STATIC GUARD ASSERTION TESTS PASSED'
     } finally {
