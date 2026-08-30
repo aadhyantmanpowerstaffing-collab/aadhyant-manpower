@@ -176,16 +176,18 @@ begin
   begin
     perform public.upsert_recruitment_joining('85000000-0000-0000-0004-000000000001', current_date + 10, null, 'pending');
     raise exception 'Company Recruiter created an internal joining';
-  exception when raise_exception then
+  exception when insufficient_privilege then null;
+  when others then
     if sqlerrm = 'Company Recruiter created an internal joining' then raise; end if;
-    if sqlerrm <> 'Joining management access is required' then raise exception 'Unexpected joining-create denial: %', sqlerrm; end if;
+    raise exception 'Unexpected joining-create denial: %', sqlerrm;
   end;
   begin
     perform public.upsert_recruitment_joining('85000000-0000-0000-0004-000000000002', current_date + 10, null, 'pending');
     raise exception 'Company Recruiter updated an internal joining';
-  exception when raise_exception then
+  exception when insufficient_privilege then null;
+  when others then
     if sqlerrm = 'Company Recruiter updated an internal joining' then raise; end if;
-    if sqlerrm <> 'Joining management access is required' then raise exception 'Unexpected joining-update denial: %', sqlerrm; end if;
+    raise exception 'Unexpected joining-update denial: %', sqlerrm;
   end;
 end;
 $$;

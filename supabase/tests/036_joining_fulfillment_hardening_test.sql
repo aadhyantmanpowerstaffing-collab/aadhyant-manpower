@@ -14,18 +14,28 @@ begin
      or has_function_privilege('anon','public.correct_recruitment_joining(uuid,timestamp with time zone,text,date,date,text,text,text,uuid)','execute') then
     raise exception 'Batch D function grant matrix is invalid';
   end if;
-  if not has_function_privilege('authenticated','public.upsert_recruitment_joining(uuid,date,date,text,text,text,uuid)','execute') then
-    raise exception 'Migration 038 compatibility wrapper retirement occurred early';
+  if to_regprocedure('public.upsert_recruitment_joining(uuid,date,date,text,text,text,uuid)') is null
+     or has_function_privilege('authenticated','public.upsert_recruitment_joining(uuid,date,date,text,text,text,uuid)','execute')
+     or has_function_privilege('anon','public.upsert_recruitment_joining(uuid,date,date,text,text,text,uuid)','execute') then
+    raise exception 'Batch D compatibility wrapper boundary is invalid';
   end if;
-  if not has_table_privilege('authenticated','public.candidate_applications','insert')
-     or not has_table_privilege('authenticated','public.candidate_applications','update')
-     or not has_table_privilege('authenticated','public.candidate_joinings','insert')
-     or not has_table_privilege('authenticated','public.candidate_joinings','update') then
-    raise exception 'Migration 038 direct-write revocation occurred early';
+  if not has_table_privilege('authenticated','public.candidate_applications','select')
+     or has_table_privilege('authenticated','public.candidate_applications','insert,update,delete')
+     or not has_table_privilege('authenticated','public.candidate_joinings','select')
+     or has_table_privilege('authenticated','public.candidate_joinings','insert,update,delete')
+     or exists(select 1 from pg_attribute a where a.attrelid='public.candidate_applications'::regclass
+       and a.attnum>0 and not a.attisdropped
+       and has_column_privilege('authenticated','public.candidate_applications',a.attname,'update'))
+     or exists(select 1 from pg_attribute a where a.attrelid='public.candidate_joinings'::regclass
+       and a.attnum>0 and not a.attisdropped
+       and has_column_privilege('authenticated','public.candidate_joinings',a.attname,'update')) then
+    raise exception 'Batch D direct-write privilege boundary is invalid';
   end if;
-  if not exists(select 1 from pg_policies where schemaname='public' and tablename='candidate_applications' and policyname='M7 admins create applications')
-     or not exists(select 1 from pg_policies where schemaname='public' and tablename='candidate_joinings' and policyname='M7 admins update joinings') then
-    raise exception 'Migration 038 write-policy removal occurred early';
+  if not exists(select 1 from pg_policies where schemaname='public' and tablename='candidate_applications' and policyname='M7 admins read applications' and cmd='SELECT')
+     or not exists(select 1 from pg_policies where schemaname='public' and tablename='candidate_joinings' and policyname='M7 admins read joinings' and cmd='SELECT')
+     or exists(select 1 from pg_policies where schemaname='public' and tablename in ('candidate_applications','candidate_joinings')
+       and cmd in ('INSERT','UPDATE','DELETE','ALL')) then
+    raise exception 'Batch D direct-write policy boundary is invalid';
   end if;
   if not exists(select 1 from pg_constraint where conrelid='public.candidate_joinings'::regclass and conname='candidate_joinings_actual_date_state_check')
      or not exists(select 1 from pg_trigger where tgrelid='public.candidate_joinings'::regclass and tgname='candidate_joinings_validate_dates' and tgenabled<>'D') then
@@ -108,6 +118,25 @@ select ('96000000-0000-0000-0004-'||lpad(g::text,12,'0'))::uuid,
        'admin','selected','96000000-0000-0000-0000-000000000001'
 from generate_series(1,28) g;
 
+-- The retained wrapper remains owner-controlled compatibility only; browser execution stays revoked.
+select set_config('request.jwt.claim.sub','96000000-0000-0000-0000-000000000001',true);
+do $$
+declare
+  india_today date := (clock_timestamp() at time zone 'Asia/Kolkata')::date;
+  message text;
+begin
+  foreach message in array array['confirmed','deferred','joined','no_show','cancelled','left'] loop
+    begin
+      perform public.upsert_recruitment_joining('96000000-0000-0000-0004-000000000008',india_today+5,
+        case when message in ('joined','left') then india_today else null end,message,null,'reason',gen_random_uuid());
+      raise exception 'Direct % creation succeeded',message;
+    exception when others then
+      if sqlerrm='Direct '||message||' creation succeeded' then raise; end if;
+    end;
+  end loop;
+end;
+$$;
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub','96000000-0000-0000-0000-000000000001',true);
 
@@ -116,7 +145,7 @@ do $$
 declare
   india_today date := (clock_timestamp() at time zone 'Asia/Kolkata')::date;
   j uuid; row_before public.candidate_joinings%rowtype; row_after public.candidate_joinings%rowtype;
-  counter_before integer; audit_before bigint; message text; target uuid;
+  counter_before integer; audit_before bigint; target uuid;
 begin
   j:=public.create_recruitment_joining('96000000-0000-0000-0004-000000000001',india_today+7,null,null,'96000000-1000-0000-0000-000000000001');
   select count(*) into audit_before from public.audit_logs where correlation_id='96000000-1000-0000-0000-000000000001';
@@ -174,12 +203,6 @@ begin
   perform public.transition_recruitment_joining(j,'deferred',row_before.updated_at,'joined',row_before.expected_joining_date,india_today-10,null,null,'96000000-1000-0000-0000-000000000019');
   if (select actual_joining_date<expected_joining_date from public.candidate_joinings where id=j) is not true then raise exception 'Historical actual-before-expected date was rejected'; end if;
 
-  -- All non-Pending creation states are rejected by the retained compatibility entry point.
-  foreach message in array array['confirmed','deferred','joined','no_show','cancelled','left'] loop
-    begin perform public.upsert_recruitment_joining('96000000-0000-0000-0004-000000000008',india_today+5,case when message in ('joined','left') then india_today else null end,message,null,'reason',gen_random_uuid());
-      raise exception 'Direct % creation succeeded',message;
-    exception when others then if sqlerrm='Direct '||message||' creation succeeded' then raise; end if; end;
-  end loop;
   j:=public.create_recruitment_joining('96000000-0000-0000-0004-000000000008',india_today+5,null,null,'96000000-1000-0000-0000-000000000020');
   select * into row_before from public.candidate_joinings where id=j;
   perform public.transition_recruitment_joining(j,'pending',row_before.updated_at,'deferred',row_before.expected_joining_date,null,null,null,'96000000-1000-0000-0000-000000000021');

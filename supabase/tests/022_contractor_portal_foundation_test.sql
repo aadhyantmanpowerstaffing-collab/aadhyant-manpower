@@ -145,7 +145,9 @@ do $$ declare app record;detail jsonb;metrics record;begin select * into app fro
   begin perform public.schedule_recruitment_interview(app.application_id,now()+interval '3 days','onsite','Chennai',null,null);raise exception 'Contractor scheduled interview';exception when raise_exception then if sqlerrm='Contractor scheduled interview' then raise;end if;end;
   begin perform public.reschedule_recruitment_interview('86000000-0000-0000-0004-000000000001',now()+interval '4 days','onsite','Chennai',null,null);raise exception 'Contractor rescheduled interview';exception when raise_exception then if sqlerrm='Contractor rescheduled interview' then raise;end if;end;
   begin perform public.update_recruitment_interview('86000000-0000-0000-0004-000000000001','completed','selected',null,null);raise exception 'Contractor mutated interview';exception when raise_exception then if sqlerrm='Contractor mutated interview' then raise;end if;end;
-  begin perform public.upsert_recruitment_joining('86000000-0000-0000-0003-000000000001',current_date+7,null,'confirmed',null,null,null);raise exception 'Contractor mutated joining';exception when raise_exception then if sqlerrm='Contractor mutated joining' then raise;end if;end;
+  begin perform public.upsert_recruitment_joining('86000000-0000-0000-0003-000000000001',current_date+7,null,'confirmed',null,null,null);raise exception 'Contractor mutated joining';
+  exception when insufficient_privilege then null;
+    when others then if sqlerrm='Contractor mutated joining' then raise;else raise exception 'Unexpected Contractor joining-wrapper denial: %',sqlerrm;end if;end;
   begin perform public.manage_contractor_portal_vacancy(p_action=>'update',p_requirement_id=>current_setting('w5.checkpoint_requirement_id')::uuid,p_client_name=>'Synthetic Client Worksite',p_job_role=>'Fitter',p_job_location=>'Chennai',p_required_headcount=>5);raise exception 'Approved vacancy regressed';exception when raise_exception then if sqlerrm='Approved vacancy regressed' then raise;end if;end;
 end $$;
 

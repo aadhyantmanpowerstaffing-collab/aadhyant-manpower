@@ -195,8 +195,12 @@ do $$ begin
   begin perform public.schedule_recruitment_interview('89300000-0000-0000-000a-000000000001',now()+interval '3 days','video','Synthetic Room',null,null);raise exception 'Candidate scheduled interview';exception when raise_exception then if sqlerrm='Candidate scheduled interview' then raise;end if;end;
   begin perform public.reschedule_recruitment_interview('89300000-0000-0000-000b-000000000001',now()+interval '4 days','video','Synthetic Room',null,null);raise exception 'Candidate rescheduled interview';exception when raise_exception then if sqlerrm='Candidate rescheduled interview' then raise;end if;end;
   begin perform public.update_recruitment_interview('89300000-0000-0000-000b-000000000001','completed','selected','Synthetic result',null);raise exception 'Candidate finalized interview';exception when raise_exception then if sqlerrm='Candidate finalized interview' then raise;end if;end;
-  begin perform public.upsert_recruitment_joining('89300000-0000-0000-000a-000000000002',current_date+5,null,'confirmed',null,null,null);raise exception 'Candidate updated joining';exception when raise_exception then if sqlerrm='Candidate updated joining' then raise;end if;end;
-  begin perform public.upsert_recruitment_joining('89300000-0000-0000-000a-000000000002',current_date+5,current_date,'joined','SYN-001',null,null);raise exception 'Candidate marked self Joined';exception when raise_exception then if sqlerrm='Candidate marked self Joined' then raise;end if;end;
+  begin perform public.upsert_recruitment_joining('89300000-0000-0000-000a-000000000002',current_date+5,null,'confirmed',null,null,null);raise exception 'Candidate updated joining';
+  exception when insufficient_privilege then null;
+    when others then if sqlerrm='Candidate updated joining' then raise;else raise exception 'Unexpected Candidate joining-update denial: %',sqlerrm;end if;end;
+  begin perform public.upsert_recruitment_joining('89300000-0000-0000-000a-000000000002',current_date+5,current_date,'joined','SYN-001',null,null);raise exception 'Candidate marked self Joined';
+  exception when insufficient_privilege then null;
+    when others then if sqlerrm='Candidate marked self Joined' then raise;else raise exception 'Unexpected Candidate joined-transition denial: %',sqlerrm;end if;end;
 end $$;
 
 select set_config('request.jwt.claim.sub','89300000-0000-0000-0000-000000000002',true);

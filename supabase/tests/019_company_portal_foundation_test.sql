@@ -100,7 +100,8 @@ do $$ declare ctx record; metrics record; profile record; own_requirement jsonb;
   begin perform public.schedule_recruitment_interview('83000000-0000-0000-0005-000000000001',now()+interval '4 days','onsite');raise exception 'Company user scheduled an internal interview';
   exception when raise_exception then if sqlerrm='Company user scheduled an internal interview' then raise;end if;end;
   begin perform public.upsert_recruitment_joining('83000000-0000-0000-0005-000000000001',current_date+10,null,'pending');raise exception 'Company user mutated internal joining';
-  exception when raise_exception then if sqlerrm='Company user mutated internal joining' then raise;end if;end;
+  exception when insufficient_privilege then null;
+    when others then if sqlerrm='Company user mutated internal joining' then raise;else raise exception 'Unexpected Company joining-wrapper denial: %',sqlerrm;end if;end;
   if not public.update_company_profile('W4 Trade','Manufacturing',null,'9876543210','Address','Chennai','Chennai','Tamil Nadu','600001','Company A HR Updated','51-200') then
     raise exception 'Company A profile update reported no changed row';
   end if;

@@ -112,7 +112,8 @@ do $$ declare p record; app uuid; interview uuid; begin
   begin perform public.transition_recruitment_application(app,'joining_pending',null,null,null); raise exception 'Recruiter bypassed joining workflow';
   exception when raise_exception then if sqlerrm='Recruiter bypassed joining workflow' then raise; end if; end;
   begin perform public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null); raise exception 'Recruiter managed joining';
-  exception when raise_exception then if sqlerrm='Recruiter managed joining' then raise; end if; end;
+  exception when insufficient_privilege then null;
+    when others then if sqlerrm='Recruiter managed joining' then raise; else raise exception 'Unexpected Recruiter wrapper result: %',sqlerrm; end if; end;
 end $$;
 reset role;
 
@@ -125,7 +126,9 @@ end $$;
 -- Operations: selected context and joining mutation only.
 set local role authenticated;
 select set_config('request.jwt.claim.sub','82000000-0000-0000-0000-000000000005',true);
-do $$ declare p record; app uuid; joining uuid; begin
+do $$ declare p record; app uuid; joining uuid; joining_row record;
+  india_today date := (clock_timestamp() at time zone 'Asia/Kolkata')::date;
+begin
   select * into p from public.get_recruitment_permissions();
   if not p.view_access or p.candidate_mutation or p.application_mutation or p.interview_mutation or not p.joining_mutation then
     raise exception 'Operations permission matrix failed'; end if;
@@ -139,11 +142,17 @@ do $$ declare p record; app uuid; joining uuid; begin
         and c.full_name='W3 Candidate' and c.status='contacted' and c.application_count=1)<>1 then
     raise exception 'Operations selected scope failed';
   end if;
-  joining:=public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null);
+  joining:=public.create_recruitment_joining(app,india_today+7,null,null,'82000000-1000-0000-0000-000000000001');
   if joining is null then raise exception 'Operations Pending joining create failed'; end if;
-  perform public.upsert_recruitment_joining(app,current_date+7,null,'confirmed',null,'Confirmed',null);
-  perform public.upsert_recruitment_joining(app,current_date+7,(clock_timestamp() at time zone 'Asia/Kolkata')::date,'joined','W3-EMP-1','Joined',null);
-  begin perform public.upsert_recruitment_joining(app,current_date+7,null,'pending',null,null,null); raise exception 'Joined placement regressed to pending';
+  select * into joining_row from public.list_recruitment_joinings(null,100) where id=joining;
+  perform public.transition_recruitment_joining(joining,joining_row.joining_status,joining_row.updated_at,
+    'confirmed',joining_row.expected_joining_date,null,null,'Confirmed','82000000-1000-0000-0000-000000000002');
+  select * into joining_row from public.list_recruitment_joinings(null,100) where id=joining;
+  perform public.transition_recruitment_joining(joining,joining_row.joining_status,joining_row.updated_at,
+    'joined',joining_row.expected_joining_date,india_today,'W3-EMP-1','Joined','82000000-1000-0000-0000-000000000003');
+  select * into joining_row from public.list_recruitment_joinings(null,100) where id=joining;
+  begin perform public.transition_recruitment_joining(joining,joining_row.joining_status,joining_row.updated_at,
+    'pending',joining_row.expected_joining_date,null,null,null,'82000000-1000-0000-0000-000000000004'); raise exception 'Joined placement regressed to pending';
   exception when raise_exception then if sqlerrm='Joined placement regressed to pending' then raise; end if; end;
   begin perform public.update_recruitment_candidate('82000000-0000-0000-0001-000000000001','selected','Yes',null,null); raise exception 'Operations mutated candidate';
   exception when raise_exception then if sqlerrm='Operations mutated candidate' then raise; end if; end;
