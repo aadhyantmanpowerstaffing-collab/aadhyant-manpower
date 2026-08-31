@@ -33,7 +33,7 @@
           <label>Website <span>(optional)</span><input name="website" type="url" maxlength="300"></label>
           <label>Workforce capacity <span>(optional)</span><input name="workforceCapacity" type="number" min="0" max="1000000"></label>
           <label>State *<select name="state" data-option-set="states" data-placeholder="Select state" required></select><small data-error="state"></small></label>
-          <label>District <span>(optional)</span><input name="district" autocomplete="address-level2" maxlength="160"><small>Enter the official district name.</small></label>
+          <label>District <span>(optional)</span><select name="district" autocomplete="address-level2" disabled><option value="">Select State first</option></select></label>
           <label>City *<input name="city" autocomplete="address-level3" maxlength="160" required><small data-error="city"></small></label>
           <label>Pincode <span>(optional)</span><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6"><small data-error="pincode"></small></label>
           <label class="wide">Address <span>(optional)</span><textarea name="address" rows="3" maxlength="600" autocomplete="street-address"></textarea></label>

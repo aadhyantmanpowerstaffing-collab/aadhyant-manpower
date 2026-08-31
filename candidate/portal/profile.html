@@ -29,7 +29,7 @@
           <legend>Location</legend>
           <div class="form-grid">
             <label class="field">State <span aria-hidden="true">*</span><select name="state" data-option-set="states" data-placeholder="Select state" required></select></label>
-            <label class="field">District <span aria-hidden="true">*</span><input name="district" maxlength="120" required><span class="field-help">Enter the official district name.</span></label>
+            <label class="field">District <span aria-hidden="true">*</span><select name="district" autocomplete="address-level2" required disabled><option value="">Select State first</option></select></label>
             <label class="field">Village / City <span aria-hidden="true">*</span><input name="current_location" maxlength="160" required></label>
             <label class="field">Pincode <span class="optional">Optional</span><input name="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"></label>
           </div>

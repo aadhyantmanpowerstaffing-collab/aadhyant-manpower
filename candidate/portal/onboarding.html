@@ -10,10 +10,18 @@
   <main class="auth-page">
     <section class="auth-card registration-card">
       <p class="eyebrow">Candidate Portal · Step 2 of 2</p>
-      <h1>Complete Your Core Profile</h1>
-      <p class="registration-steps">Personal Details · Location · Education · Experience · Review</p>
-      <p class="sensitive-note">Mobile and Aadhaar are required. Aadhaar is retained only as a uniqueness fingerprint and masked last four digits; it is never shown in full after save.</p>
-      <form data-onboarding-form class="structured-profile-form">
+      <h1 data-onboarding-content>Complete Your Core Profile</h1>
+      <p class="registration-steps" data-onboarding-content>Personal Details · Location · Education · Experience · Review</p>
+      <p class="sensitive-note" data-onboarding-content>Mobile and Aadhaar are required. Aadhaar is retained only as a uniqueness fingerprint and masked last four digits; it is never shown in full after save.</p>
+      <section class="auth-callback-notice" data-auth-callback-error hidden aria-labelledby="confirmation-link-heading">
+        <h2 id="confirmation-link-heading">Confirmation link unavailable</h2>
+        <p data-auth-error-message>This confirmation link has expired or was already used.</p>
+        <div class="auth-callback-actions">
+          <a class="button" data-auth-sign-in href="login.html">Sign In</a>
+          <a data-auth-return-login href="login.html">Return to Candidate Login</a>
+        </div>
+      </section>
+      <form data-onboarding-form data-onboarding-content class="structured-profile-form">
         <fieldset class="profile-section">
           <legend>Personal Details</legend>
           <div class="form-grid">
@@ -28,7 +36,7 @@
           <legend>Location</legend>
           <div class="form-grid">
             <label class="field">State <span aria-hidden="true">*</span><select name="state" data-option-set="states" data-placeholder="Select state" required></select></label>
-            <label class="field">District <span aria-hidden="true">*</span><input name="district" autocomplete="address-level2" maxlength="120" required><span class="field-help">Enter the official district name.</span></label>
+            <label class="field">District <span aria-hidden="true">*</span><select name="district" autocomplete="address-level2" required disabled><option value="">Select State first</option></select></label>
             <label class="field">Village / City <span aria-hidden="true">*</span><input name="current_location" autocomplete="address-level3" maxlength="160" required></label>
             <label class="field">Pincode <span class="optional">Optional</span><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6"></label>
           </div>
