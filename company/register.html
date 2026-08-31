@@ -11,71 +11,45 @@
   <script src="../config.js" defer></script>
   <script src="../supabase-client.js" defer></script>
   <script src="../assets/js/legal-consent.js" defer></script>
+  <script src="../assets/js/registration-options.js" defer></script>
   <script src="company.js" defer></script>
 </head>
 <body data-company-page="register">
-  <header class="company-header">
-    <a class="company-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home">
-      <span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong>
-    </a>
-    <a class="text-link" href="login.html">Employer Login</a>
-  </header>
-
+  <header class="company-header"><a class="company-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong></a><a class="text-link" href="login.html">Employer Login</a></header>
   <main class="onboarding-layout">
     <aside class="onboarding-intro">
-      <p class="eyebrow">Employer onboarding</p>
-      <h1>Create your Employer workspace.</h1>
+      <p class="eyebrow">Employer onboarding</p><h1>Create your Employer workspace.</h1>
       <p>Register your organization for review by Aadhyant. Approved Employer accounts receive secure access to the Company profile and supported requirement workflows.</p>
-      <ul class="benefit-list">
-        <li><span>01</span> Submit verified company details</li>
-        <li><span>02</span> Aadhyant reviews your account</li>
-        <li><span>03</span> Access activates after approval</li>
-      </ul>
+      <ul class="benefit-list"><li><span>01</span> Submit verified company details</li><li><span>02</span> Aadhyant reviews your account</li><li><span>03</span> Access activates after approval</li></ul>
     </aside>
-
     <section class="form-card" aria-labelledby="registration-title">
-      <div class="form-heading">
-        <p class="eyebrow">Create an Employer account</p>
-        <h2 id="registration-title">Employer Registration</h2>
-        <p>Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
-      </div>
+      <div class="form-heading"><p class="eyebrow">Create an Employer account</p><h2 id="registration-title">Employer Registration</h2><p>Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p></div>
       <div class="company-message" data-page-message role="status" aria-live="polite"></div>
       <form data-registration-form novalidate>
-        <fieldset>
-          <legend>Account details</legend>
-          <div class="form-grid">
-            <div class="field field-wide"><label for="register-email">Work email *</label><input id="register-email" name="email" type="email" autocomplete="email" maxlength="254" required><span class="field-error" data-error-for="email"></span></div>
-            <div class="field"><label for="register-password">Password *</label><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help"><span class="field-help" id="password-help">At least 8 characters with a letter and a number.</span><span class="field-error" data-error-for="password"></span></div>
-            <div class="field"><label for="register-confirm-password">Confirm password *</label><input id="register-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required><span class="field-error" data-error-for="confirmPassword"></span></div>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Company details</legend>
-          <div class="form-grid">
-            <div class="field field-wide"><label for="register-company">Company / Organization name *</label><input id="register-company" name="companyName" type="text" autocomplete="organization" maxlength="240" required><span class="field-error" data-error-for="companyName"></span></div>
-            <div class="field"><label for="register-contact">Contact person *</label><input id="register-contact" name="contactPerson" type="text" autocomplete="name" maxlength="160" required><span class="field-error" data-error-for="contactPerson"></span></div>
-            <div class="field"><label for="register-mobile">Mobile number *</label><input id="register-mobile" name="mobile" type="tel" autocomplete="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" required><span class="field-error" data-error-for="mobile"></span></div>
-            <div class="field"><label for="register-industry">Company type / Industry *</label><input id="register-industry" name="industry" type="text" maxlength="160" placeholder="e.g. Automotive manufacturing" required><span class="field-error" data-error-for="industry"></span></div>
-            <div class="field"><label for="register-workforce">Employee / workforce size</label><select id="register-workforce" name="workforceSize"><option value="">Select size</option><option>1-10</option><option>11-50</option><option>51-200</option><option>201-500</option><option>501-1000</option><option>1000+</option></select><span class="field-error" data-error-for="workforceSize"></span></div>
-            <div class="field"><label for="register-city">City *</label><input id="register-city" name="city" type="text" autocomplete="address-level2" maxlength="160" required><span class="field-error" data-error-for="city"></span></div>
-            <div class="field"><label for="register-state">State *</label><input id="register-state" name="state" type="text" autocomplete="address-level1" maxlength="160" required><span class="field-error" data-error-for="state"></span></div>
-            <div class="field"><label for="register-gstin">GSTIN</label><input id="register-gstin" name="gstin" type="text" maxlength="15" autocapitalize="characters" placeholder="24ABCDE1234F1Z5"><span class="field-error" data-error-for="gstin"></span></div>
-            <div class="field"><label for="register-website">Website</label><input id="register-website" name="website" type="url" maxlength="300" placeholder="https://example.com"><span class="field-error" data-error-for="website"></span></div>
-            <div class="field field-wide"><label for="register-address">Full address</label><textarea id="register-address" name="address" rows="3" maxlength="500" autocomplete="street-address"></textarea><span class="field-error" data-error-for="address"></span></div>
-          </div>
-        </fieldset>
-
-        <div class="consent-field field">
-          <label><input name="consent" type="checkbox" required> <span>I acknowledge that Aadhyant may review these details to approve or reject company account access. *</span></label>
-          <span class="field-error" data-error-for="consent"></span>
-        </div>
+        <fieldset><legend>Account details</legend><div class="form-grid">
+          <div class="field field-wide"><label for="register-email">Work email *</label><input id="register-email" name="email" type="email" autocomplete="email" maxlength="254" required><span class="field-error" data-error-for="email"></span></div>
+          <div class="field"><label for="register-password">Password *</label><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help"><span class="field-help" id="password-help">At least 8 characters with a letter and a number.</span><span class="field-error" data-error-for="password"></span></div>
+          <div class="field"><label for="register-confirm-password">Confirm password *</label><input id="register-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required><span class="field-error" data-error-for="confirmPassword"></span></div>
+        </div></fieldset>
+        <fieldset><legend>Company details</legend><div class="form-grid">
+          <div class="field field-wide"><label for="register-company">Company / Organization name *</label><input id="register-company" name="companyName" type="text" autocomplete="organization" maxlength="240" required><span class="field-error" data-error-for="companyName"></span></div>
+          <div class="field"><label for="register-contact">Contact person *</label><input id="register-contact" name="contactPerson" type="text" autocomplete="name" maxlength="160" required><span class="field-error" data-error-for="contactPerson"></span></div>
+          <div class="field"><label for="register-mobile">Mobile number *</label><input id="register-mobile" name="mobile" type="tel" autocomplete="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" required><span class="field-error" data-error-for="mobile"></span></div>
+          <div class="field"><label for="register-industry">Company type / Industry *</label><select id="register-industry" name="industry" data-option-set="industries" data-placeholder="Select industry" required></select><span class="field-error" data-error-for="industry"></span></div>
+          <div class="field" data-industry-other hidden><label for="register-industry-other">Specify industry *</label><input id="register-industry-other" name="industryOther" maxlength="160"><span class="field-error" data-error-for="industryOther"></span></div>
+          <div class="field"><label for="register-workforce">Employee / workforce size <span class="field-help">Optional</span></label><select id="register-workforce" name="workforceSize" data-option-set="workforceSizes" data-placeholder="Select size"></select><span class="field-error" data-error-for="workforceSize"></span></div>
+          <div class="field"><label for="register-state">State *</label><select id="register-state" name="state" data-option-set="states" data-placeholder="Select state" required></select><span class="field-error" data-error-for="state"></span></div>
+          <div class="field"><label for="register-city">City *</label><input id="register-city" name="city" type="text" autocomplete="address-level2" maxlength="160" required><span class="field-help">District remains available in Company Profile after approval.</span><span class="field-error" data-error-for="city"></span></div>
+          <div class="field"><label for="register-gstin">GSTIN <span class="field-help">Optional</span></label><input id="register-gstin" name="gstin" type="text" maxlength="15" autocapitalize="characters" placeholder="24ABCDE1234F1Z5"><span class="field-error" data-error-for="gstin"></span></div>
+          <div class="field"><label for="register-website">Website <span class="field-help">Optional</span></label><input id="register-website" name="website" type="url" maxlength="300" placeholder="https://example.com"><span class="field-error" data-error-for="website"></span></div>
+          <div class="field field-wide"><label for="register-address">Full address <span class="field-help">Optional</span></label><textarea id="register-address" name="address" rows="3" maxlength="500" autocomplete="street-address"></textarea><span class="field-error" data-error-for="address"></span></div>
+        </div></fieldset>
+        <div class="consent-field field"><label><input name="consent" type="checkbox" required> <span>I acknowledge that Aadhyant may review these details to approve or reject company account access. *</span></label><span class="field-error" data-error-for="consent"></span></div>
         <button class="company-button company-button-primary submit-button" type="submit">Create Company Account</button>
         <p class="form-footnote">Registration does not activate your account automatically. Approval is controlled by Aadhyant.</p>
       </form>
     </section>
   </main>
-
   <footer class="company-footer">Aadhyant Manpower &amp; Staffing · <a href="../contact/">Contact us</a></footer>
 </body>
 </html>

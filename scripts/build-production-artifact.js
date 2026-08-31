@@ -44,6 +44,7 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'assets/js/jobs.js',
   'assets/js/legal-consent.js',
   'assets/js/public-navigation.js',
+  'assets/js/registration-options.js',
   'candidate/index.html',
   'candidate/portal/applications.html',
   'candidate/portal/candidate.css',

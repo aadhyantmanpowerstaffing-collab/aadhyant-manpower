@@ -1,1 +1,72 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Candidate Profile Setup | Aadhyant</title><link rel="stylesheet" href="candidate.css"></head><body data-candidate-page="onboarding"><main class="auth-page"><section class="auth-card"><p class="eyebrow">Required profile</p><h1>Complete Candidate Profile</h1><p class="sensitive-note">Mobile and Aadhaar are compulsory. Aadhaar is retained only as a uniqueness fingerprint and masked last four digits; it is never shown in full after save.</p><form data-onboarding-form class="form-grid"><label class="field">Full Name<input name="full_name" maxlength="160" required></label><label class="field">Mobile<input name="mobile" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" required></label><label class="field">Aadhaar Number<input name="aadhaar" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" autocomplete="off" required></label><label class="field">Date of Birth<input name="date_of_birth" type="date" required></label><label class="field">Gender<select name="gender" required><option value="">Select</option><option>Male</option><option>Female</option><option>Other / Prefer not to say</option></select></label><label class="field">Candidate Type<select name="candidate_type" required><option>Fresher</option><option>Experienced</option></select></label><label class="field">Current City / Village<input name="current_location" required></label><label class="field">District<input name="district" required></label><label class="field">State<input name="state" required></label><label class="field">Pincode<input name="pincode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"></label><label class="field">Qualification<select name="highest_qualification" required><option>Below 10th</option><option>10th</option><option>12th</option><option>ITI</option><option>Diploma</option><option>Graduate</option><option>Post Graduate</option><option>Other</option></select></label><label class="field">Trade / Specialization<input name="specialization"></label><label class="field field-wide"><input name="consent" type="checkbox" required> I consent to Candidate profile processing under the Privacy Policy.</label><button class="button" type="submit">Save Required Profile</button></form><p data-message class="message" role="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script><script src="../../config.js"></script><script src="../../supabase-client.js"></script><script src="candidate.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Candidate Profile Setup | Aadhyant</title>
+  <link rel="stylesheet" href="candidate.css">
+</head>
+<body data-candidate-page="onboarding">
+  <main class="auth-page">
+    <section class="auth-card registration-card">
+      <p class="eyebrow">Candidate Portal · Step 2 of 2</p>
+      <h1>Complete Your Core Profile</h1>
+      <p class="registration-steps">Personal Details · Location · Education · Experience · Review</p>
+      <p class="sensitive-note">Mobile and Aadhaar are required. Aadhaar is retained only as a uniqueness fingerprint and masked last four digits; it is never shown in full after save.</p>
+      <form data-onboarding-form class="structured-profile-form">
+        <fieldset class="profile-section">
+          <legend>Personal Details</legend>
+          <div class="form-grid">
+            <label class="field">Full Name <span aria-hidden="true">*</span><input name="full_name" autocomplete="name" maxlength="160" required></label>
+            <label class="field">Mobile <span aria-hidden="true">*</span><input name="mobile" inputmode="numeric" autocomplete="tel" pattern="[6-9][0-9]{9}" maxlength="10" required></label>
+            <label class="field">Aadhaar Number <span aria-hidden="true">*</span><input name="aadhaar" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" autocomplete="off" required></label>
+            <label class="field">Date of Birth <span aria-hidden="true">*</span><input name="date_of_birth" type="date" required></label>
+            <label class="field">Gender <span aria-hidden="true">*</span><select name="gender" data-option-set="genders" data-placeholder="Select gender" required></select></label>
+          </div>
+        </fieldset>
+        <fieldset class="profile-section">
+          <legend>Location</legend>
+          <div class="form-grid">
+            <label class="field">State <span aria-hidden="true">*</span><select name="state" data-option-set="states" data-placeholder="Select state" required></select></label>
+            <label class="field">District <span aria-hidden="true">*</span><input name="district" autocomplete="address-level2" maxlength="120" required><span class="field-help">Enter the official district name.</span></label>
+            <label class="field">Village / City <span aria-hidden="true">*</span><input name="current_location" autocomplete="address-level3" maxlength="160" required></label>
+            <label class="field">Pincode <span class="optional">Optional</span><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6"></label>
+          </div>
+        </fieldset>
+        <fieldset class="profile-section">
+          <legend>Education</legend>
+          <div class="form-grid">
+            <label class="field">Highest Qualification <span aria-hidden="true">*</span><select name="highest_qualification" data-option-set="qualifications" data-placeholder="Select qualification" required></select></label>
+            <label class="field">Trade / Specialization <span class="optional">Optional</span><select name="specialization" data-placeholder="Select trade / specialization"></select></label>
+            <label class="field" data-specialization-other hidden>Specify Trade / Specialization <span aria-hidden="true">*</span><input name="specialization_other" maxlength="160"></label>
+          </div>
+        </fieldset>
+        <fieldset class="profile-section">
+          <legend>Experience</legend>
+          <div class="form-grid">
+            <label class="field">Candidate Type <span aria-hidden="true">*</span><select name="candidate_type" data-option-set="candidateTypes" data-placeholder="Select experience level" required></select></label>
+            <label class="field">Interview Availability <span aria-hidden="true">*</span><select name="interview_available" data-option-set="interviewAvailability" data-placeholder="Select availability" required></select></label>
+          </div>
+          <div class="form-grid conditional-panel" data-experience-fields hidden>
+            <label class="field">Total Experience <span aria-hidden="true">*</span><select name="total_experience" data-option-set="experienceDurations" data-placeholder="Select duration"></select></label>
+            <label class="field" data-experience-other hidden>Specify Experience <span aria-hidden="true">*</span><input name="total_experience_other" maxlength="80"></label>
+            <label class="field">Most Recent Role <span aria-hidden="true">*</span><input name="previous_job_role" maxlength="160"></label>
+          </div>
+        </fieldset>
+        <fieldset class="profile-section">
+          <legend>Review / Create Profile</legend>
+          <label class="consent-line"><input name="consent" type="checkbox" required> I consent to Candidate profile processing under the Privacy Policy.</label>
+          <p class="field-help">You can review and update permitted fields later in My Profile.</p>
+        </fieldset>
+        <button class="button" type="submit">Create Candidate Profile</button>
+      </form>
+      <p data-message class="message" role="status"></p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script>
+  <script src="../../config.js"></script>
+  <script src="../../supabase-client.js"></script>
+  <script src="../../assets/js/registration-options.js"></script>
+  <script src="candidate.js"></script>
+</body>
+</html>
