@@ -27,17 +27,17 @@ insert into public.company_users(company_id, user_id, role, status) values
 insert into public.employer_requirements(
   id, company_name, contact_person, mobile, company_location, job_role, required_headcount,
   qualification, consent, status, requirement_code, company_id, created_by_user_id,
-  department, job_location, filled_positions, requirement_visibility, requirement_stage
+  department, job_location, filled_positions, source_type, review_status, requirement_visibility, requirement_stage
 ) values
 ('85000000-0000-0000-0002-000000000001', 'W4 Coverage Company A', 'Synthetic HR', '9876500301', 'Chennai', 'Fitter', 2,
  'ITI', true, 'new', 'W4-COV-A-DRAFT', '85000000-0000-0000-0001-000000000001', '85000000-0000-0000-0000-000000000001',
- 'Production', 'Chennai', 0, 'private', 'draft'),
+ 'Production', 'Chennai', 0, 'employer_portal', 'draft', 'private', 'draft'),
 ('85000000-0000-0000-0002-000000000002', 'W4 Coverage Company A', 'Synthetic HR', '9876500301', 'Chennai', 'Technician', 2,
  'Diploma', true, 'in_progress', 'W4-COV-A-OPEN', '85000000-0000-0000-0001-000000000001', '85000000-0000-0000-0000-000000000001',
- 'Maintenance', 'Chennai', 0, 'private', 'open'),
+ 'Maintenance', 'Chennai', 0, 'employer_portal', 'approved', 'public', 'open'),
 ('85000000-0000-0000-0002-000000000003', 'W4 Coverage Company B', 'Synthetic HR', '9876500302', 'Pune', 'Operator', 1,
  '12th', true, 'new', 'W4-COV-B-DRAFT', '85000000-0000-0000-0001-000000000002', '85000000-0000-0000-0000-000000000002',
- 'Operations', 'Pune', 0, 'private', 'draft');
+ 'Operations', 'Pune', 0, 'employer_portal', 'draft', 'private', 'draft');
 
 insert into public.candidates(
   id, full_name, age, gender, mobile, whatsapp_number, current_location, district, state,
@@ -111,8 +111,8 @@ begin
   end if;
 
   select * into changed from public.manage_company_portal_requirement('close', '85000000-0000-0000-0002-000000000001');
-  if changed.requirement_stage <> 'cancelled' or changed.requirement_visibility <> 'private' then
-    raise exception 'Authorized draft close did not produce terminal cancellation';
+  if changed.requirement_stage <> 'closed' or changed.requirement_visibility <> 'private' then
+    raise exception 'Authorized draft close did not produce canonical terminal closure';
   end if;
   begin
     perform public.manage_company_portal_requirement(

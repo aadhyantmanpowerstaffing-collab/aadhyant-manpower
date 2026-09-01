@@ -118,6 +118,16 @@ values
 ('89300000-0000-0000-0002-000000000005','W6 Closed','Synthetic','9876500945','Chennai','Closed',5,'ITI',true,'closed','AAD-2097-000005','Chennai',0,'private','closed',null),
 ('89300000-0000-0000-0002-000000000006','W6 Filled','Synthetic','9876500946','Chennai','Filled',5,'ITI',true,'closed','AAD-2097-000006','Chennai',5,'public','filled',now()),
 ('89300000-0000-0000-0002-000000000007','W6 Zero','Synthetic','9876500947','Chennai','Zero Openings',5,'ITI',true,'in_progress','AAD-2097-000007','Chennai',5,'public','open',now());
+
+-- The sole visible fixture must satisfy the canonical Migration 039 boundary.
+update public.employer_requirements
+set source_type='employer_portal',review_status='approved'
+where id='89300000-0000-0000-0002-000000000001'
+  and requirement_code='AAD-2097-000001'
+  and requirement_stage='open'
+  and requirement_visibility='public'
+  and filled_positions<required_headcount;
+
 insert into public.requirement_contractors(id,requirement_id,contractor_id,assigned_headcount,assignment_status,origin_type,submission_status)
 values
 ('89300000-0000-0000-0006-000000000011','89300000-0000-0000-0002-000000000002','89300000-0000-0000-0006-000000000001',5,'assigned','contractor_submission','under_review'),

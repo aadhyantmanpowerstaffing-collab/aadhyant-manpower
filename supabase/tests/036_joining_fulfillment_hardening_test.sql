@@ -105,6 +105,16 @@ values
 ('96000000-0000-0000-0003-000000000005','Batch D Company','Contact','9876500005','Chennai','Closed Gate',2,0,'ITI',true,'closed','BDD-REQ-CLOSED','96000000-0000-0000-0001-000000000001','Chennai','closed','private',now()),
 ('96000000-0000-0000-0003-000000000006','Batch D Company','Contact','9876500006','Chennai','Cancelled Gate',2,0,'ITI',true,'closed','BDD-REQ-CANCEL','96000000-0000-0000-0001-000000000001','Chennai','cancelled','private',now());
 
+-- This is the sole lifecycle fixture that deliberately begins public and later
+-- proves an explicit capacity-backed reopen; it is therefore an approved vacancy.
+update public.employer_requirements
+set source_type='employer_portal',review_status='approved'
+where id='96000000-0000-0000-0003-000000000002'
+  and requirement_code='BDD-REQ-FULL'
+  and requirement_stage='open'
+  and requirement_visibility='public'
+  and filled_positions<required_headcount;
+
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status,created_by)
 select ('96000000-0000-0000-0004-'||lpad(g::text,12,'0'))::uuid,
        ('96000000-0000-0000-0002-'||lpad(g::text,12,'0'))::uuid,

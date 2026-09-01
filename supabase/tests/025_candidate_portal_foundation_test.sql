@@ -63,11 +63,11 @@ end $$;
 reset role;
 
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,
-  qualification,consent,status,requirement_code,job_location,filled_positions,requirement_visibility,requirement_stage,published_at)
+  qualification,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage,published_at)
 values
-('89000000-0000-0000-0002-000000000001','W6 Open Employer','Synthetic Contact','9876500910','Chennai','Fitter',5,'ITI',true,'in_progress','AAD-2096-000001','Chennai',0,'public','open',now()),
-('89000000-0000-0000-0002-000000000002','W6 Private Employer','Synthetic Contact','9876500911','Chennai','Private Role',5,'ITI',true,'new','AAD-2096-000002','Chennai',0,'private','draft',null),
-('89000000-0000-0000-0002-000000000003','W6 Contractor Pending','Synthetic Contact','9876500912','Chennai','Pending Role',5,'ITI',true,'new','AAD-2096-000003','Chennai',0,'private','draft',null);
+('89000000-0000-0000-0002-000000000001','W6 Open Employer','Synthetic Contact','9876500910','Chennai','Fitter',5,'ITI',true,'in_progress','AAD-2096-000001','Chennai',0,'employer_portal','approved','public','open',now()),
+('89000000-0000-0000-0002-000000000002','W6 Private Employer','Synthetic Contact','9876500911','Chennai','Private Role',5,'ITI',true,'new','AAD-2096-000002','Chennai',0,'admin_manual','draft','private','draft',null),
+('89000000-0000-0000-0002-000000000003','W6 Contractor Pending','Synthetic Contact','9876500912','Chennai','Pending Role',5,'ITI',true,'new','AAD-2096-000003','Chennai',0,'contractor_portal','draft','private','draft',null);
 insert into public.requirement_contractors(id,requirement_id,contractor_id,assigned_headcount,assignment_status,origin_type,submission_status)
 values('89000000-0000-0000-0006-000000000001','89000000-0000-0000-0002-000000000003','89000000-0000-0000-0005-000000000001',5,'assigned','contractor_submission','submitted');
 

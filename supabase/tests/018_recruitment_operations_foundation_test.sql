@@ -38,9 +38,9 @@ insert into public.candidates(id,full_name,age,gender,mobile,current_location,di
   specialization,candidate_type,interview_available,consent,status)
 values('82000000-0000-0000-0001-000000000001','W3 Candidate',24,'Female','9876543210','Chennai','Chennai','Tamil Nadu','ITI','Fitter','Fresher','Yes',true,'new');
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,
-  qualification,consent,status,requirement_code,job_location,requirement_stage,requirement_visibility)
+  qualification,consent,status,requirement_code,job_location,source_type,review_status,requirement_stage,requirement_visibility)
 values('82000000-0000-0000-0002-000000000001','W3 Company A','W3 Contact','9876543211','Chennai','Fitter',5,
-  'ITI',true,'in_progress','W3-REQ-001','Chennai','open','private');
+  'ITI',true,'in_progress','W3-REQ-001','Chennai','admin_manual','approved','open','public');
 
 do $$
 begin

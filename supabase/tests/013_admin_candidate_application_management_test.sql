@@ -13,8 +13,8 @@ insert into public.platform_users(user_id,account_type,display_name,email,accoun
 ('51000000-0000-0000-0000-000000000002','company','R12 Company','r12-company@test.local','active'),
 ('51000000-0000-0000-0000-000000000003','contractor','R12 Partner','r12-partner@test.local','active');
 
-insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,filled_positions,consent,job_location,requirement_stage,requirement_visibility,published_at)
-values('52000000-0000-0000-0000-000000000001','R12 Company','R12 Contact','9876520001','Ahmedabad','R12 Fitter',10,1,true,'Ahmedabad','open','public',now());
+insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,filled_positions,consent,job_location,source_type,review_status,requirement_stage,requirement_visibility,published_at)
+values('52000000-0000-0000-0000-000000000001','R12 Company','R12 Contact','9876520001','Ahmedabad','R12 Fitter',10,1,true,'Ahmedabad','admin_manual','approved','open','public',now());
 insert into public.candidates(id,full_name,age,gender,mobile,current_location,district,state,highest_qualification,specialization,candidate_type,total_experience,interview_available,consent)
 values('53000000-0000-0000-0000-000000000001','R12 Candidate',25,'Male','9876520002','Kadi','Mahesana','Gujarat','ITI','Fitter','Experienced','3 years','Yes',true);
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status)

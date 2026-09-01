@@ -118,6 +118,16 @@ insert into public.employer_requirements(id,company_name,contact_person,mobile,c
 values('97000000-0000-0000-0002-000000000001','Batch D E Company','Contact','9700000010','Chennai',
   'Direct-write guard',3,'ITI',true,'in_progress','BDE-REQ-001','97000000-0000-0000-0005-000000000001','Chennai','open','private');
 
+-- Canonical Recruiter/Admin application creation below requires an approved,
+-- public vacancy with capacity under the Migration 039 eligibility contract.
+update public.employer_requirements
+set source_type='employer_portal',review_status='approved',requirement_visibility='public'
+where id='97000000-0000-0000-0002-000000000001'
+  and requirement_code='BDE-REQ-001'
+  and requirement_stage='open'
+  and requirement_visibility='private'
+  and filled_positions<required_headcount;
+
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status,created_by) values
 ('97000000-0000-0000-0003-000000000001','97000000-0000-0000-0001-000000000001','97000000-0000-0000-0002-000000000001','admin','selected','97000000-0000-0000-0000-000000000001'),
 ('97000000-0000-0000-0003-000000000002','97000000-0000-0000-0001-000000000002','97000000-0000-0000-0002-000000000001','admin','applied','97000000-0000-0000-0000-000000000001');

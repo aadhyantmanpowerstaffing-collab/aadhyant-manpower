@@ -115,8 +115,8 @@ select set_config('request.jwt.claim.sub','86000000-0000-0000-0000-000000000001'
 do $$ declare rid uuid:=current_setting('w5.checkpoint_requirement_id')::uuid; updated record; detail jsonb;begin
   detail:=public.get_contractor_portal_vacancy(rid);if detail->>'submission_status'<>'correction_required' or detail->>'review_feedback'<>'Clarify the shift details' then raise exception 'Correction feedback projection failed';end if;
   select * into updated from public.manage_contractor_portal_vacancy(p_action=>'update',p_requirement_id=>rid,p_client_name=>'Synthetic Client Worksite',p_job_role=>'Fitter',p_job_location=>'Chennai',p_required_headcount=>5,p_qualification=>'ITI',p_shift_details=>'General shift');
-  if updated.submission_status<>'draft' then raise exception 'Correction edit did not return to Draft';end if;
-  perform public.manage_contractor_portal_vacancy(p_action=>'submit',p_requirement_id=>rid);
+  if updated.submission_status<>'correction_required' then raise exception 'Correction edit did not preserve correction-required state';end if;
+  perform public.manage_contractor_portal_vacancy(p_action=>'resubmit',p_requirement_id=>rid);
 end $$;
 
 select set_config('request.jwt.claim.sub','86000000-0000-0000-0000-000000000010',true);
@@ -126,11 +126,11 @@ do $$ declare rid uuid:=current_setting('w5.checkpoint_requirement_id')::uuid;be
 
 select set_config('request.jwt.claim.sub','86000000-0000-0000-0000-000000000006',true);
 do $$ declare rid uuid:=current_setting('w5.checkpoint_requirement_id')::uuid; reviewed record;begin
-  select * into reviewed from public.review_contractor_vacancy(rid,'approve','Approved synthetic vacancy');if reviewed.submission_status<>'approved' or reviewed.requirement_stage<>'open' or reviewed.requirement_visibility<>'assigned' then raise exception 'Internal approval bridge failed';end if;if not exists(select 1 from public.list_recruitment_requirements(null,'open',50,0) r where r.id=rid) then raise exception 'Approved vacancy not visible to W3';end if;end $$;
+  select * into reviewed from public.review_contractor_vacancy(rid,'approve','Approved synthetic vacancy');if reviewed.submission_status<>'approved' or reviewed.requirement_stage<>'open' or reviewed.requirement_visibility<>'public' then raise exception 'Canonical approval bridge failed';end if;if not exists(select 1 from public.list_recruitment_requirements(null,'open',50,0) r where r.id=rid) then raise exception 'Approved vacancy not visible to W3';end if;end $$;
 
 reset role;
 do $$ declare rid uuid:=current_setting('w5.checkpoint_requirement_id')::uuid;begin
-  if (select count(*) from public.employer_requirements r where r.id=rid and r.requirement_stage='open' and r.requirement_visibility='assigned')<>1 then raise exception 'Canonical approval did not update the same requirement';end if;
+  if (select count(*) from public.employer_requirements r where r.id=rid and r.requirement_stage='open' and r.requirement_visibility='public')<>1 then raise exception 'Canonical approval did not update the same requirement';end if;
   if (select count(*) from public.requirement_contractors link where link.requirement_id=rid and link.contractor_id='86000000-0000-0000-0001-000000000001' and link.submission_status='approved' and link.reviewed_by='86000000-0000-0000-0000-000000000006' and link.reviewed_at is not null)<>1 then raise exception 'Canonical approval linkage integrity failed';end if;
 end $$;
 insert into public.candidates(id,full_name,age,gender,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,candidate_type,total_experience,interview_available,internal_notes,consent,status)
