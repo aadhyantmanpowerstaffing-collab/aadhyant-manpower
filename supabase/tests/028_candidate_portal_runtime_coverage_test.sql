@@ -117,13 +117,23 @@ values
 ('89300000-0000-0000-0002-000000000004','W6 Rejected','Synthetic','9876500944','Chennai','Rejected',5,'ITI',true,'closed','AAD-2097-000004','Chennai',0,'private','cancelled',null),
 ('89300000-0000-0000-0002-000000000005','W6 Closed','Synthetic','9876500945','Chennai','Closed',5,'ITI',true,'closed','AAD-2097-000005','Chennai',0,'private','closed',null),
 ('89300000-0000-0000-0002-000000000006','W6 Filled','Synthetic','9876500946','Chennai','Filled',5,'ITI',true,'closed','AAD-2097-000006','Chennai',5,'public','filled',now()),
-('89300000-0000-0000-0002-000000000007','W6 Zero','Synthetic','9876500947','Chennai','Zero Openings',5,'ITI',true,'in_progress','AAD-2097-000007','Chennai',5,'public','open',now());
+('89300000-0000-0000-0002-000000000007','W6 Zero','Synthetic','9876500947','Chennai','Zero Openings',5,'ITI',true,'in_progress','AAD-2097-000007','Chennai',5,'public','open',now()),
+('89300000-0000-0000-0002-000000000008','W6 Application Target','Synthetic','9876500948','Chennai','Application Target Fitter',5,'ITI',true,'in_progress','AAD-2097-000008','Chennai',0,'public','open',now());
 
--- The sole visible fixture must satisfy the canonical Migration 039 boundary.
+-- The visible opportunity fixture must satisfy the canonical Migration 039 boundary.
 update public.employer_requirements
 set source_type='employer_portal',review_status='approved'
 where id='89300000-0000-0000-0002-000000000001'
   and requirement_code='AAD-2097-000001'
+  and requirement_stage='open'
+  and requirement_visibility='public'
+  and filled_positions<required_headcount;
+
+-- A dedicated application/interview fixture must satisfy the same boundary.
+update public.employer_requirements
+set source_type='employer_portal',review_status='approved'
+where id='89300000-0000-0000-0002-000000000008'
+  and requirement_code='AAD-2097-000008'
   and requirement_stage='open'
   and requirement_visibility='public'
   and filled_positions<required_headcount;
@@ -196,7 +206,7 @@ reset role;
 insert into public.candidate_applications(id,candidate_id,requirement_id,source_type,application_status,source_reference) values
 ('89300000-0000-0000-000a-000000000001','89300000-0000-0000-0001-000000000001','89300000-0000-0000-0002-000000000001','direct','applied','broad_checkpoint'),
 ('89300000-0000-0000-000a-000000000002','89300000-0000-0000-0001-000000000001','89300000-0000-0000-0002-000000000005','direct','selected','broad_checkpoint'),
-('89300000-0000-0000-000a-000000000003','89300000-0000-0000-0001-000000000001','89300000-0000-0000-0002-000000000004','direct','interview','broad_checkpoint');
+('89300000-0000-0000-000a-000000000003','89300000-0000-0000-0001-000000000001','89300000-0000-0000-0002-000000000008','direct','interview','broad_checkpoint');
 insert into public.interviews(id,application_id,interview_round,scheduled_at,mode,location,status,created_by) values
 ('89300000-0000-0000-000b-000000000001','89300000-0000-0000-000a-000000000003',1,now()+interval '2 days','video','Synthetic Room','scheduled','89300000-0000-0000-0000-000000000004');
 insert into public.candidate_joinings(id,application_id,expected_joining_date,joining_status,created_by) values
