@@ -34,10 +34,10 @@ insert into public.staff_roles(user_id,role,status,granted_by) values('83000000-
 
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,
   qualification,consent,status,requirement_code,company_id,created_by_user_id,department,job_location,filled_positions,
-  requirement_visibility,requirement_stage)
+  requirement_visibility,requirement_stage,source_type,review_status,published_at)
 values
-('83000000-0000-0000-0003-000000000001','W4 Company A','Company A HR','9876543210','Chennai','Fitter',5,'ITI',true,'in_progress','W4-A-001','83000000-0000-0000-0001-000000000001','83000000-0000-0000-0000-000000000001','Production','Chennai',0,'private','open'),
-('83000000-0000-0000-0003-000000000002','W4 Company B','Company B HR','9876543211','Pune','Operator',3,'12th',true,'in_progress','W4-B-001','83000000-0000-0000-0001-000000000002','83000000-0000-0000-0000-000000000002','Operations','Pune',0,'private','open');
+('83000000-0000-0000-0003-000000000001','W4 Company A','Company A HR','9876543210','Chennai','Fitter',5,'ITI',true,'in_progress','W4-A-001','83000000-0000-0000-0001-000000000001','83000000-0000-0000-0000-000000000001','Production','Chennai',0,'public','open','employer_portal','approved',now()),
+('83000000-0000-0000-0003-000000000002','W4 Company B','Company B HR','9876543211','Pune','Operator',3,'12th',true,'in_progress','W4-B-001','83000000-0000-0000-0001-000000000002','83000000-0000-0000-0000-000000000002','Operations','Pune',0,'public','open','employer_portal','approved',now());
 insert into public.candidates(id,full_name,age,gender,mobile,whatsapp_number,current_location,district,state,highest_qualification,specialization,
   candidate_type,total_experience,interview_available,internal_notes,consent,status)
 values
