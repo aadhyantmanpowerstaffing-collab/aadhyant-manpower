@@ -23,7 +23,7 @@ test('Migration 042 is a narrow transactional Candidate Apply correction', () =>
   assert.doesNotMatch(migration042, /\balter table\b|\bcreate table\b|\bdrop table\b|\bcreate trigger\b/i);
   const later = fs.readdirSync(path.join(root, 'supabase', 'migrations'))
     .filter((name) => /^(?:043|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
-  assert.deepEqual(later, []);
+  assert.deepEqual(later, ['043_extend_company_vacancy_fields.sql']);
 });
 
 test('Migration 042 removes Candidate Apply ambiguity with its public signature intact', () => {

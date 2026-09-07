@@ -63,7 +63,9 @@ begin
         'get_company_portal_requirement','manage_company_portal_requirement','list_company_portal_applications',
         'get_company_portal_application','list_company_portal_interviews','list_company_portal_joinings')
       and p.prosecdef and exists(select 1 from unnest(p.proconfig) c where split_part(c,'=',1)='search_path'
-        and btrim(split_part(c,'=',2),'"')=''))<>14 then raise exception 'W4 function security configuration failed'; end if;
+      -- Migration 043 adds an authenticated-only, SECURITY DEFINER extended
+      -- Company vacancy overload while preserving this legacy wrapper.
+      and btrim(split_part(c,'=',2),'"')=''))<>15 then raise exception 'W4 function security configuration failed'; end if;
   if has_function_privilege('anon','public.get_company_portal_context()','EXECUTE')
      or has_function_privilege('authenticated','private.current_company_portal_id(boolean)','EXECUTE')
      or not has_function_privilege('authenticated','public.get_company_requirements()','EXECUTE')

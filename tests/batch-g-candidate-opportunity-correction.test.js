@@ -23,8 +23,11 @@ test('Migration 041 is a narrow transactional Candidate opportunity correction',
   assert.match(migration041, /create or replace function public\.list_candidate_job_opportunities\(/i);
   assert.doesNotMatch(migration041, /\balter table\b|\bcreate table\b|\bdrop table\b|\bcreate trigger\b/i);
   const later = fs.readdirSync(path.join(root, 'supabase', 'migrations'))
-    .filter((name) => /^(?:042|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
-  assert.deepEqual(later, ['042_fix_candidate_apply_ambiguity.sql']);
+    .filter((name) => /^(?:042|043|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
+  assert.deepEqual(later, [
+    '042_fix_candidate_apply_ambiguity.sql',
+    '043_extend_company_vacancy_fields.sql',
+  ]);
 });
 
 test('Migration 041 removes the Candidate identifier collision without changing the signature', () => {

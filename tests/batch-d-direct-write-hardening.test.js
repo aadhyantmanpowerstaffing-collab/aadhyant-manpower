@@ -24,6 +24,7 @@ test('migration 038 has the approved number, name, and transaction boundary', ()
     '040_fix_contractor_vacancy_submit_ambiguity.sql',
     '041_fix_candidate_opportunity_ambiguity.sql',
     '042_fix_candidate_apply_ambiguity.sql',
+    '043_extend_company_vacancy_fields.sql',
   ]);
 });
 

@@ -67,22 +67,22 @@ function Get-MigrationManifestHash {
     $rootPrefix = $RepositoryRoot.TrimEnd('\') + '\'
     $migrations = @(
         Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'supabase\migrations') -File -Filter '*.sql' |
-            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-9]|04[0-2])_' } |
+            Where-Object { $_.Name -match '^(00[7-9]|01[0-9]|02[0-9]|03[0-9]|04[0-3])_' } |
             Sort-Object Name
     )
-    $expectedNumbers = @(7..42)
+    $expectedNumbers = @(7..43)
     $actualNumbers = @($migrations | ForEach-Object { [int]$_.Name.Substring(0, 3) })
     if (@($actualNumbers | Group-Object | Where-Object Count -ne 1).Count -ne 0) {
-        Stop-Guard 'Duplicate migration number detected in the required 007-042 range.'
+        Stop-Guard 'Duplicate migration number detected in the required 007-043 range.'
     }
     if (@(Compare-Object $expectedNumbers $actualNumbers -SyncWindow 0).Count -ne 0) {
-        Stop-Guard 'Expected exactly one migration for each number 007-042.'
+        Stop-Guard 'Expected exactly one migration for each number 007-043.'
     }
     $files = @(
         Join-Path $RepositoryRoot 'supabase\schema.sql'
         $migrations | Select-Object -ExpandProperty FullName
     )
-    if ($files.Count -ne 37) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-042.' }
+    if ($files.Count -ne 38) { Stop-Guard 'Expected schema.sql plus exactly migrations 007-043.' }
 
     $manifestLines = foreach ($file in $files) {
         if (-not $file.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
@@ -121,7 +121,7 @@ function Invoke-GuardAssertionTests {
         $migrationRoot = Join-Path $fixtureRoot 'supabase\migrations'
         [void](New-Item -ItemType Directory -Path $migrationRoot -Force)
         [IO.File]::WriteAllText((Join-Path $fixtureRoot 'supabase\schema.sql'), 'schema')
-        foreach ($number in 7..42) {
+        foreach ($number in 7..43) {
             [IO.File]::WriteAllText((Join-Path $migrationRoot ("{0:D3}_fixture.sql" -f $number)), "migration-$number")
         }
 
@@ -129,18 +129,18 @@ function Invoke-GuardAssertionTests {
         $secondHash = Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         if ($firstHash -cne $secondHash) { throw 'Migration manifest hash is not deterministic.' }
 
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '043_future.sql'), 'future-migration')
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '044_future.sql'), 'future-migration')
         if ((Get-MigrationManifestHash -RepositoryRoot $fixtureRoot) -cne $firstHash) {
-            throw 'Migration 043 was not excluded from the approved manifest.'
+            throw 'Migration 044 was not excluded from the approved manifest.'
         }
 
-        [IO.File]::Delete((Join-Path $migrationRoot '042_fixture.sql'))
-        Assert-GuardRefusal -ExpectedMessage 'Expected exactly one migration for each number 007-042.' -Action {
+        [IO.File]::Delete((Join-Path $migrationRoot '043_fixture.sql'))
+        Assert-GuardRefusal -ExpectedMessage 'Expected exactly one migration for each number 007-043.' -Action {
             Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         }
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '042_fixture.sql'), 'migration-42')
-        [IO.File]::WriteAllText((Join-Path $migrationRoot '042_duplicate.sql'), 'duplicate-migration-42')
-        Assert-GuardRefusal -ExpectedMessage 'Duplicate migration number detected in the required 007-042 range.' -Action {
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '043_fixture.sql'), 'migration-43')
+        [IO.File]::WriteAllText((Join-Path $migrationRoot '043_duplicate.sql'), 'duplicate-migration-43')
+        Assert-GuardRefusal -ExpectedMessage 'Duplicate migration number detected in the required 007-043 range.' -Action {
             Get-MigrationManifestHash -RepositoryRoot $fixtureRoot
         }
 

@@ -25,10 +25,11 @@ test('Migration 040 is a narrow transactional replacement of the Contractor vaca
   assert.doesNotMatch(migration040, /\balter table\b|\bcreate table\b|\bdrop table\b/i);
   assert.match(migration040, /create or replace function public\.review_contractor_vacancy\(/i);
   const later = fs.readdirSync(path.join(root, 'supabase', 'migrations'))
-    .filter((name) => /^(?:041|042|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
+    .filter((name) => /^(?:041|042|043|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
   assert.deepEqual(later, [
     '041_fix_candidate_opportunity_ambiguity.sql',
     '042_fix_candidate_apply_ambiguity.sql',
+    '043_extend_company_vacancy_fields.sql',
   ]);
 });
 
