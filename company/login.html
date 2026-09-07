@@ -7,27 +7,37 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Employer Login | Aadhyant Manpower &amp; Staffing</title>
   <link rel="stylesheet" href="company.css">
+  <link rel="stylesheet" href="../assets/css/password-recovery.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous" defer></script>
   <script src="../config.js" defer></script>
   <script src="../supabase-client.js" defer></script>
+  <script src="../assets/js/password-recovery.js" defer></script>
   <script src="company.js" defer></script>
 </head>
-<body class="auth-page" data-company-page="login">
+<body class="auth-page" data-company-page="login" data-password-recovery-portal="company" data-password-recovery-min-length="8">
   <main class="auth-shell">
     <a class="company-brand light-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong></a>
     <section class="auth-card" aria-labelledby="company-login-title">
-      <p class="eyebrow">Secure Employer access</p>
-      <h1 id="company-login-title">Employer Login</h1>
-      <p>Sign in to check your approval status and access your Employer workspace.</p>
-      <div class="company-message" data-page-message role="status" aria-live="polite"></div>
-      <form data-login-form novalidate>
-        <div class="field"><label for="company-email">Work email</label><input id="company-email" name="email" type="email" autocomplete="username" required><span class="field-error" data-error-for="email"></span></div>
-        <div class="field"><label for="company-password">Password</label><input id="company-password" name="password" type="password" autocomplete="current-password" required><span class="field-error" data-error-for="password"></span></div>
-        <button class="company-button company-button-primary" type="submit">Sign In</button>
-      </form>
-      <button class="reset-link" type="button" data-reset-password>Forgot your password?</button>
-      <p class="auth-alternate">New to the Employer Portal? <a href="register.html">Create an Employer account</a></p>
-      <p class="auth-help">Account access is activated only after review by Aadhyant.</p>
+      <div data-recovery-login-content>
+        <p class="eyebrow">Secure Employer access</p>
+        <h1 id="company-login-title">Employer Login</h1>
+        <p>Sign in to check your approval status and access your Employer workspace.</p>
+        <div class="company-message" data-page-message role="status" aria-live="polite"></div>
+        <form data-login-form novalidate>
+          <div class="field"><label for="company-email">Work email</label><input id="company-email" name="email" type="email" autocomplete="username" required><span class="field-error" data-error-for="email"></span></div>
+          <div class="field"><label for="company-password">Password</label><input id="company-password" name="password" type="password" autocomplete="current-password" required><span class="field-error" data-error-for="password"></span></div>
+          <button class="company-button company-button-primary" type="submit">Sign In</button>
+        </form>
+        <button class="reset-link" type="button" data-password-recovery-request>Forgot your password?</button>
+        <p class="auth-alternate">New to the Employer Portal? <a href="register.html">Create an Employer account</a></p>
+        <p class="auth-help">Account access is activated only after review by Aadhyant.</p>
+      </div>
+      <section data-recovery-set-password hidden aria-labelledby="company-new-password-title">
+        <p class="eyebrow">Password recovery</p><h1 id="company-new-password-title">Set New Password</h1><p class="recovery-copy">Choose a new Employer Portal password.</p>
+        <form data-password-recovery-form novalidate><div class="field"><label for="company-recovery-password">New Password</label><input id="company-recovery-password" name="password" data-recovery-new-password type="password" autocomplete="new-password" required></div><div class="field"><label for="company-recovery-confirm">Confirm New Password</label><input id="company-recovery-confirm" name="confirmPassword" type="password" autocomplete="new-password" required></div><button class="company-button company-button-primary" type="submit">Update Password</button></form><div class="company-message recovery-message" data-page-message role="status" aria-live="polite"></div>
+      </section>
+      <section data-recovery-expired hidden aria-labelledby="company-recovery-expired-title"><p class="eyebrow">Password recovery</p><h1 id="company-recovery-expired-title">Reset link unavailable</h1><p>This password reset link has expired or was already used.</p><form data-password-recovery-request-form novalidate><div class="field"><label for="company-recovery-email">Work email</label><input id="company-recovery-email" name="email" type="email" autocomplete="email" required></div><button class="company-button company-button-primary" type="submit">Request New Reset Link</button></form><div class="company-message recovery-message" data-page-message role="status" aria-live="polite"></div><p class="recovery-actions"><a href="login.html">Return to Employer Login</a></p></section>
+      <section data-recovery-success hidden aria-labelledby="company-recovery-success-title"><p class="eyebrow">Password recovery</p><h1 id="company-recovery-success-title">Password updated</h1><p>Password updated successfully. You can now sign in with your new password.</p><p class="recovery-actions"><a class="company-button company-button-primary" href="login.html">Sign In</a></p></section>
     </section>
   </main>
 </body>

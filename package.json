@@ -6,7 +6,7 @@
   "scripts": {
     "build:production": "node scripts/build-production-artifact.js",
     "test:artifact": "node --test tests/production-artifact.test.js",
-    "test": "node --test tests/admin-product-ui.test.js tests/batch2-vacancy-workflow-ui.test.js tests/candidate-portal-ui.test.js tests/company-portal-ui.test.js tests/contractor-portal-ui.test.js tests/p0-remediation.test.js tests/production-artifact.test.js tests/public-website-ui.test.js tests/recruitment-operations-ui.test.js tests/staff-management-ui.test.js tests/whatsapp-campaigns-ui.test.js"
+    "test": "node --test tests/admin-product-ui.test.js tests/batch2-vacancy-workflow-ui.test.js tests/candidate-portal-ui.test.js tests/company-portal-ui.test.js tests/contractor-portal-ui.test.js tests/password-recovery-ui.test.js tests/p0-remediation.test.js tests/production-artifact.test.js tests/public-website-ui.test.js tests/recruitment-operations-ui.test.js tests/staff-management-ui.test.js tests/whatsapp-campaigns-ui.test.js"
   },
   "keywords": [],
   "author": "",
