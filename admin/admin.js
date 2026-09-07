@@ -574,6 +574,7 @@
     await window.aadhyantRecruitmentOperations?.initialize({ client, authorization });
     await window.aadhyantWhatsAppCampaigns?.initialize({ client, authorization });
     await window.aadhyantAdminProduct?.initialize({ client, authorization });
+    await window.aadhyantVacancyReview?.initialize({ client, authorization });
 
     const loadDashboard = async () => {
       const active=document.querySelector('[data-w3-tab][aria-selected="true"],[data-product-tab][aria-selected="true"],[data-tab][aria-selected="true"]');

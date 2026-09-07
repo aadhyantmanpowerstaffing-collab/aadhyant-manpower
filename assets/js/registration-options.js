@@ -20,7 +20,11 @@
       'Automotive', 'Engineering', 'FMCG', 'Manufacturing', 'Warehouse & Logistics', 'Industrial Operations',
       'Construction & Infrastructure', 'Healthcare', 'Hospitality', 'Retail & E-commerce',
       'IT & Business Services', 'Other'
-    ])
+    ]),
+    vacancyExperience: Object.freeze(['Both', 'Fresher', 'Experienced']),
+    vacancyGender: Object.freeze(['Any', 'Male', 'Female']),
+    vacancyShifts: Object.freeze(['General', 'Day', 'Night', 'Rotational', 'Other']),
+    vacancyFacilities: Object.freeze(['Not Applicable', 'Yes', 'No'])
   });
 
   // District data: Government of India, Ministry of Panchayati Raj, Local Government Directory

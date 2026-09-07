@@ -111,18 +111,24 @@ test('candidate picker searches through the projected W3 candidate RPC', () => {
   assert.doesNotMatch(source, /(?:client|supabase)\.from\s*\(/);
 });
 
-test('only open requirements and eligible candidates are actionable', () => {
-  assert.equal(moduleApi.isRequirementMatchable({ requirement_stage: 'open' }), true);
-  ['draft','closed','filled','cancelled','on_hold'].forEach((stage) => assert.equal(moduleApi.isRequirementMatchable({ requirement_stage: stage }), false));
+test('only approved public requirements with capacity and eligible candidates are actionable', () => {
+  const eligible={ normalized_review_status:'approved', requirement_stage:'open', requirement_visibility:'public', remaining_positions:1 };
+  assert.equal(moduleApi.isRequirementMatchable(eligible), true);
+  [
+    { normalized_review_status:'draft', requirement_stage:'open', requirement_visibility:'public', remaining_positions:1 },
+    { normalized_review_status:'approved', requirement_stage:'draft', requirement_visibility:'private', remaining_positions:1 },
+    { normalized_review_status:'approved', requirement_stage:'open', requirement_visibility:'private', remaining_positions:1 },
+    { normalized_review_status:'approved', requirement_stage:'open', requirement_visibility:'public', remaining_positions:0 }
+  ].forEach((requirement) => assert.equal(moduleApi.isRequirementMatchable(requirement), false));
   assert.equal(moduleApi.isCandidateMatchable({ status: 'new' }), true);
   assert.equal(moduleApi.isCandidateMatchable({ status: 'active' }), true);
   assert.equal(moduleApi.isCandidateMatchable({ status: 'inactive' }), false);
-  assert.equal(moduleApi.canMatchRequirement({ requirement_stage: 'open' }, { application_mutation: true }), true);
-  assert.equal(moduleApi.canMatchRequirement({ requirement_stage: 'open' }, { application_mutation: false }), false);
+  assert.equal(moduleApi.canMatchRequirement(eligible, { application_mutation: true }), true);
+  assert.equal(moduleApi.canMatchRequirement(eligible, { application_mutation: false }), false);
   assert.equal(moduleApi.canMatchRequirement({ requirement_stage: 'draft' }, { application_mutation: true }), false);
   assert.match(source, /canMatchRequirement\(row,permissions\)/);
 });
-test('company-origin draft Job Leads expose a server-authorized publish review action',()=>{assert.match(source,/Approve & Publish/);assert.match(source,/set_company_requirement_stage/);assert.match(source,/p_requirement_stage:'open',p_requirement_visibility:'public'/);assert.match(source,/requirement_stage==='draft'.*requirement_visibility==='private'/);assert.match(source,/!requirement\.contractor_origin/);assert.match(source,/window\.confirm/);assert.match(source,/job-lead-changed/);assert.match(source,/dispatchEvent\(new Event\('submit'/);});
+test('Job Leads do not wire their legacy publisher into a user-facing action',()=>{assert.doesNotMatch(source,/renderJobLeadRpcDetailWithPublish\(lead\.requirement_id\)/);assert.match(source,/unified Batch 2 review queue/);assert.match(source,/normalized_review_status === 'approved'/);assert.match(source,/requirement_visibility === 'public'/);});
 
 test('matching confirmation uses the existing application RPC and refreshes the requirement list', () => {
   assert.match(source, /Confirm Match/);
