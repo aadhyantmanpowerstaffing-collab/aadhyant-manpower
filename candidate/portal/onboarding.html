@@ -11,7 +11,7 @@
     <section class="auth-card registration-card">
       <p class="eyebrow">Candidate Portal · Step 2 of 2</p>
       <h1 data-onboarding-content>Complete Your Core Profile</h1>
-      <p class="registration-steps" data-onboarding-content>Personal Details · Location · Education · Experience · Review</p>
+      <p class="registration-steps" data-onboarding-content>Personal Details · Location · Education · Experience · Resume/CV · Review</p>
       <p class="sensitive-note" data-onboarding-content>Mobile and Aadhaar are required. Aadhaar is retained only as a uniqueness fingerprint and masked last four digits; it is never shown in full after save.</p>
       <section class="auth-callback-notice" data-auth-callback-error hidden aria-labelledby="confirmation-link-heading">
         <h2 id="confirmation-link-heading">Confirmation link unavailable</h2>
@@ -19,6 +19,15 @@
         <div class="auth-callback-actions">
           <a class="button" data-auth-sign-in href="login.html">Sign In</a>
           <a data-auth-return-login href="login.html">Return to Candidate Login</a>
+        </div>
+      </section>
+      <section class="auth-callback-notice" data-existing-candidate-account hidden aria-labelledby="existing-candidate-account-heading">
+        <h2 id="existing-candidate-account-heading">Your Candidate account already exists.</h2>
+        <p data-existing-candidate-message>Use your existing account to continue securely.</p>
+        <div class="auth-callback-actions">
+          <a class="button" data-existing-candidate-primary href="index.html">Go to Candidate Portal</a>
+          <a data-existing-candidate-login href="login.html">Sign In</a>
+          <a data-existing-candidate-recovery href="login.html">Forgot Password</a>
         </div>
       </section>
       <form data-onboarding-form data-onboarding-content class="structured-profile-form">
@@ -59,6 +68,15 @@
             <label class="field">Total Experience <span aria-hidden="true">*</span><select name="total_experience" data-option-set="experienceDurations" data-placeholder="Select duration"></select></label>
             <label class="field" data-experience-other hidden>Specify Experience <span aria-hidden="true">*</span><input name="total_experience_other" maxlength="80"></label>
             <label class="field">Most Recent Role <span aria-hidden="true">*</span><input name="previous_job_role" maxlength="160"></label>
+          </div>
+        </fieldset>
+        <fieldset class="profile-section">
+          <legend>Resume / CV</legend>
+          <div class="form-grid">
+            <label class="field field-wide">Resume / CV <span aria-hidden="true">*</span><input name="resume" data-resume-input type="file" accept=".pdf,application/pdf" aria-describedby="resume-guidance resume-file-name" required></label>
+            <p class="field-help field-wide" id="resume-guidance">Required to complete Candidate registration. Upload a PDF up to 10 MB.</p>
+            <p class="field-help field-wide" id="resume-file-name" data-resume-file-name aria-live="polite">No file selected.</p>
+            <p class="field-help field-wide" data-resume-upload-state aria-live="polite"></p>
           </div>
         </fieldset>
         <fieldset class="profile-section">

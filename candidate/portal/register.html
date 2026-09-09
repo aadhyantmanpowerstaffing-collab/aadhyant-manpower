@@ -17,6 +17,15 @@
         <label class="field field-wide">Password <span aria-hidden="true">*</span><input name="password" type="password" minlength="10" autocomplete="new-password" required></label>
         <button class="button" type="submit">Continue to Profile</button>
       </form>
+      <section class="auth-callback-notice" data-existing-candidate-account hidden aria-labelledby="existing-candidate-account-heading">
+        <h2 id="existing-candidate-account-heading">Your Candidate account already exists.</h2>
+        <p data-existing-candidate-message>Use your existing account to continue securely.</p>
+        <div class="auth-callback-actions">
+          <a class="button" data-existing-candidate-primary href="index.html">Go to Candidate Portal</a>
+          <a data-existing-candidate-login href="login.html">Sign In</a>
+          <a data-existing-candidate-recovery href="login.html">Forgot Password</a>
+        </div>
+      </section>
       <p data-message class="message" role="status"></p>
       <a href="login.html">Return to login</a>
     </section>
