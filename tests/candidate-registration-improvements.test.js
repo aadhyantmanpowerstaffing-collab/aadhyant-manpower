@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const vm=require('node:vm');
 
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,...file),'utf8');
@@ -12,6 +13,7 @@ const candidate=read(['candidate','portal','candidate.js']);
 const migration=read(['supabase','migrations','023_candidate_portal_foundation.sql']);
 const apply=read(['supabase','migrations','042_fix_candidate_apply_ambiguity.sql']);
 const login=read(['candidate','portal','login.html']);
+const mapper=(name,next)=>vm.runInNewContext(`(${candidate.slice(candidate.indexOf(`function ${name}`),candidate.indexOf(next,candidate.indexOf(`function ${name}`)))})`);
 
 test('registration collects a required canonical Resume/CV before profile submission',()=>{
   assert.match(onboarding,/Personal Details · Location · Education · Experience · Resume\/CV · Review/);
@@ -72,6 +74,26 @@ test('safe actionable registration and document errors do not render raw backend
   assert.doesNotMatch(candidate,/message\(\s*(?:error|_error)\?\.message/);
   assert.doesNotMatch(candidate,/message\(\s*(?:error|_error)\.message/);
   assert.doesNotMatch(candidate,/event\.reason\?\.message/);
+});
+
+test('Step 1 maps Auth signup failures without Candidate-profile wording or raw Auth details',()=>{
+  const signupError=mapper('signupError','function registrationError');
+  assert.equal(signupError({status:429,code:'over_email_send_rate_limit',message:'raw upstream rate limit detail'}),'Too many attempts. Please wait and try again.');
+  assert.equal(signupError({code:'email_address_invalid',message:'raw email validation detail'}),'Enter a valid email address.');
+  assert.equal(signupError({code:'weak_password',message:'raw password policy detail'}),'Choose a stronger password of at least 10 characters.');
+  assert.equal(signupError({message:'Failed to fetch internal endpoint'}),'We could not create your account securely. Please try again.');
+  assert.equal(signupError({code:'unexpected_failure',message:'raw Supabase internal detail'}),'Your account could not be created. Please try again or contact Aadhyant.');
+  assert.doesNotMatch(signupError({message:'raw Supabase internal detail'}),/Candidate profile|raw Supabase/i);
+  assert.match(candidate,/catch\(error\)\{message\(signupError\(error\),'error'\)\}/);
+  assert.match(candidate,/if\(!client\?\.auth\?\.signUp\)\{message\('We could not create your account securely\. Please try again\.'/);
+});
+
+test('Step 1 preserves privacy-safe signup success while Step 2 retains its profile mapper',()=>{
+  assert.match(candidate,/data\.session\?'Account created\. Continue to required profile setup\.'\s*:\s*'Check your email to confirm the account, then sign in to complete your profile\.'/);
+  assert.match(candidate,/emailRedirectTo:new URL\(withRequirement\('onboarding\.html'\),location\.href\)\.href/);
+  assert.match(candidate,/function registrationError\(error\)/);
+  assert.match(candidate,/else message\(registrationError\(error\),'error'\)/);
+  assert.doesNotMatch(candidate,/auth\.users|check.*email.*exist|email.*exist.*check/i);
 });
 
 test('Documents remains the canonical Resume surface and Apply still requires an active Resume',()=>{
