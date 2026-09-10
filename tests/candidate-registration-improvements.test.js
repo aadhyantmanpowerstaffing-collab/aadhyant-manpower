@@ -88,8 +88,15 @@ test('Step 1 maps Auth signup failures without Candidate-profile wording or raw 
   assert.match(candidate,/if\(!client\?\.auth\?\.signUp\)\{message\('We could not create your account securely\. Please try again\.'/);
 });
 
-test('Step 1 preserves privacy-safe signup success while Step 2 retains its profile mapper',()=>{
-  assert.match(candidate,/data\.session\?'Account created\. Continue to required profile setup\.'\s*:\s*'Check your email to confirm the account, then sign in to complete your profile\.'/);
+test('Step 1 uses identical neutral session-null signup wording and persistent account actions',()=>{
+  const neutral='Check your email for the next step. If you already have an account, sign in instead.';
+  assert.match(candidate,new RegExp(`data\\.session\\?'Account created\\. Continue to required profile setup\\.'\\s*:\\s*'${neutral.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}'`));
+  assert.equal((candidate.match(new RegExp(neutral.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length,1);
+  assert.doesNotMatch(candidate,/Check your email to confirm the account, then sign in to complete your profile\./);
+  assert.match(registration,/data-registration-account-actions/);
+  assert.match(registration,/Already registered\?\s*<a href="login\.html">Sign In<\/a>/);
+  assert.match(registration,/<a href="login\.html">Forgot Password<\/a>/);
+  assert.doesNotMatch(registration,/<[^>]+data-registration-account-actions[^>]*hidden/);
   assert.match(candidate,/emailRedirectTo:new URL\(withRequirement\('onboarding\.html'\),location\.href\)\.href/);
   assert.match(candidate,/function registrationError\(error\)/);
   assert.match(candidate,/else message\(registrationError\(error\),'error'\)/);
