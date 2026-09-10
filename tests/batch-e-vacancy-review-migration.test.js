@@ -18,13 +18,14 @@ test('Migration 039 is the next migration and has a transactional checkpoint', (
   assert.match(checkpoint, /\\set ON_ERROR_STOP on[\s\S]*?\bbegin;/);
   assert.match(checkpoint, /\brollback;\s*$/);
   const later = fs.readdirSync(path.join(root, 'supabase', 'migrations')).filter((name) => /^(?:04\d|0[5-9]\d|[1-9]\d{2,})_.*\.sql$/i.test(name));
-  // 039 remains immutable; the reviewed follow-ups only correct its
-  // Contractor and Candidate Portal RPC implementations.
+  // 039 remains immutable; reviewed follow-ups correct its Contractor/Candidate
+  // Portal implementations and add the separate compensation/lifecycle contract.
   assert.deepEqual(later, [
     '040_fix_contractor_vacancy_submit_ambiguity.sql',
     '041_fix_candidate_opportunity_ambiguity.sql',
     '042_fix_candidate_apply_ambiguity.sql',
     '043_extend_company_vacancy_fields.sql',
+    '044_vacancy_compensation_accommodation_lifecycle.sql',
   ]);
 });
 

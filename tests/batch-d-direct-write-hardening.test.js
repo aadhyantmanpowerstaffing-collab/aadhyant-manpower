@@ -17,14 +17,15 @@ test('migration 038 has the approved number, name, and transaction boundary', ()
   assert.match(migration, /commit;\s*$/i);
   const later = fs.readdirSync(path.join(root, 'supabase', 'migrations'))
     .filter((name) => /^(?:039|0[4-9]\d|[1-9]\d{2,})_/.test(name));
-  // 038 remains frozen; the reviewed Batch 2 migration and its narrowly scoped
-  // Contractor/Candidate Portal RPC corrections are the only later migrations.
+  // 038 remains frozen; later reviewed vacancy, Candidate Portal, and
+  // compensation/accommodation work is additive only.
   assert.deepEqual(later, [
     '039_unified_vacancy_review_workflow.sql',
     '040_fix_contractor_vacancy_submit_ambiguity.sql',
     '041_fix_candidate_opportunity_ambiguity.sql',
     '042_fix_candidate_apply_ambiguity.sql',
     '043_extend_company_vacancy_fields.sql',
+    '044_vacancy_compensation_accommodation_lifecycle.sql',
   ]);
 });
 
