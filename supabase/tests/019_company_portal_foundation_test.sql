@@ -63,9 +63,14 @@ begin
         'get_company_portal_requirement','manage_company_portal_requirement','list_company_portal_applications',
         'get_company_portal_application','list_company_portal_interviews','list_company_portal_joinings')
       and p.prosecdef and exists(select 1 from unnest(p.proconfig) c where split_part(c,'=',1)='search_path'
-      -- Migration 043 adds an authenticated-only, SECURITY DEFINER extended
-      -- Company vacancy overload while preserving this legacy wrapper.
-      and btrim(split_part(c,'=',2),'"')=''))<>15 then raise exception 'W4 function security configuration failed'; end if;
+      -- M043 adds one extended Company overload and M044 adds the approved
+      -- compensation/accommodation wrapper, both retaining the same boundary.
+      and btrim(split_part(c,'=',2),chr(34))=''))<>16 then raise exception 'W4 function security configuration failed'; end if;
+  if to_regprocedure('public.manage_company_portal_requirement(text,uuid,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,timestamp with time zone,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)') is null
+     or not has_function_privilege('authenticated','public.manage_company_portal_requirement(text,uuid,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,timestamp with time zone,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)','EXECUTE')
+     or has_function_privilege('anon','public.manage_company_portal_requirement(text,uuid,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,timestamp with time zone,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)','EXECUTE') then
+    raise exception 'M044 Company compensation overload security boundary failed';
+  end if;
   if has_function_privilege('anon','public.get_company_portal_context()','EXECUTE')
      or has_function_privilege('authenticated','private.current_company_portal_id(boolean)','EXECUTE')
      or not has_function_privilege('authenticated','public.get_company_requirements()','EXECUTE')

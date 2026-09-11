@@ -46,8 +46,16 @@ do $$ begin
     'get_contractor_portal_context','get_contractor_dashboard_metrics','get_contractor_portal_profile','update_contractor_portal_profile',
     'list_contractor_portal_vacancies','get_contractor_portal_vacancy','manage_contractor_portal_vacancy','list_contractor_portal_applications',
     'get_contractor_portal_application','list_contractor_portal_interviews','list_contractor_portal_joinings','list_contractor_vacancy_reviews','review_contractor_vacancy')
-    and p.prosecdef and exists(select 1 from unnest(p.proconfig)c where split_part(c,'=',1)='search_path' and btrim(split_part(c,'=',2),'"')=''))<>16 then
+    -- M044 adds the extended compensation/accommodation overload, retaining the
+    -- same SECURITY DEFINER/search_path and authenticated-only boundary.
+    and p.prosecdef and exists(select 1 from unnest(p.proconfig)c where split_part(c,'=',1)='search_path' and btrim(split_part(c,'=',2),'"')=''))<>17 then
     raise exception 'W5 SECURITY DEFINER/search_path posture failed'; end if;
+  if to_regprocedure('public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)') is null
+     or not has_function_privilege('authenticated','public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)','EXECUTE')
+     or has_function_privilege('anon','public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)','EXECUTE')
+     or exists(select 1 from pg_proc p where p.oid='public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)'::regprocedure and (not p.prosecdef or not exists(select 1 from unnest(p.proconfig)c where split_part(c,'=',1)='search_path' and btrim(split_part(c,'=',2),'"')=''))) then
+    raise exception 'M044 Contractor compensation overload security boundary failed';
+  end if;
   if has_function_privilege('anon','public.get_contractor_portal_context()','execute')
     or has_function_privilege('authenticated','private.current_contractor_portal_id(boolean)','execute') then raise exception 'W5 execute boundary failed'; end if;
 end $$;
