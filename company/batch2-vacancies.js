@@ -4,8 +4,10 @@
 
   const client = window.aadhyantSupabase?.client;
   const optionApi = window.AadhyantRegistrationOptions;
-  const fields = ['department','jobRole','jobLocation','requiredHeadcount','qualification','itiTrade','experienceRequirement','genderPreference','ageMin','ageMax','salaryMin','salaryMax','shiftDetails','workingHours','overtimeDetails','canteen','transport','accommodation','interviewLocation','interviewDate','expectedJoiningDate','additionalNotes'];
+  const fields = ['department','jobRole','jobLocation','requiredHeadcount','qualification','itiTrade','experienceRequirement','genderPreference','ageMin','ageMax','salaryMin','salaryMax','shiftDetails','workingHours','overtimeDetails','canteen','transport','interviewLocation','interviewDate','expectedJoiningDate','additionalNotes'];
   const column = {department:'department',jobRole:'job_role',jobLocation:'job_location',requiredHeadcount:'required_headcount',qualification:'qualification',itiTrade:'iti_trade',experienceRequirement:'experience_requirement',genderPreference:'gender_preference',ageMin:'age_min',ageMax:'age_max',salaryMin:'salary_min',salaryMax:'salary_max',shiftDetails:'shift_details',workingHours:'working_hours',overtimeDetails:'overtime_details',canteen:'canteen',transport:'transport',accommodation:'accommodation',interviewLocation:'interview_location',interviewDate:'interview_date',expectedJoiningDate:'expected_joining_date',additionalNotes:'additional_notes'};
+  const compensation = window.AadhyantVacancyCompensation;
+  const formatCompensationCtc = (row) => compensation?.hasStructuredSalary(row) ? `CTC ${compensation.money(row.ctc)}` : compensation?.legacySalary(row) || 'Not specified';
   const first = (value) => Array.isArray(value) ? value[0] : value;
   const display = (value, fallback = '—') => value === null || value === undefined || value === '' ? fallback : String(value);
   const call = async (name, args = {}) => { const { data, error } = await client.rpc(name, args); if (error) throw error; return data; };
@@ -45,12 +47,13 @@
     const params = () => {
       const value = (name) => String(form.elements[name].value || '').trim();
       const numeric = (name) => value(name) === '' ? null : Number(value(name));
-      return { p_department:value('department'),p_job_role:value('jobRole'),p_job_location:value('jobLocation'),p_required_headcount:numeric('requiredHeadcount'),p_qualification:value('qualification')||null,p_iti_trade:value('itiTrade')||null,p_experience_requirement:value('experienceRequirement')||'Both',p_gender_preference:value('genderPreference')||'Any',p_age_min:numeric('ageMin'),p_age_max:numeric('ageMax'),p_salary_min:numeric('salaryMin'),p_salary_max:numeric('salaryMax'),p_shift_details:value('shiftDetails')||null,p_working_hours:value('workingHours')||null,p_overtime_details:value('overtimeDetails')||null,p_canteen:value('canteen')||'Not Applicable',p_transport:value('transport')||'Not Applicable',p_accommodation:value('accommodation')||'Not Applicable',p_interview_location:value('interviewLocation')||null,p_interview_date:value('interviewDate') ? new Date(value('interviewDate')).toISOString() : null,p_expected_joining_date:value('expectedJoiningDate')||null,p_additional_notes:value('additionalNotes')||null };
+      return { p_department:value('department'),p_job_role:value('jobRole'),p_job_location:value('jobLocation'),p_required_headcount:numeric('requiredHeadcount'),p_qualification:value('qualification')||null,p_iti_trade:value('itiTrade')||null,p_experience_requirement:value('experienceRequirement')||'Both',p_gender_preference:value('genderPreference')||'Any',p_age_min:numeric('ageMin'),p_age_max:numeric('ageMax'),p_salary_min:numeric('salaryMin'),p_salary_max:numeric('salaryMax'),p_shift_details:value('shiftDetails')||null,p_working_hours:value('workingHours')||null,p_overtime_details:value('overtimeDetails')||null,p_canteen:value('canteen')||'Not Applicable',p_transport:value('transport')||'Not Applicable',p_accommodation:null,p_interview_location:value('interviewLocation')||null,p_interview_date:value('interviewDate') ? new Date(value('interviewDate')).toISOString() : null,p_expected_joining_date:value('expectedJoiningDate')||null,p_additional_notes:value('additionalNotes')||null,...(compensation?.rpcParams(form) || {}) };
     };
     const valid = () => {
       const required = ['department','jobRole','jobLocation'].every((name) => form.elements[name].value.trim());
       const openings = Number(form.elements.requiredHeadcount.value);
       if (!required || !Number.isInteger(openings) || openings < 1) { message('Department, role, location, and a valid number of openings are required.','error'); return false; }
+      const compensationError = compensation?.validate(form); if (compensationError) { message(compensationError,'error'); return false; }
       return true;
     };
     const setEditable = () => {
@@ -59,7 +62,12 @@
       form.querySelector('[data-save-requirement]').hidden = !editable;
       form.querySelector('[data-submit-requirement]').hidden = !editable;
       form.querySelector('[data-submit-requirement]').textContent = current?.review_status === 'correction_required' ? 'Edit & Resubmit' : 'Submit Vacancy';
-      form.querySelector('[data-close-requirement]').hidden = !context.can_manage_requirements || !current || ['closed','rejected'].includes(current.review_status);
+      ['[data-delete-requirement]','[data-withdraw-requirement]','[data-close-requirement]'].forEach((selector) => { form.querySelector(selector).hidden = true; });
+      if (!context.can_manage_requirements || !current) return;
+      const state = statusFor(current);
+      if (state === 'Draft') form.querySelector('[data-delete-requirement]').hidden = false;
+      if (state === 'Pending Review') form.querySelector('[data-withdraw-requirement]').hidden = false;
+      if (state === 'Published / Open') form.querySelector('[data-close-requirement]').hidden = false;
     };
     const load = async () => {
       const filters = new FormData(document.querySelector('[data-requirement-filters]'));
@@ -67,7 +75,7 @@
       body.replaceChildren();empty.hidden = Boolean(rows.length);
       rows.forEach((row) => {
         const tr = document.createElement('tr');
-        [ `${row.requirement_code} · ${row.job_role}`, display(row.job_location), row.required_headcount, formatCtc(row), statusFor(row), row.application_count || 0, row.interview_count || 0, row.joined_count || 0 ].forEach((value) => { const cell = document.createElement('td');cell.textContent = display(value);tr.append(cell); });
+        [ `${row.requirement_code} · ${row.job_role}`, display(row.job_location), row.required_headcount, formatCompensationCtc(row), statusFor(row), row.application_count || 0, row.interview_count || 0, row.joined_count || 0 ].forEach((value) => { const cell = document.createElement('td');cell.textContent = display(value);tr.append(cell); });
         const action = document.createElement('td');const view = document.createElement('button');view.className = 'table-action';view.type = 'button';view.textContent = 'View details';view.onclick = () => open(row);action.append(view);tr.append(action);body.append(tr);
       });
     };
@@ -77,6 +85,7 @@
       document.querySelector('[data-requirement-dialog-title]').textContent = row ? 'Vacancy Details' : 'Create Vacancy';
       document.querySelector('[data-requirement-code]').textContent = current ? `${current.requirement_code} · ${statusFor(current)}` : '';
       if (current) fields.forEach((name) => { const value = current[column[name]] ?? '';const control = form.elements[name];if (!control) return;if (control.tagName === 'SELECT') optionApi?.setValue(control,value);else control.value = name === 'interviewDate' ? dateInput(value,true) : name === 'expectedJoiningDate' ? dateInput(value) : value; });
+      compensation?.hydrate(form,current || {});
       const feedback = current?.review_feedback ? `${statusFor(current)}: ${current.review_feedback}` : (current ? `Status: ${statusFor(current)}` : '');detailMessage(feedback);
       const pipeline = current?.pipeline || {};document.querySelector('[data-requirement-pipeline]').textContent = current ? `Applications ${pipeline.applications || 0} · Screening ${pipeline.screening || 0} · Shortlisted ${pipeline.shortlisted || 0} · Interviews ${pipeline.interviews || 0} · Selected ${pipeline.selected || 0} · Joined ${pipeline.joined || 0}` : '';
       setEditable();dialog.showModal();
@@ -90,11 +99,21 @@
       else { await call('manage_company_portal_requirement',{...params(),p_action:'update',p_requirement_id:id});await call('manage_company_portal_requirement',{p_action:current?.review_status === 'correction_required' ? 'resubmit' : 'submit',p_requirement_id:id}); }
       dialog.close();await load();message('Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.','success');
     };
+    compensation?.wireForm(form);
+    const lifecycle = async (rpc, confirmation, success) => {
+      if (!current || !window.confirm(confirmation)) return;
+      form.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+      try { await call(rpc,{p_requirement_id:form.elements.requirementId.value});dialog.close();await load();message(success,'success'); }
+      catch (_) { message('This vacancy action could not be completed. Its state or recruitment history may have changed. Refresh and try again.','error'); }
+      finally { form.querySelectorAll('button').forEach((button) => { button.disabled = false; }); }
+    };
     document.querySelector('[data-new-requirement]').onclick = () => open();
     document.querySelector('[data-requirement-filters]').onsubmit = (event) => { event.preventDefault();load().catch(() => message('Vacancies could not be loaded.','error')); };
     form.onsubmit = async (event) => { event.preventDefault();try { await save(); } catch (_) { message('The vacancy could not be saved. No changes were made.','error'); } };
     form.querySelector('[data-submit-requirement]').onclick = async () => { try { await submit(); } catch (_) { message('The vacancy could not be submitted. No changes were made.','error'); } };
-    form.querySelector('[data-close-requirement]').onclick = async () => { try { await call('manage_company_portal_requirement',{p_action:'close',p_requirement_id:form.elements.requirementId.value});dialog.close();await load();message('Vacancy closed. Recruitment history remains available.','success'); } catch (_) { message('The vacancy could not be closed.','error'); } };
+    form.querySelector('[data-delete-requirement]').onclick = () => lifecycle('delete_company_portal_draft_vacancy','Delete this draft vacancy? This action cannot be undone.','Draft vacancy deleted.');
+    form.querySelector('[data-withdraw-requirement]').onclick = () => lifecycle('withdraw_company_portal_vacancy','Withdraw this vacancy from review?','Vacancy withdrawn from review.');
+    form.querySelector('[data-close-requirement]').onclick = () => lifecycle('close_company_portal_open_vacancy','Close this vacancy? Existing recruitment history will remain available.','Vacancy closed. Recruitment history remains available.');
     dialog.querySelectorAll('[data-close-dialog]').forEach((button) => { button.onclick = () => dialog.close(); });
     await load();
   }
