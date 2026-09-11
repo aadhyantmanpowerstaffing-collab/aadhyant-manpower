@@ -43,11 +43,20 @@ values('89700000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000
 insert into public.admin_users(user_id) values('89700000-0000-0000-0000-000000000001');
 
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,
-  qualification,iti_trade,experience_requirement,consent,status,requirement_code,job_location,filled_positions,requirement_visibility,requirement_stage) values
-('89700000-0000-0000-0001-000000000001','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-OPEN-1','Chennai',0,'private','open'),
-('89700000-0000-0000-0001-000000000002','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-OPEN-2','Chennai',0,'private','open'),
-('89700000-0000-0000-0001-000000000003','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'closed','REQ-W7C-CLOSED','Chennai',0,'private','closed'),
-('89700000-0000-0000-0001-000000000004','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-QUEUED','Chennai',0,'private','open');
+  qualification,iti_trade,experience_requirement,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage) values
+('89700000-0000-0000-0001-000000000001','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-OPEN-1','Chennai',0,'admin_manual','approved','public','open'),
+('89700000-0000-0000-0001-000000000002','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-OPEN-2','Chennai',0,'admin_manual','approved','public','open'),
+('89700000-0000-0000-0001-000000000003','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-CLOSED','Chennai',0,'admin_manual','approved','public','open'),
+('89700000-0000-0000-0001-000000000004','W7C Employer','Contact','9876700000','Chennai','Fitter',4,'ITI','Fitter','Fresher',true,'in_progress','REQ-W7C-QUEUED','Chennai',0,'admin_manual','approved','public','open');
+
+do $$
+begin
+  if (select count(*) from public.employer_requirements r
+      where r.id in ('89700000-0000-0000-0001-000000000001','89700000-0000-0000-0001-000000000002')
+        and private.vacancy_is_application_eligible(r.id))<>2 then
+    raise exception 'W7C application fixtures must be approved public vacancies with capacity';
+  end if;
+end $$;
 
 insert into public.candidates(id,full_name,age,gender,mobile,current_location,district,state,highest_qualification,specialization,
   candidate_type,interview_available,consent,status,profile_status,profile_completion_status,current_employment_status,availability_status) values
@@ -77,6 +86,18 @@ insert into public.whatsapp_campaigns(id,operation_key,requirement_id,campaign_n
 ('89700000-0000-0000-0006-000000000002','89700000-0000-0000-0010-000000000002','89700000-0000-0000-0001-000000000002','W7C Existing','queued','vacancy_campaign','marketing','vacancy_interest','en','1','{}','89700000-0000-0000-0000-000000000001','89700000-0000-0000-0000-000000000001',now(),now()),
 ('89700000-0000-0000-0006-000000000003','89700000-0000-0000-0010-000000000003','89700000-0000-0000-0001-000000000003','W7C Closed','queued','vacancy_campaign','marketing','vacancy_interest','en','1','{}','89700000-0000-0000-0000-000000000001','89700000-0000-0000-0000-000000000001',now(),now()),
 ('89700000-0000-0000-0006-000000000004','89700000-0000-0000-0010-000000000004','89700000-0000-0000-0001-000000000004','W7C Undelivered','queued','vacancy_campaign','marketing','vacancy_interest','en','1','{}','89700000-0000-0000-0000-000000000001','89700000-0000-0000-0000-000000000001',now(),now());
+
+-- The closed-requirement reply must retain a previously deliverable campaign
+-- context, then be rejected because the vacancy closed before the reply.
+update public.employer_requirements set review_status='closed',requirement_stage='closed',requirement_visibility='private',status='closed',closed_at=now()
+where id='89700000-0000-0000-0001-000000000003';
+
+do $$
+begin
+  if (select private.vacancy_is_application_eligible('89700000-0000-0000-0001-000000000003')) then
+    raise exception 'W7C closed fixture remained application eligible';
+  end if;
+end $$;
 
 set local role service_role;
 select set_config('w7c.outbound1',public.enqueue_whatsapp_outbound_message(current_setting('w7c.contact1')::uuid,
