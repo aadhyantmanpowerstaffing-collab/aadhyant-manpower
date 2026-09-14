@@ -30,6 +30,7 @@ test('Migration 039 is the next migration and has a transactional checkpoint', (
     '046_fix_owner_vacancy_projection_ambiguity.sql',
     '047_fix_candidate_opportunity_projection_ambiguity.sql',
     '048_fix_vacancy_submit_managed_record_shape.sql',
+    '049_contractor_submission_idempotency_and_joining_date.sql',
   ]);
 });
 

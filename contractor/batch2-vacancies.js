@@ -10,6 +10,14 @@
   const numericFields = new Set(['requiredHeadcount', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax']);
   const call = async (name, args = {}) => { const { data, error } = await client.rpc(name, args); if (error) throw error; return data; };
   const first = (value) => Array.isArray(value) ? value[0] : value;
+  const indiaToday = () => {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    return `${parts.find((part) => part.type === 'year').value}-${parts.find((part) => part.type === 'month').value}-${parts.find((part) => part.type === 'day').value}`;
+  };
+  const newSubmissionKey = () => {
+    if (!window.crypto?.randomUUID) throw new Error('Secure submission identifiers are unavailable. Refresh and try again.');
+    return window.crypto.randomUUID();
+  };
   const statusFor = (row = {}) => {
     const review = row.normalized_review_status || row.submission_status;
     if (['closed', 'cancelled'].includes(row.requirement_stage) || review === 'cancelled') return 'Closed';
@@ -37,17 +45,38 @@
     const dialog = document.querySelector('[data-vacancy-dialog]');
     const form = document.querySelector('[data-vacancy-form]');
     const pageMessage = document.querySelector('[data-page-message]');
+    const formMessage = document.querySelector('[data-vacancy-form-message]');
     let current = null;
-    const message = (text, type = '') => { pageMessage.textContent = text; pageMessage.className = `message ${type}`; };
+    let submitInFlight = false;
+    let submissionKey = null;
+    let originalExpectedJoiningDate = '';
+    const message = (text, type = '', inForm = false) => {
+      pageMessage.textContent = text; pageMessage.className = `message ${type}`;
+      if (formMessage) { formMessage.textContent = inForm ? text : ''; formMessage.hidden = !inForm; }
+    };
+    const setSubmitInFlight = (value) => {
+      submitInFlight = value;
+      form.querySelectorAll('[data-submit],[data-save]').forEach((button) => { button.disabled = value; });
+    };
     const valid = () => {
       if (!['clientName', 'jobRole', 'jobLocation'].every((name) => form.elements[name].value.trim()) || Number(form.elements.requiredHeadcount.value) <= 0) {
-        message('Client/worksite, role, location, and openings are required.', 'error');
+        message('Client/worksite, role, location, and openings are required.', 'error', true);
         return false;
       }
       const error = compensation?.validate(form);
-      if (!error) return true;
-      message(error, 'error');
-      return false;
+      if (error) { message(error, 'error', true); return false; }
+      const minimum = form.elements.salaryMin.value === '' ? null : Number(form.elements.salaryMin.value);
+      const maximum = form.elements.salaryMax.value === '' ? null : Number(form.elements.salaryMax.value);
+      if (minimum !== null && maximum !== null && minimum > maximum) {
+        message('Minimum CTC cannot exceed Maximum CTC.', 'error', true); return false;
+      }
+      const expectedJoining = form.elements.expectedJoiningDate.value;
+      const editingHistoricalDate = Boolean(form.elements.requirementId.value) && expectedJoining === originalExpectedJoiningDate;
+      if (expectedJoining && expectedJoining < indiaToday() && !editingHistoricalDate) {
+        message('Expected joining date must be today or a future date.', 'error', true); return false;
+      }
+      if (!form.checkValidity()) { form.reportValidity(); return false; }
+      return true;
     };
     const params = () => {
       const data = new FormData(form), result = {};
@@ -77,13 +106,18 @@
     };
     const open = async (row = null) => {
       form.reset(); options?.initialize(form);
+      submissionKey = null;
+      setSubmitInFlight(false);
+      if (formMessage) { formMessage.textContent = ''; formMessage.hidden = true; }
       current = row ? await call('get_contractor_portal_vacancy', { p_requirement_id: row.id }) : null;
+      originalExpectedJoiningDate = current?.expected_joining_date || '';
       form.elements.requirementId.value = row?.id || '';
       document.querySelector('#vacancy-title').textContent = row ? 'Vacancy Details' : 'Create Vacancy';
       if (current) fields.forEach((name) => {
         const control = form.elements[name], value = current[map[name]] ?? '';
         if (control?.tagName === 'SELECT') options?.setValue(control, value); else if (control) control.value = value;
       });
+      form.elements.expectedJoiningDate.min = current ? '' : indiaToday();
       compensation?.hydrate(form, current || {});
       const feedback = document.querySelector('[data-review-feedback]'), state = current ? statusFor(current) : '';
       feedback.textContent = current?.review_feedback ? `${state}: ${current.review_feedback}` : (state ? `Status: ${state}` : '');
@@ -105,17 +139,22 @@
       dialog.close(); await load(); message('Vacancy saved as Draft. Submit it when ready for Aadhyant review.', 'success');
     };
     const submit = async () => {
-      if (!valid()) return;
+      if (submitInFlight || !valid()) return;
       const id = form.elements.requirementId.value;
-      if (!id) await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'create_and_submit', p_requirement_id: null });
-      else if (current?.submission_status === 'correction_required') {
-        await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'update', p_requirement_id: id });
-        await call('manage_contractor_portal_vacancy', { p_action: 'resubmit', p_requirement_id: id });
-      } else {
-        await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'update', p_requirement_id: id });
-        await call('manage_contractor_portal_vacancy', { p_action: 'submit', p_requirement_id: id });
-      }
-      dialog.close(); await load(); message('Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.', 'success');
+      if (!id && !submissionKey) submissionKey = newSubmissionKey();
+      setSubmitInFlight(true);
+      try {
+        if (!id) await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'create_and_submit', p_requirement_id: null, p_submission_idempotency_key: submissionKey });
+        else if (current?.submission_status === 'correction_required') {
+          await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'update', p_requirement_id: id });
+          await call('manage_contractor_portal_vacancy', { p_action: 'resubmit', p_requirement_id: id });
+        } else {
+          await call('manage_contractor_portal_vacancy', { ...params(), p_action: 'update', p_requirement_id: id });
+          await call('manage_contractor_portal_vacancy', { p_action: 'submit', p_requirement_id: id });
+        }
+        submissionKey = null;
+        dialog.close(); await load(); message('Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.', 'success');
+      } finally { setSubmitInFlight(false); }
     };
     const lifecycle = async (rpc, confirmation, success) => {
       if (!current || !window.confirm(confirmation)) return;
@@ -131,7 +170,18 @@
     compensation?.wireForm(form);
     document.querySelector('[data-new-vacancy]').onclick = () => open();
     document.querySelector('[data-vacancy-filters]').onsubmit = (event) => { event.preventDefault(); load().catch(() => message('Vacancies could not be loaded.', 'error')); };
-    form.onsubmit = async (event) => { event.preventDefault(); try { await submit(); } catch (_) { message('The vacancy could not be submitted. No changes were made.', 'error'); } };
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      try { await submit(); }
+      catch (error) {
+        const text = String(error?.message || '');
+        const safe = /Expected joining date/.test(text) ? 'Expected joining date must be today or a future date.'
+          : /Vacancy criteria are invalid/.test(text) ? 'Check the salary range and vacancy criteria.'
+          : /accommodation/i.test(text) ? 'Enter a valid accommodation charge and basis.'
+          : 'The vacancy could not be submitted right now. Please try again or contact Aadhyant.';
+        message(safe, 'error', true);
+      }
+    };
     form.querySelector('[data-save]').onclick = async () => { try { await save(); } catch (_) { message('The vacancy could not be saved. No changes were made.', 'error'); } };
     form.querySelector('[data-delete-vacancy]').onclick = () => lifecycle('delete_contractor_portal_draft_vacancy', 'Delete this draft vacancy? This action cannot be undone.', 'Draft vacancy deleted.');
     form.querySelector('[data-withdraw-vacancy]').onclick = () => lifecycle('withdraw_contractor_portal_vacancy', 'Withdraw this vacancy from review?', 'Vacancy withdrawn from review.');

@@ -32,39 +32,38 @@ const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex'
 function canonicalManifest() {
   const migrationRoot = path.join(root, 'supabase', 'migrations');
   const migrations = fs.readdirSync(migrationRoot)
-    .filter((name) => /^(00[7-9]|01[0-9]|02[0-9]|03[0-9]|04[0-8])_.*\.sql$/.test(name))
+    .filter((name) => /^(00[7-9]|01[0-9]|02[0-9]|03[0-9]|04[0-9])_.*\.sql$/.test(name))
     .sort();
   const numbers = migrations.map((name) => Number(name.slice(0, 3)));
-  assert.deepEqual(numbers, Array.from({ length: 42 }, (_, index) => index + 7));
+  assert.deepEqual(numbers, Array.from({ length: 43 }, (_, index) => index + 7));
   const files = [path.join(root, 'supabase', 'schema.sql'), ...migrations.map((name) => path.join(migrationRoot, name))];
   const lines = files.map((file) => `${path.relative(root, file).replaceAll(path.sep, '/')}=${sha256(fs.readFileSync(file))}`);
   return { files, lines, digest: sha256(lines.join('\n')) };
 }
 
-test('guard manifest is exact through migration 048 and excludes migration 049+', () => {
-  assert.match(guard, /04\[0-8\]/);
-  assert.match(guard, /\$expectedNumbers = @\(7\.\.48\)/);
-  assert.match(guard, /\$files\.Count -ne 43/);
-  assert.match(guard, /schema\.sql plus exactly migrations 007-048/);
-  assert.doesNotMatch(guard, /\$expectedNumbers = @\(7\.\.49\)|007-049/);
-  assert.match(readme, /migrations 007.048 \(43 files total/);
-  assert.match(readme, /Migration 049 and later files are excluded/);
+test('guard manifest is exact through migration 049 and excludes migration 050+', () => {
+  assert.match(guard, /04\[0-9\]/);
+  assert.match(guard, /\$expectedNumbers = @\(7\.\.49\)/);
+  assert.match(guard, /\$files\.Count -ne 44/);
+  assert.match(guard, /schema\.sql plus exactly migrations 007-049/);
+  assert.doesNotMatch(guard, /\$expectedNumbers = @\(7\.\.50\)|007-050/);
+  assert.match(readme, /migrations 007.049 \(44 files total/);
+  assert.match(readme, /Migration 050 and later files are excluded/);
 });
 
 test('canonical manifest ordering and aggregate are deterministic', () => {
   const first = canonicalManifest();
   const second = canonicalManifest();
-  assert.equal(first.files.length, 43);
+  assert.equal(first.files.length, 44);
   assert.equal(first.lines[0].split('=')[0], 'supabase/schema.sql');
-  assert.equal(first.lines.at(-1).split('=')[0], 'supabase/migrations/048_fix_vacancy_submit_managed_record_shape.sql');
-  assert.equal(first.digest, 'a80005a2e789d368eec431ae15d0450b211bace43be6f6a150ae156be686502a');
+  assert.equal(first.lines.at(-1).split('=')[0], 'supabase/migrations/049_contractor_submission_idempotency_and_joining_date.sql');
   assert.equal(second.digest, first.digest);
 });
 
 test('guard self-tests cover missing, duplicate, future migration, and exact HEAD refusal', () => {
-  assert.match(guard, /048_fixture\.sql/);
-  assert.match(guard, /048_duplicate\.sql/);
-  assert.match(guard, /049_future\.sql/);
+  assert.match(guard, /049_fixture\.sql/);
+  assert.match(guard, /049_duplicate\.sql/);
+  assert.match(guard, /050_future\.sql/);
   assert.match(guard, /Migration manifest hash is not deterministic/);
   assert.match(guard, /Git HEAD does not equal the approved staging-test commit/);
   assert.match(guard, /\$ApprovedCommit -cne \$Head/);

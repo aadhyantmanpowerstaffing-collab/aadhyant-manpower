@@ -23,7 +23,7 @@
   </div>
   <dialog data-vacancy-dialog aria-labelledby="vacancy-title">
     <button class="dialog-x" data-close-dialog aria-label="Close vacancy dialog">×</button>
-    <h2 id="vacancy-title">Create Vacancy</h2><p data-review-feedback class="feedback"></p>
+    <h2 id="vacancy-title">Create Vacancy</h2><p data-review-feedback class="feedback"></p><p data-vacancy-form-message class="feedback" role="alert" hidden></p>
     <form data-vacancy-form class="vacancy-form">
       <input type="hidden" name="requirementId">
       <fieldset class="wide"><legend>A. Job Details</legend><div class="vacancy-form-grid"><label>Client / worksite name *<input name="clientName" maxlength="200" required></label><label>Department<input name="department" maxlength="200"></label><label>Job role / trade *<input name="jobRole" maxlength="200" required></label><label>Location *<input name="jobLocation" maxlength="300" required></label><label>Number of openings *<input name="requiredHeadcount" type="number" min="1" max="100000" required></label></div></fieldset>
