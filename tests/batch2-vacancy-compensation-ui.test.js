@@ -19,6 +19,13 @@ function helper() {
   return window.AadhyantVacancyCompensation;
 }
 
+function candidateDetails() {
+  const window = { AadhyantVacancyCompensation: helper() };
+  const document = { body: { dataset: { candidatePage: 'jobs-batch2' } } };
+  vm.runInNewContext(candidate, { window, document, location: { search: '' }, URLSearchParams });
+  return window.aadhyantCandidateJobDetails;
+}
+
 test('shared wage helper calculates the approved deterministic salary contract', () => {
   const result = helper().calculate({ basicDa: 10000, attendanceBonus: 500, monthlyBonus: 300, leaveAmount: 200, otherFixedEarning: 0, employeePf: 600, employeeEsic: 100, canteenDeduction: 200, otherDeduction: 100, employerPf: 700, employerEsic: 150, gratuityProvision: 300, bonusProvision: 250, leaveProvision: 100, otherCtcComponent: 0 });
   assert.equal(result.grossWages, 11000);
@@ -38,10 +45,36 @@ test('Company and Contractor use the same compensation inputs, accommodation mod
 });
 
 test('Candidate job cards render candidate-safe labelled salary and facilities, with legacy fallback', () => {
-  for (const token of ['company_worksite_name', 'Salary Summary', 'Salary Breakup', 'Salary / CTC', 'Canteen', 'Transport', 'Accommodation', 'compensation?.accommodation', 'safe_description']) assert.ok(candidate.includes(token), `Candidate card is missing ${token}`);
+  for (const token of ['Job Summary', 'Salary & Work Details', 'Eligibility', 'Facilities & Benefits', 'Interview & Joining', 'Job Description / Remarks', 'Salary Summary', 'Salary Breakup', 'Salary / CTC', 'Canteen', 'Transport', 'Accommodation', 'Department', 'Age Preference', 'Gender Preference', 'Interview Date', 'safe_description', 'Apply Now']) assert.ok(candidate.includes(token), `Candidate card is missing ${token}`);
   assert.match(candidateHtml, /vacancy-compensation\.js/);
   assert.doesNotMatch(candidate, /join\(['"] .*['"]\)/);
   assert.doesNotMatch(candidate, /(contact_person|company_phone|billing|margin|service_charge|internal_note)/i);
+});
+
+test('Candidate job detail formats structured and legacy salary truthfully', () => {
+  const details = candidateDetails();
+  assert.equal(details.salaryText({ ctc: 25000, basic_da: 15000 }), '₹25,000');
+  assert.equal(details.salaryText({ salary_min: 15000, salary_max: 25000 }), '₹15,000 – ₹25,000');
+  assert.equal(details.salaryText({ salary_max: 15000 }), 'Up to ₹15,000');
+});
+
+test('Candidate facility detail shows only supported terms without inventing charges', () => {
+  const details = candidateDetails();
+  const normalize = (value) => JSON.parse(JSON.stringify(value));
+  assert.deepEqual(normalize(details.accommodationDetails({ accommodation_status: 'free' })), { status: 'Free', terms: null });
+  assert.deepEqual(normalize(details.accommodationDetails({ accommodation_status: 'chargeable', accommodation_charge_amount: 1500, accommodation_charge_basis: 'per_month' })), { status: 'Chargeable', terms: '₹1,500 / month' });
+  assert.deepEqual(normalize(details.accommodationDetails({ accommodation_status: 'chargeable', accommodation_charge_amount: 30, accommodation_charge_basis: 'per_day' })), { status: 'Chargeable', terms: '₹30 / day' });
+  assert.deepEqual(normalize(details.accommodationDetails({ accommodation_status: 'not_available' })), { status: 'Not Available', terms: null });
+  assert.deepEqual(normalize(details.legacyFacilityDetails('Yes')), { status: 'Available', terms: null });
+  assert.deepEqual(normalize(details.legacyFacilityDetails('No')), { status: 'Not Available', terms: null });
+  assert.deepEqual(normalize(details.legacyFacilityDetails('Not Applicable')), { status: 'Not Applicable', terms: null });
+});
+
+test('Candidate job detail remains responsive and preserves candidate-safe Apply flow', () => {
+  for (const token of ['@media(max-width:900px)', '@media(max-width:620px)', 'facility-cards', 'job-detail-apply']) assert.ok(fs.readFileSync('candidate/portal/batch2-jobs.css', 'utf8').includes(token), `Missing responsive detail rule ${token}`);
+  assert.match(candidate, /apply_candidate_job/);
+  assert.match(candidate, /already_applied/);
+  assert.doesNotMatch(candidate, /\.from\s*\(/);
 });
 
 test('Admin review displays compensation, accommodation and labelled facilities without changing review actions', () => {

@@ -1,1 +1,28 @@
-.job h2{margin:4px 0;color:var(--navy)}.job dl{margin:16px 0}.job dt{color:var(--muted);font-size:.76rem;font-weight:700}.job dd{margin:2px 0 12px}.job .button{min-width:132px}@media(max-width:620px){.job .button{width:100%}}
+.job-detail-card{display:grid;gap:16px;padding:0;overflow:hidden}
+.job-detail-hero{padding:22px;background:linear-gradient(135deg,#f0f7ff,#fff);border-bottom:1px solid var(--line)}
+.job-detail-hero h2{margin:4px 0;color:var(--navy)}
+.job-detail-hero>p:not(.eyebrow):not(.job-detail-pay){margin:0;color:var(--muted)}
+.job-detail-pay{margin:14px 0 0;color:var(--ok);font-size:1.35rem;font-weight:800}
+.job-detail-section,.salary-breakdown{margin:0 20px;padding:0 0 16px;border-bottom:1px solid var(--line)}
+.job-detail-section h3,.salary-breakdown h3{margin:0 0 14px;color:var(--navy);font-size:1rem}
+.job-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0}
+.job-detail-grid>div{min-width:0}
+.job-detail-grid dt,.salary-breakdown dt{color:var(--muted);font-size:.76rem;font-weight:800;letter-spacing:.02em}
+.job-detail-grid dd,.salary-breakdown dd{margin:4px 0 0;overflow-wrap:anywhere}
+.salary-work-section .vacancy-detail-summary{margin:16px 0 0;padding:14px;border-radius:10px;background:#f4f8fc}
+.vacancy-detail-summary h4{margin:0 0 10px;color:var(--navy);font-size:.9rem}
+.vacancy-detail-summary dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.salary-breakdown{padding:0 0 16px}
+.salary-breakdown-group{padding:12px 0;border-top:1px dashed var(--line)}
+.salary-breakdown-group h4{margin:0 0 10px;color:var(--navy);font-size:.9rem}
+.salary-breakdown-group dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}
+.facility-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.facility-card{min-width:0;border:1px solid var(--line);border-radius:10px;padding:14px;background:#f8fbff}
+.facility-card h4{margin:0 0 7px;color:var(--navy);font-size:.9rem}
+.facility-status{margin:0;font-weight:800}
+.facility-terms{margin:5px 0 0;color:var(--ok);font-weight:700;overflow-wrap:anywhere}
+.job-description-section{border-bottom:0}
+.job-description-section dd{white-space:pre-wrap;line-height:1.55}
+.job-detail-apply{margin:0 20px 20px;justify-self:start;min-width:148px}
+@media(max-width:900px){.facility-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.vacancy-detail-summary dl{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.job-detail-hero{padding:18px}.job-detail-section,.salary-breakdown{margin:0 16px}.job-detail-grid,.salary-breakdown-group dl,.vacancy-detail-summary dl,.facility-cards{grid-template-columns:1fr}.job-detail-apply{margin:0 16px 16px;width:calc(100% - 32px)}.job-detail-pay{font-size:1.2rem}}
