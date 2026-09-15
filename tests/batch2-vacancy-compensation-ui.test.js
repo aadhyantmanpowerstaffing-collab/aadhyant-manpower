@@ -47,7 +47,8 @@ test('Company and Contractor use the same compensation inputs, accommodation mod
 test('Candidate job cards render candidate-safe labelled salary and facilities, with legacy fallback', () => {
   for (const token of ['Job Summary', 'Salary & Work Details', 'Eligibility', 'Facilities & Benefits', 'Interview & Joining', 'Job Description / Remarks', 'Salary Summary', 'Salary Breakup', 'Salary / CTC', 'Canteen', 'Transport', 'Accommodation', 'Department', 'Age Preference', 'Gender Preference', 'Interview Date', 'safe_description', 'Apply Now']) assert.ok(candidate.includes(token), `Candidate card is missing ${token}`);
   assert.match(candidateHtml, /vacancy-compensation\.js/);
-  assert.doesNotMatch(candidate, /join\(['"] .*['"]\)/);
+  assert.match(candidate, /facilityCard/);
+  assert.doesNotMatch(candidate, /compensation\?\.facility\([^)]*\)\s*\.join\(/);
   assert.doesNotMatch(candidate, /(contact_person|company_phone|billing|margin|service_charge|internal_note)/i);
 });
 
@@ -71,10 +72,39 @@ test('Candidate facility detail shows only supported terms without inventing cha
 });
 
 test('Candidate job detail remains responsive and preserves candidate-safe Apply flow', () => {
-  for (const token of ['@media(max-width:900px)', '@media(max-width:620px)', 'facility-cards', 'job-detail-apply']) assert.ok(fs.readFileSync('candidate/portal/batch2-jobs.css', 'utf8').includes(token), `Missing responsive detail rule ${token}`);
+  for (const token of ['@media(max-width:900px)', '@media(max-width:620px)', 'facility-cards', 'job-detail-apply', 'job-selector']) assert.ok(fs.readFileSync('candidate/portal/batch2-jobs.css', 'utf8').includes(token), `Missing responsive detail rule ${token}`);
   assert.match(candidate, /apply_candidate_job/);
   assert.match(candidate, /already_applied/);
   assert.doesNotMatch(candidate, /\.from\s*\(/);
+});
+
+test('Candidate job selector filters safe result fields and cannot retain a stale Apply target', () => {
+  const details = candidateDetails();
+  const rows = [
+    { requirement_code: 'AAD-2026-000269', job_role: 'Helper', company_worksite_name: 'Mandal Mother Son', job_location: 'Mandal', salary_min: 15000, salary_max: 25000 },
+    { requirement_code: 'AAD-2026-000270', job_role: 'Fitter', company_worksite_name: 'Sanand Works', job_location: 'Sanand', salary_max: 18000 }
+  ];
+  assert.equal(details.selectorLabel(rows[0]), 'AAD-2026-000269 — Helper — Mandal — ₹15,000 – ₹25,000');
+  assert.deepEqual(JSON.parse(JSON.stringify(details.filterOpportunities(rows, 'helper').map((row) => row.requirement_code))), ['AAD-2026-000269']);
+  assert.deepEqual(JSON.parse(JSON.stringify(details.filterOpportunities(rows, '000270').map((row) => row.requirement_code))), ['AAD-2026-000270']);
+  assert.deepEqual(JSON.parse(JSON.stringify(details.filterOpportunities(rows, 'mother son').map((row) => row.requirement_code))), ['AAD-2026-000269']);
+  assert.deepEqual(JSON.parse(JSON.stringify(details.filterOpportunities(rows, 'sanand').map((row) => row.requirement_code))), ['AAD-2026-000270']);
+  assert.equal(details.reconcileSelectedCode(rows, 'AAD-2026-000270'), 'AAD-2026-000270');
+  const filtered = details.filterOpportunities(rows, 'helper');
+  const noResults = details.filterOpportunities(rows, 'no such opportunity');
+  assert.equal(details.reconcileSelectedCode(filtered, 'AAD-2026-000270'), 'AAD-2026-000269');
+  assert.equal(details.selectedOpportunity(filtered, 'AAD-2026-000270'), null);
+  assert.equal(noResults.length, 0);
+  assert.equal(details.reconcileSelectedCode(noResults, 'AAD-2026-000269'), '');
+  assert.equal(details.filterOpportunities(rows, '').length, 2);
+  assert.equal(details.selectedOpportunity(rows, 'AAD-2026-000270').requirement_code, 'AAD-2026-000270');
+  assert.equal(details.applyTarget(details.selectedOpportunity(rows, 'AAD-2026-000270')), 'AAD-2026-000270');
+  assert.equal(details.applyTarget(details.selectedOpportunity(filtered, 'AAD-2026-000270')), null);
+});
+
+test('Candidate selector renders one active detail view from existing Candidate-safe RPC results', () => {
+  for (const token of ['data-job-select', 'data-no-results', 'selectorLabel', 'filterOpportunities', 'reconcileSelectedCode', 'applyTarget', 'list.append(detailCard(selected))', 'p_search: null', 'p_limit: pageSize', 'p_offset: offset']) assert.ok(`${candidate}\n${candidateHtml}`.includes(token), `Candidate selector is missing ${token}`);
+  assert.doesNotMatch(candidate, /rows\.forEach\(\(row\)\s*=>\s*\{\s*const card = document\.createElement\('article'\)/);
 });
 
 test('Admin review displays compensation, accommodation and labelled facilities without changing review actions', () => {

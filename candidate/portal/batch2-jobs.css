@@ -1,4 +1,7 @@
 .job-detail-card{display:grid;gap:16px;padding:0;overflow:hidden}
+.job-selector{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,1fr) auto;gap:12px;align-items:end;margin-top:16px}
+.job-selector .field{min-width:0}
+.job-selector select{width:100%;min-height:44px}
 .job-detail-hero{padding:22px;background:linear-gradient(135deg,#f0f7ff,#fff);border-bottom:1px solid var(--line)}
 .job-detail-hero h2{margin:4px 0;color:var(--navy)}
 .job-detail-hero>p:not(.eyebrow):not(.job-detail-pay){margin:0;color:var(--muted)}
@@ -24,5 +27,5 @@
 .job-description-section{border-bottom:0}
 .job-description-section dd{white-space:pre-wrap;line-height:1.55}
 .job-detail-apply{margin:0 20px 20px;justify-self:start;min-width:148px}
-@media(max-width:900px){.facility-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.vacancy-detail-summary dl{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.job-detail-hero{padding:18px}.job-detail-section,.salary-breakdown{margin:0 16px}.job-detail-grid,.salary-breakdown-group dl,.vacancy-detail-summary dl,.facility-cards{grid-template-columns:1fr}.job-detail-apply{margin:0 16px 16px;width:calc(100% - 32px)}.job-detail-pay{font-size:1.2rem}}
+@media(max-width:900px){.job-selector{grid-template-columns:1fr 1fr}.job-selector .button{grid-column:1/-1;justify-self:start}.facility-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.vacancy-detail-summary dl{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.job-selector{grid-template-columns:1fr}.job-selector .button{grid-column:auto;justify-self:stretch}.job-detail-hero{padding:18px}.job-detail-section,.salary-breakdown{margin:0 16px}.job-detail-grid,.salary-breakdown-group dl,.vacancy-detail-summary dl,.facility-cards{grid-template-columns:1fr}.job-detail-apply{margin:0 16px 16px;width:calc(100% - 32px)}.job-detail-pay{font-size:1.2rem}}

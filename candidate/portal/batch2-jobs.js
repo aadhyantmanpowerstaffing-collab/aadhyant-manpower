@@ -52,6 +52,16 @@
     if (compensation?.hasStructuredSalary?.(row)) return money(row.ctc) || money(row.gross_wages) || null;
     return compensation?.legacySalary?.(row) || null;
   };
+  const selectorLabel = (row) => [row.requirement_code, row.job_role || 'Vacancy', row.job_location, salaryText(row)].filter(present).join(' — ');
+  const filterOpportunities = (rows, searchTerm) => {
+    const term = String(searchTerm || '').trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter((row) => [row.requirement_code, row.job_role, row.company_worksite_name, row.job_location]
+      .some((value) => String(value || '').toLowerCase().includes(term)));
+  };
+  const selectedOpportunity = (rows, requirementCode) => rows.find((row) => row.requirement_code === requirementCode) || null;
+  const reconcileSelectedCode = (rows, requirementCode) => selectedOpportunity(rows, requirementCode)?.requirement_code || rows[0]?.requirement_code || '';
+  const applyTarget = (row) => row?.requirement_code || null;
   const facilityCard = (label, detail) => {
     if (!detail?.status) return null;
     const item = document.createElement('article'); item.className = 'facility-card';
@@ -109,7 +119,9 @@
     return node;
   };
 
-  window.aadhyantCandidateJobDetails = Object.freeze({ accommodationDetails, legacyFacilityDetails, salaryText });
+  window.aadhyantCandidateJobDetails = Object.freeze({
+    accommodationDetails, legacyFacilityDetails, salaryText, selectorLabel, filterOpportunities, selectedOpportunity, reconcileSelectedCode, applyTarget
+  });
 
   async function start() {
     if (!client) return;
@@ -121,13 +133,15 @@
     document.querySelectorAll('[data-logout]').forEach((button) => { button.onclick = async () => { await client.auth.signOut(); location.replace('login.html'); }; });
     const list = document.querySelector('[data-job-list]');
     const search = document.querySelector('[name=search]');
+    const selector = document.querySelector('[data-job-select]');
     const notice = document.querySelector('[data-message]');
+    const empty = document.querySelector('[data-empty]');
+    const noResults = document.querySelector('[data-no-results]');
+    let allRows = [];
+    let selectedCode = requested;
     if (requested) search.value = requested;
     const message = (text, type = '') => { notice.textContent = text; notice.className = `message ${type}`; };
-    const load = async () => {
-      const rows = await call('list_candidate_job_opportunities', { p_search: search.value.trim() || null, p_limit: 50, p_offset: 0 }) || [];
-      list.replaceChildren(); document.querySelector('[data-empty]').hidden = Boolean(rows.length);
-      rows.forEach((row) => {
+    const detailCard = (row) => {
         const card = document.createElement('article'); card.className = 'job job-detail-card';
         const heading = document.createElement('header'); heading.className = 'job-detail-hero';
         heading.append(
@@ -168,13 +182,46 @@
         apply.className = 'button job-detail-apply'; apply.type = 'button'; apply.textContent = row.already_applied ? 'Applied' : 'Apply Now'; apply.disabled = Boolean(row.already_applied);
         apply.onclick = async () => {
           apply.disabled = true;
-          try { await call('apply_candidate_job', { p_requirement_code: row.requirement_code }); apply.textContent = 'Applied'; message('Application submitted to Aadhyant.', 'success'); }
+          try {
+            await call('apply_candidate_job', { p_requirement_code: applyTarget(row) });
+            row.already_applied = true; message('Application submitted to Aadhyant.', 'success'); render();
+          }
           catch (_) { apply.disabled = false; message('Your application could not be submitted. Please refresh and try again.', 'error'); }
         };
-        card.append(apply); list.append(card);
-      });
+        card.append(apply);
+        return card;
     };
-    document.querySelector('[data-search]').onsubmit = (event) => { event.preventDefault(); load().catch(() => message('Opportunities could not be loaded.', 'error')); };
+    const render = () => {
+      const rows = filterOpportunities(allRows, search.value);
+      selectedCode = reconcileSelectedCode(rows, selectedCode);
+      const selected = selectedOpportunity(rows, selectedCode);
+      selector.replaceChildren();
+      rows.forEach((row) => {
+        const option = document.createElement('option'); option.value = row.requirement_code; option.textContent = selectorLabel(row);
+        selector.append(option);
+      });
+      selector.disabled = !rows.length;
+      if (selected) selector.value = selected.requirement_code;
+      list.replaceChildren();
+      if (selected) list.append(detailCard(selected));
+      empty.hidden = Boolean(allRows.length);
+      noResults.hidden = !allRows.length || Boolean(rows.length);
+    };
+    const load = async () => {
+      const pageSize = 50;
+      let offset = 0;
+      let rows = [];
+      do {
+        const page = await call('list_candidate_job_opportunities', { p_search: null, p_limit: pageSize, p_offset: offset }) || [];
+        rows = rows.concat(page); offset += page.length;
+        if (page.length < pageSize) break;
+      } while (offset <= 5000);
+      allRows = rows;
+      render();
+    };
+    document.querySelector('[data-search]').onsubmit = (event) => { event.preventDefault(); render(); };
+    search.oninput = () => render();
+    selector.onchange = () => { selectedCode = selector.value; render(); };
     await load();
   }
   start().catch(() => { const node = document.querySelector('[data-message]'); if (node) node.textContent = 'Opportunities are temporarily unavailable.'; });
