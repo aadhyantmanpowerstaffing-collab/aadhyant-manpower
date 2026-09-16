@@ -160,6 +160,20 @@ test('M050 Company owner fixture follows the authoritative legacy facility vocab
   assert.doesNotMatch(companyFixture, /p_(canteen|transport|accommodation)=>'Available'/);
 });
 
+test('M050 checkpoint restores privileged context before private owner postconditions', () => {
+  const security = checkpoint.slice(checkpoint.indexOf('-- Browser-role execution'), checkpoint.indexOf('-- Company owner uses'));
+  assert.match(security, /set local role anon;[\s\S]*CHECKPOINT_050_ANON_PRIVATE_BENEFITS_READ[\s\S]*reset role;/);
+  assert.match(security, /set local role authenticated;[\s\S]*CHECKPOINT_050_AUTHENTICATED_PRIVATE_BENEFITS_READ[\s\S]*reset role;/);
+  const company = checkpoint.slice(checkpoint.indexOf('-- Company owner uses'), checkpoint.indexOf('-- Contractor submission'));
+  const reset = company.indexOf('reset role;');
+  const privatePostcondition = company.indexOf('private.vacancy_candidate_benefits');
+  assert.ok(reset >= 0 && privatePostcondition > reset, 'Company private verification must follow RESET ROLE');
+  assert.match(company, /current_setting\('m50\.company_requirement'\)::uuid/);
+  const contractor = checkpoint.slice(checkpoint.indexOf('-- Contractor submission'), checkpoint.indexOf('-- Admin approval'));
+  assert.match(contractor, /set local role authenticated;[\s\S]*m50\.contractor_requirement[\s\S]*reset role;[\s\S]*private\.contractor_vacancy_submission_requests/);
+  assert.match(contractor, /CHECKPOINT_050_CHANGED_BASE_REPLAY_ACCEPTED[\s\S]*reset role;[\s\S]*CHECKPOINT_050_CONFLICT_RESIDUE/);
+});
+
 test('M050 structured-CTC checkpoint mutations retain cadence except dedicated cadence failures', () => {
   assert.match(checkpoint, /create function pg_temp\.m50_constraint_terms[\s\S]*pg_temp\.m50_terms\('\[\]'::jsonb\).*\|\|/);
   assert.match(checkpoint, /pg_temp\.m50_constraint_terms\(\)-'compensation_cadence'/);

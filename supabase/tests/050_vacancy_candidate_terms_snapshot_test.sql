@@ -232,7 +232,23 @@ begin
 end;
 $$;
 
--- Browser-role execution must not discover the private benefits table.
+-- Browser-role execution must not discover the private benefits table. Each
+-- restricted-role assertion is followed by RESET ROLE before a privileged
+-- checkpoint postcondition reads private state.
+set local role anon;
+do $$
+begin
+  begin
+    perform 1 from private.vacancy_candidate_benefits;
+    raise exception 'CHECKPOINT_050_ANON_PRIVATE_BENEFITS_READ';
+  exception when insufficient_privilege then null;
+    when undefined_table then null;
+    when raise_exception then if sqlerrm='CHECKPOINT_050_ANON_PRIVATE_BENEFITS_READ' then raise; end if;
+  end;
+end;
+$$;
+reset role;
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000004',true);
 do $$
@@ -257,13 +273,34 @@ declare v_company record;
 begin
   select * into v_company from public.manage_company_portal_requirement(
     p_action=>'create',p_requirement_id=>null,p_department=>'M50',p_job_role=>'M50 Company Fitter',p_job_location=>'Ahmedabad',p_required_headcount=>2,p_qualification=>'ITI',p_iti_trade=>'Fitter',p_experience_requirement=>'Fresher',p_gender_preference=>'Any',p_age_min=>18,p_age_max=>45,p_salary_min=>15000,p_salary_max=>16000,p_shift_details=>'Day',p_working_hours=>'8 hours',p_overtime_details=>'Available',p_canteen=>'Yes',p_transport=>'Yes',p_accommodation=>'Yes',p_interview_location=>'Ahmedabad',p_interview_date=>null,p_expected_joining_date=>(clock_timestamp() at time zone 'Asia/Kolkata')::date,p_additional_notes=>'M50 synthetic',p_payable_days=>26,p_basic_da=>12000,p_attendance_bonus=>500,p_monthly_bonus=>250,p_leave_amount=>100,p_other_fixed_earning=>150,p_gross_wages=>13000,p_employee_pf=>100,p_employee_esic=>50,p_canteen_deduction=>0,p_other_deduction=>0,p_employer_pf=>100,p_employer_esic=>50,p_gratuity_provision=>25,p_bonus_provision=>25,p_leave_provision=>25,p_other_ctc_component=>25,p_approx_in_hand=>12850,p_ctc=>13250,p_accommodation_status=>'chargeable',p_accommodation_charge_amount=>1500,p_accommodation_charge_basis=>'per_month',p_candidate_terms=>pg_temp.m50_terms()) limit 1;
-  if v_company.id is null or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_company.id)<>2 then
+  if v_company.id is null then
     raise exception 'CHECKPOINT_050_COMPANY_OWNER_RPC_TERMS';
   end if;
   perform set_config('m50.company_requirement',v_company.id::text,true);
 end;
 $$;
 reset role;
+
+-- This is deliberately outside the authenticated Company browser context:
+-- private benefit rows are verified only by the privileged checkpoint role.
+do $$
+declare v_company uuid:=current_setting('m50.company_requirement')::uuid;
+begin
+  if not exists(
+    select 1 from public.employer_requirements r
+    where r.id=v_company
+      and r.compensation_cadence='monthly'
+      and r.paid_leave_days_per_year=12
+      and r.canteen_status='chargeable'
+      and r.transport_status='chargeable'
+      and r.review_status='draft'
+      and r.requirement_stage='draft'
+      and r.requirement_visibility='private'
+  ) or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_company)<>2 then
+    raise exception 'CHECKPOINT_050_COMPANY_OWNER_RPC_TERMS';
+  end if;
+end;
+$$;
 
 -- Contractor submission exercises M049's base ledger plus the M050 terms
 -- ledger in one transaction. Same-key replays must remain one logical row.
@@ -285,14 +322,32 @@ begin
   if v_first.id is null or v_first.id<>v_replay.id or v_first.submission_status<>'submitted' then
     raise exception 'CHECKPOINT_050_IDEMPOTENT_REPLAY';
   end if;
-  if (select count(*) from public.employer_requirements where id=v_first.id)<>1
-     or (select count(*) from public.requirement_contractors where requirement_id=v_first.id and contractor_id='50000000-0000-0000-0001-000000000002')<>1
-     or (select count(*) from private.contractor_vacancy_submission_requests where requirement_id=v_first.id)<>1
-     or (select count(*) from private.contractor_vacancy_submission_term_requests where requirement_id=v_first.id)<>1
-     or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_first.id)<>2 then
+  perform set_config('m50.contractor_requirement',v_first.id::text,true);
+end;
+$$;
+reset role;
+
+-- M049/M050 ledgers and benefit rows are private; inspect their cardinality
+-- only after restoring the privileged checkpoint role.
+do $$
+declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
+begin
+  if (select count(*) from public.employer_requirements where id=v_requirement)<>1
+     or (select count(*) from public.requirement_contractors where requirement_id=v_requirement and contractor_id='50000000-0000-0000-0001-000000000002')<>1
+     or (select count(*) from private.contractor_vacancy_submission_requests where requirement_id=v_requirement)<>1
+     or (select count(*) from private.contractor_vacancy_submission_term_requests where requirement_id=v_requirement)<>1
+     or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_requirement)<>2 then
     raise exception 'CHECKPOINT_050_IDEMPOTENCY_CARDINALITY';
   end if;
-  perform set_config('m50.contractor_requirement',v_first.id::text,true);
+  perform set_config('m50.contractor_requirement_code',(select requirement_code from public.employer_requirements where id=v_requirement),true);
+end;
+$$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000003',true);
+do $$
+declare v_terms jsonb:=pg_temp.m50_terms();
+begin
   begin
     perform pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',v_terms,'M50 Changed Base Client');
     raise exception 'CHECKPOINT_050_CHANGED_BASE_REPLAY_ACCEPTED';
@@ -313,15 +368,22 @@ begin
     raise exception 'CHECKPOINT_050_CHANGED_BASE_AND_TERMS_REPLAY_ACCEPTED';
   exception when raise_exception then if sqlerrm='CHECKPOINT_050_CHANGED_BASE_AND_TERMS_REPLAY_ACCEPTED' then raise; end if;
   end;
-  if (select count(*) from public.employer_requirements where id=v_first.id)<>1
-     or (select count(*) from private.contractor_vacancy_submission_requests where requirement_id=v_first.id)<>1
-     or (select count(*) from private.contractor_vacancy_submission_term_requests where requirement_id=v_first.id)<>1
-     or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_first.id)<>2 then
+end;
+$$;
+reset role;
+
+do $$
+declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
+begin
+  if (select count(*) from public.employer_requirements where id=v_requirement)<>1
+     or (select count(*) from public.requirement_contractors where requirement_id=v_requirement and contractor_id='50000000-0000-0000-0001-000000000002')<>1
+     or (select count(*) from private.contractor_vacancy_submission_requests where requirement_id=v_requirement)<>1
+     or (select count(*) from private.contractor_vacancy_submission_term_requests where requirement_id=v_requirement)<>1
+     or (select count(*) from private.vacancy_candidate_benefits where requirement_id=v_requirement)<>2 then
     raise exception 'CHECKPOINT_050_CONFLICT_RESIDUE';
   end if;
 end;
 $$;
-reset role;
 
 -- Admin approval followed by scalar and benefit-only material changes must
 -- remove a vacancy from Candidate eligibility until explicit republication.
@@ -361,7 +423,7 @@ select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000004'
 do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
-  if exists(select 1 from public.list_candidate_job_opportunities('M50 Contractor Fitter',50,0) where requirement_code=(select requirement_code from public.employer_requirements where id=v_requirement)) then
+  if exists(select 1 from public.list_candidate_job_opportunities('M50 Contractor Fitter',50,0) where requirement_code=current_setting('m50.contractor_requirement_code')) then
     raise exception 'CHECKPOINT_050_PENDING_REVIEW_EXPOSED';
   end if;
 end;
