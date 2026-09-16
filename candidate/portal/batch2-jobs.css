@@ -6,6 +6,11 @@
 .job-detail-hero h2{margin:4px 0;color:var(--navy)}
 .job-detail-hero>p:not(.eyebrow):not(.job-detail-pay){margin:0;color:var(--muted)}
 .job-detail-pay{margin:14px 0 0;color:var(--ok);font-size:1.35rem;font-weight:800}
+.job-detail-in-hand{margin:6px 0 0;color:var(--muted);font-weight:700}
+.candidate-terms-disclosure{margin:0 20px 16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.candidate-terms-disclosure>summary{padding:14px 16px;cursor:pointer;color:var(--navy);font-weight:800}
+.candidate-terms-disclosure[open]>summary{border-bottom:1px solid var(--line)}
+.candidate-terms-disclosure .job-detail-section{margin:16px 16px 0}
 .job-detail-section,.salary-breakdown{margin:0 20px;padding:0 0 16px;border-bottom:1px solid var(--line)}
 .job-detail-section h3,.salary-breakdown h3{margin:0 0 14px;color:var(--navy);font-size:1rem}
 .job-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0}
@@ -28,4 +33,4 @@
 .job-description-section dd{white-space:pre-wrap;line-height:1.55}
 .job-detail-apply{margin:0 20px 20px;justify-self:start;min-width:148px}
 @media(max-width:900px){.job-selector{grid-template-columns:1fr 1fr}.job-selector .button{grid-column:1/-1;justify-self:start}.facility-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.vacancy-detail-summary dl{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.job-selector{grid-template-columns:1fr}.job-selector .button{grid-column:auto;justify-self:stretch}.job-detail-hero{padding:18px}.job-detail-section,.salary-breakdown{margin:0 16px}.job-detail-grid,.salary-breakdown-group dl,.vacancy-detail-summary dl,.facility-cards{grid-template-columns:1fr}.job-detail-apply{margin:0 16px 16px;width:calc(100% - 32px)}.job-detail-pay{font-size:1.2rem}}
+@media(max-width:620px){.job-selector{grid-template-columns:1fr}.job-selector .button{grid-column:auto;justify-self:stretch}.job-detail-hero{padding:18px}.job-detail-section,.salary-breakdown{margin:0 16px}.candidate-terms-disclosure{margin:0 16px 16px}.job-detail-grid,.salary-breakdown-group dl,.vacancy-detail-summary dl,.facility-cards{grid-template-columns:1fr}.job-detail-apply{margin:0 16px 16px;width:calc(100% - 32px)}.job-detail-pay{font-size:1.2rem}}

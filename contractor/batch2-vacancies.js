@@ -5,6 +5,7 @@
   const client = window.aadhyantSupabase?.client;
   const options = window.AadhyantRegistrationOptions;
   const compensation = window.AadhyantVacancyCompensation;
+  const candidateTerms = window.AadhyantVacancyCandidateTerms;
   const fields = ['clientName', 'department', 'jobRole', 'jobLocation', 'requiredHeadcount', 'qualification', 'itiTrade', 'experienceRequirement', 'genderPreference', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax', 'shiftDetails', 'workingHours', 'overtimeDetails', 'canteen', 'transport', 'interviewLocation', 'expectedJoiningDate', 'additionalNotes'];
   const map = { clientName: 'client_name', department: 'department', jobRole: 'job_role', jobLocation: 'job_location', requiredHeadcount: 'required_headcount', qualification: 'qualification', itiTrade: 'iti_trade', experienceRequirement: 'experience_requirement', genderPreference: 'gender_preference', ageMin: 'age_min', ageMax: 'age_max', salaryMin: 'salary_min', salaryMax: 'salary_max', shiftDetails: 'shift_details', workingHours: 'working_hours', overtimeDetails: 'overtime_details', canteen: 'canteen', transport: 'transport', interviewLocation: 'interview_location', expectedJoiningDate: 'expected_joining_date', additionalNotes: 'additional_notes' };
   const numericFields = new Set(['requiredHeadcount', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax']);
@@ -65,6 +66,8 @@
       }
       const error = compensation?.validate(form);
       if (error) { message(error, 'error', true); return false; }
+      const termsError = candidateTerms?.validate(form);
+      if (termsError) { message(termsError, 'error', true); return false; }
       const minimum = form.elements.salaryMin.value === '' ? null : Number(form.elements.salaryMin.value);
       const maximum = form.elements.salaryMax.value === '' ? null : Number(form.elements.salaryMax.value);
       if (minimum !== null && maximum !== null && minimum > maximum) {
@@ -85,7 +88,7 @@
         if (numericFields.has(name)) value = value === '' ? null : Number(value);
         result[`p_${name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)}`] = value === '' ? null : value;
       });
-      return { ...result, p_accommodation: null, ...(compensation?.rpcParams(form) || {}) };
+      return { ...result, p_accommodation: null, ...(compensation?.rpcParams(form) || {}), p_candidate_terms: candidateTerms?.terms(form) || {} };
     };
     const load = async () => {
       const values = new FormData(document.querySelector('[data-vacancy-filters]'));
@@ -119,6 +122,7 @@
       });
       form.elements.expectedJoiningDate.min = current ? '' : indiaToday();
       compensation?.hydrate(form, current || {});
+      candidateTerms?.hydrate(form, current || {}); candidateTerms?.wire(form);
       const feedback = document.querySelector('[data-review-feedback]'), state = current ? statusFor(current) : '';
       feedback.textContent = current?.review_feedback ? `${state}: ${current.review_feedback}` : (state ? `Status: ${state}` : '');
       feedback.hidden = !feedback.textContent;
@@ -168,6 +172,7 @@
     };
 
     compensation?.wireForm(form);
+    candidateTerms?.wire(form);
     document.querySelector('[data-new-vacancy]').onclick = () => open();
     document.querySelector('[data-vacancy-filters]').onsubmit = (event) => { event.preventDefault(); load().catch(() => message('Vacancies could not be loaded.', 'error')); };
     form.onsubmit = async (event) => {

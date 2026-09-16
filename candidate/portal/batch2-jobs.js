@@ -40,6 +40,11 @@
     return { status: compensation?.facility?.(row.accommodation) || words(row.accommodation), terms: null };
   };
   const legacyFacilityDetails = (value) => ({ status: compensation?.facility?.(value) || words(value), terms: null });
+  const structuredFacilityDetails = (status, amount, chargeBasis, legacy) => {
+    if (!status) return legacyFacilityDetails(legacy);
+    if (status === 'chargeable') { const basis = { per_day: 'day', per_meal: 'meal', per_month: 'month' }[chargeBasis] || words(chargeBasis); return { status: 'Chargeable', terms: amount != null && basis ? `${money(amount)} / ${basis}` : null }; }
+    return { status: words(status), terms: null };
+  };
   const agePreference = (row) => {
     const min = present(row.age_min) ? row.age_min : null;
     const max = present(row.age_max) ? row.age_max : null;
@@ -50,7 +55,7 @@
   };
   const salaryText = (row) => {
     if (compensation?.hasStructuredSalary?.(row)) return money(row.ctc) || money(row.gross_wages) || null;
-    return compensation?.legacySalary?.(row) || null;
+    return compensation?.legacySalary?.(row) || (present(row.salary_wage) ? row.salary_wage : null);
   };
   const selectorLabel = (row) => [row.requirement_code, row.job_role || 'Vacancy', row.job_location, salaryText(row)].filter(present).join(' — ');
   const filterOpportunities = (rows, searchTerm) => {
@@ -111,16 +116,31 @@
     const heading = document.createElement('h3'); heading.textContent = 'Facilities & Benefits';
     const cards = document.createElement('div'); cards.className = 'facility-cards';
     [
-      ['Canteen', present(row.canteen) ? legacyFacilityDetails(row.canteen) : null],
-      ['Transport', present(row.transport) ? legacyFacilityDetails(row.transport) : null],
+      ['Canteen', structuredFacilityDetails(row.canteen_status, row.canteen_charge_amount, row.canteen_charge_basis, row.canteen)],
+      ['Transport', structuredFacilityDetails(row.transport_status, row.transport_charge_amount, row.transport_charge_basis, row.transport)],
       ['Accommodation', present(row.accommodation_status) || present(row.accommodation) ? accommodationDetails(row) : null]
     ].forEach(([label, detail]) => { const card = facilityCard(label, detail); if (card) cards.append(card); });
     node.append(heading, cards);
     return node;
   };
+  const termsDisclosure = (row) => {
+    const details = document.createElement('details'); details.className = 'candidate-terms-disclosure';
+    const summary = document.createElement('summary'); summary.textContent = 'View Salary, Benefits & Employment Terms'; details.append(summary);
+    const cadence = row.compensation_cadence === 'monthly' ? 'Monthly CTC' : row.compensation_cadence === 'annual' ? 'Annual CTC' : 'CTC';
+    const ctc = section('Salary & CTC Breakdown', [['Basic + DA', money(row.basic_da)], ['Attendance Bonus', money(row.attendance_bonus)], ['Monthly Bonus', money(row.monthly_bonus)], ['EL / Leave Amount', money(row.leave_amount)], ['Other Fixed Earning', money(row.other_fixed_earning)], ['Gross Salary — Before listed employee deductions', money(row.gross_wages)], [cadence, money(row.ctc)]]);
+    const deductions = section('Deductions / Approx. In-Hand', [['Employee PF', money(row.employee_pf)], ['Employee ESIC', money(row.employee_esic)], ['Canteen Deduction', money(row.canteen_deduction)], ['Other Deduction', money(row.other_deduction)], ['Approx. In-Hand — Approximate amount after listed employee deductions', money(row.approx_in_hand)]]);
+    const employer = section('Employer CTC Components', [['Employer PF', money(row.employer_pf)], ['Employer ESIC', money(row.employer_esic)], ['Gratuity Provision', money(row.gratuity_provision)], ['Bonus Provision', money(row.bonus_provision)], ['Leave Provision', money(row.leave_provision)], ['Other CTC Component', money(row.other_ctc_component)]]);
+    const leave = section('Leave & Holidays', [['Paid / Earned Leave (days/year)', row.paid_leave_days_per_year], ['Casual Leave (days/year)', row.casual_leave_days_per_year], ['Sick Leave (days/year)', row.sick_leave_days_per_year], ['National Holidays (days/year)', row.national_holiday_days_per_year], ['Festival Holidays (days/year)', row.festival_holiday_days_per_year]]);
+    const work = section('Working Terms', [['Duty Hours', row.working_hours], ['Working Days / Week', row.working_days_per_week], ['Weekly Offs / Week', row.weekly_off_count], ['Shift', row.shift_details], ['Overtime', row.overtime_details], ['OT Rate', present(row.overtime_rate) ? `${money(row.overtime_rate)} / ${words(row.overtime_rate_basis)}` : null]]);
+    const facility = facilities(row);
+    const benefits = Array.isArray(row.candidate_benefits) && row.candidate_benefits.length ? section('Other Benefits', row.candidate_benefits.map((benefit) => [words(benefit.benefit_type), benefit.benefit_value_type === 'cash' ? `${money(benefit.amount)} / ${words(benefit.amount_basis)}` : 'Provided'])) : null;
+    const employment = section('Employment Terms', [['Employment Type', words(row.employment_type)], ['Payroll', row.payroll_type ? ({ company: 'Company Payroll', contractor: 'Contractor Payroll', third_party: 'Third-party Payroll' }[row.payroll_type] || words(row.payroll_type)) : null], ['Contract Duration', present(row.contract_duration_months) ? `${row.contract_duration_months} months` : null], ['Probation', present(row.probation_period_months) ? `${row.probation_period_months} months` : null], ['Training', present(row.training_period_days) ? `${row.training_period_days} days` : null], ['Notice Period', present(row.notice_period_days) ? `${row.notice_period_days} days` : null]]);
+    [ctc, deductions, employer, leave, work, facility, benefits, employment].filter(Boolean).forEach((node) => details.append(node));
+    return details.childElementCount > 1 ? details : null;
+  };
 
   window.aadhyantCandidateJobDetails = Object.freeze({
-    accommodationDetails, legacyFacilityDetails, salaryText, selectorLabel, filterOpportunities, selectedOpportunity, reconcileSelectedCode, applyTarget
+    accommodationDetails, legacyFacilityDetails, structuredFacilityDetails, salaryText, selectorLabel, filterOpportunities, selectedOpportunity, reconcileSelectedCode, applyTarget
   });
 
   async function start() {
@@ -152,7 +172,8 @@
         const pay = salaryText(row);
         if (pay) {
           const salary = document.createElement('p'); salary.className = 'job-detail-pay';
-          salary.textContent = pay; heading.append(salary);
+          salary.textContent = `${row.compensation_cadence === 'monthly' ? 'Monthly CTC ' : row.compensation_cadence === 'annual' ? 'Annual CTC ' : ''}${pay}`; heading.append(salary);
+          if (present(row.approx_in_hand)) heading.append(Object.assign(document.createElement('p'), { className: 'job-detail-in-hand', textContent: `Approx. In-Hand ${money(row.approx_in_hand)}` }));
         }
         card.append(heading);
         const summary = section('Job Summary', [
@@ -165,13 +186,12 @@
         ], 'salary-work-section');
         if (work) card.append(work);
         const structuredSummary = salarySummary(row); if (structuredSummary) work?.append(structuredSummary);
-        const breakup = salaryBreakdown(row); if (breakup) card.append(breakup);
         const eligibility = section('Eligibility', [
           ['Qualification', row.qualification], ['Trade / Specialization', row.iti_trade], ['Experience', row.experience_requirement],
           ['Age Preference', agePreference(row)], ['Gender Preference', row.gender_preference]
         ]);
         if (eligibility) card.append(eligibility);
-        const facilitySection = facilities(row); if (facilitySection) card.append(facilitySection);
+        const disclosure = termsDisclosure(row); if (disclosure) card.append(disclosure);
         const interview = section('Interview & Joining', [
           ['Interview Location', row.interview_location], ['Interview Date', date(row.interview_date)], ['Expected Joining', date(row.expected_joining_date)]
         ]);

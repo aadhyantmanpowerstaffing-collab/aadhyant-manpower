@@ -7,6 +7,7 @@
   const fields = ['department','jobRole','jobLocation','requiredHeadcount','qualification','itiTrade','experienceRequirement','genderPreference','ageMin','ageMax','salaryMin','salaryMax','shiftDetails','workingHours','overtimeDetails','canteen','transport','interviewLocation','interviewDate','expectedJoiningDate','additionalNotes'];
   const column = {department:'department',jobRole:'job_role',jobLocation:'job_location',requiredHeadcount:'required_headcount',qualification:'qualification',itiTrade:'iti_trade',experienceRequirement:'experience_requirement',genderPreference:'gender_preference',ageMin:'age_min',ageMax:'age_max',salaryMin:'salary_min',salaryMax:'salary_max',shiftDetails:'shift_details',workingHours:'working_hours',overtimeDetails:'overtime_details',canteen:'canteen',transport:'transport',accommodation:'accommodation',interviewLocation:'interview_location',interviewDate:'interview_date',expectedJoiningDate:'expected_joining_date',additionalNotes:'additional_notes'};
   const compensation = window.AadhyantVacancyCompensation;
+  const candidateTerms = window.AadhyantVacancyCandidateTerms;
   const formatCompensationCtc = (row) => compensation?.hasStructuredSalary(row) ? `CTC ${compensation.money(row.ctc)}` : compensation?.legacySalary(row) || 'Not specified';
   const first = (value) => Array.isArray(value) ? value[0] : value;
   const display = (value, fallback = '—') => value === null || value === undefined || value === '' ? fallback : String(value);
@@ -47,13 +48,14 @@
     const params = () => {
       const value = (name) => String(form.elements[name].value || '').trim();
       const numeric = (name) => value(name) === '' ? null : Number(value(name));
-      return { p_department:value('department'),p_job_role:value('jobRole'),p_job_location:value('jobLocation'),p_required_headcount:numeric('requiredHeadcount'),p_qualification:value('qualification')||null,p_iti_trade:value('itiTrade')||null,p_experience_requirement:value('experienceRequirement')||'Both',p_gender_preference:value('genderPreference')||'Any',p_age_min:numeric('ageMin'),p_age_max:numeric('ageMax'),p_salary_min:numeric('salaryMin'),p_salary_max:numeric('salaryMax'),p_shift_details:value('shiftDetails')||null,p_working_hours:value('workingHours')||null,p_overtime_details:value('overtimeDetails')||null,p_canteen:value('canteen')||'Not Applicable',p_transport:value('transport')||'Not Applicable',p_accommodation:null,p_interview_location:value('interviewLocation')||null,p_interview_date:value('interviewDate') ? new Date(value('interviewDate')).toISOString() : null,p_expected_joining_date:value('expectedJoiningDate')||null,p_additional_notes:value('additionalNotes')||null,...(compensation?.rpcParams(form) || {}) };
+      return { p_department:value('department'),p_job_role:value('jobRole'),p_job_location:value('jobLocation'),p_required_headcount:numeric('requiredHeadcount'),p_qualification:value('qualification')||null,p_iti_trade:value('itiTrade')||null,p_experience_requirement:value('experienceRequirement')||'Both',p_gender_preference:value('genderPreference')||'Any',p_age_min:numeric('ageMin'),p_age_max:numeric('ageMax'),p_salary_min:numeric('salaryMin'),p_salary_max:numeric('salaryMax'),p_shift_details:value('shiftDetails')||null,p_working_hours:value('workingHours')||null,p_overtime_details:value('overtimeDetails')||null,p_canteen:value('canteen')||'Not Applicable',p_transport:value('transport')||'Not Applicable',p_accommodation:null,p_interview_location:value('interviewLocation')||null,p_interview_date:value('interviewDate') ? new Date(value('interviewDate')).toISOString() : null,p_expected_joining_date:value('expectedJoiningDate')||null,p_additional_notes:value('additionalNotes')||null,...(compensation?.rpcParams(form) || {}),p_candidate_terms:candidateTerms?.terms(form)||{} };
     };
     const valid = () => {
       const required = ['department','jobRole','jobLocation'].every((name) => form.elements[name].value.trim());
       const openings = Number(form.elements.requiredHeadcount.value);
       if (!required || !Number.isInteger(openings) || openings < 1) { message('Department, role, location, and a valid number of openings are required.','error'); return false; }
       const compensationError = compensation?.validate(form); if (compensationError) { message(compensationError,'error'); return false; }
+      const termsError = candidateTerms?.validate(form); if (termsError) { message(termsError,'error'); return false; }
       return true;
     };
     const setEditable = () => {
@@ -86,6 +88,7 @@
       document.querySelector('[data-requirement-code]').textContent = current ? `${current.requirement_code} · ${statusFor(current)}` : '';
       if (current) fields.forEach((name) => { const value = current[column[name]] ?? '';const control = form.elements[name];if (!control) return;if (control.tagName === 'SELECT') optionApi?.setValue(control,value);else control.value = name === 'interviewDate' ? dateInput(value,true) : name === 'expectedJoiningDate' ? dateInput(value) : value; });
       compensation?.hydrate(form,current || {});
+      candidateTerms?.hydrate(form,current || {}); candidateTerms?.wire(form);
       const feedback = current?.review_feedback ? `${statusFor(current)}: ${current.review_feedback}` : (current ? `Status: ${statusFor(current)}` : '');detailMessage(feedback);
       const pipeline = current?.pipeline || {};document.querySelector('[data-requirement-pipeline]').textContent = current ? `Applications ${pipeline.applications || 0} · Screening ${pipeline.screening || 0} · Shortlisted ${pipeline.shortlisted || 0} · Interviews ${pipeline.interviews || 0} · Selected ${pipeline.selected || 0} · Joined ${pipeline.joined || 0}` : '';
       setEditable();dialog.showModal();
@@ -100,6 +103,7 @@
       dialog.close();await load();message('Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.','success');
     };
     compensation?.wireForm(form);
+    candidateTerms?.wire(form);
     const lifecycle = async (rpc, confirmation, success) => {
       if (!current || !window.confirm(confirmation)) return;
       form.querySelectorAll('button').forEach((button) => { button.disabled = true; });

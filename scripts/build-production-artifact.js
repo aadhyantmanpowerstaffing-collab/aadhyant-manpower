@@ -50,6 +50,7 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'assets/js/password-recovery.js',
   'assets/js/public-navigation.js',
   'assets/js/registration-options.js',
+  'assets/js/vacancy-candidate-terms.js',
   'assets/js/vacancy-compensation.js',
   'candidate/index.html',
   'candidate/portal/applications.html',
