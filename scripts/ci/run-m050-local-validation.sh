@@ -128,8 +128,17 @@ assert_local_db_url() {
 }
 
 discover_local_db_url() {
+  local db_url_assignment
   supabase --workdir "$LOCAL_WORKDIR" status -o env > "$STATUS_ENV" 2> "$RAW_OUTPUT" || fail "LOCAL_SUPABASE_STATUS_FAILED"
-  LOCAL_DB_URL="$(sed -n -E 's/^DB_URL=["'"']?([^"'"']*)["'"']?$/\1/p' "$STATUS_ENV" | head -n 1)"
+  db_url_assignment="$(grep -m 1 '^DB_URL=' "$STATUS_ENV")" || fail "LOCAL_DB_URL_MISSING"
+  LOCAL_DB_URL="${db_url_assignment#DB_URL=}"
+  if [[ "$LOCAL_DB_URL" == \"*\" ]]; then
+    LOCAL_DB_URL="${LOCAL_DB_URL#\"}"
+    LOCAL_DB_URL="${LOCAL_DB_URL%\"}"
+  elif [[ "$LOCAL_DB_URL" == \'*\' ]]; then
+    LOCAL_DB_URL="${LOCAL_DB_URL#\'}"
+    LOCAL_DB_URL="${LOCAL_DB_URL%\'}"
+  fi
   [[ -n "$LOCAL_DB_URL" ]] || fail "LOCAL_DB_URL_MISSING"
   assert_local_db_url
 }

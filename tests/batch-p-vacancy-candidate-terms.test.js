@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const vm = require('node:vm');
 
 const read = (file) => fs.readFileSync(file, 'utf8');
@@ -267,4 +269,14 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
   assert.match(localRuntimeWorkflow, /version:\s*2\.111\.0/);
   assert.match(localRuntimeWorkflow, /bash scripts\/ci\/run-m050-local-validation\.sh/);
   assert.doesNotMatch(localRuntimeWorkflow, /secrets\.|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|STAGING_SUPABASE|CLOUDFLARE|environment:/i);
+});
+
+test('M050 disposable local runtime harness is valid Bash on Linux CI', (t) => {
+  if (process.platform === 'win32') {
+    t.skip('Ubuntu CI executes the Bash parser check; this workstation routes bash through unavailable WSL.');
+    return;
+  }
+  const result = spawnSync('bash', ['-n', path.join('scripts', 'ci', 'run-m050-local-validation.sh')], { encoding: 'utf8' });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
 });
