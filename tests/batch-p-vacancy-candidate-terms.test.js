@@ -160,6 +160,15 @@ test('M050 Company owner fixture follows the authoritative legacy facility vocab
   assert.doesNotMatch(companyFixture, /p_(canteen|transport|accommodation)=>'Available'/);
 });
 
+test('M050 Contractor replay fixture follows the authoritative legacy facility vocabulary', () => {
+  const contractorFixture = checkpoint.slice(checkpoint.indexOf('create function pg_temp.submit_m50'), checkpoint.indexOf("set local role authenticated;", checkpoint.indexOf('create function pg_temp.submit_m50')));
+  for (const token of ["p_canteen=>'Yes'", "p_transport=>'Yes'", "p_accommodation=>'Yes'"]) assert.ok(contractorFixture.includes(token), token);
+  assert.doesNotMatch(contractorFixture, /p_(canteen|transport|accommodation)=>'Available'/);
+  const legacyFixture = checkpoint.slice(checkpoint.indexOf('-- Legacy compatibility'), checkpoint.indexOf('-- The transaction boundary'));
+  assert.match(legacyFixture, /'15000','Yes','No','Yes'/);
+  assert.doesNotMatch(legacyFixture, /'Available'|'Not Available'/);
+});
+
 test('M050 checkpoint restores privileged context before private owner postconditions', () => {
   const security = checkpoint.slice(checkpoint.indexOf('-- Browser-role execution'), checkpoint.indexOf('-- Company owner uses'));
   assert.match(security, /set local role anon;[\s\S]*CHECKPOINT_050_ANON_PRIVATE_BENEFITS_READ[\s\S]*reset role;/);
