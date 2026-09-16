@@ -72,8 +72,20 @@ $$;
 
 -- A direct synthetic row exercises every CHECK constraint without bypassing
 -- it. Legacy NULL values and explicit zero leave values are both valid.
-insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,qualification,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage,leave_amount,leave_provision)
-values ('50000000-0000-0000-0002-000000000001','M50 Constraint Co','M50','9876550099','Ahmedabad','M50 Constraint Role',1,'ITI',true,'new','M50-CONSTRAINT','Ahmedabad',0,'admin_manual','draft','private','draft',111,222);
+insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,qualification,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage,basic_da,attendance_bonus,monthly_bonus,leave_amount,other_fixed_earning,gross_wages,employee_pf,employee_esic,canteen_deduction,other_deduction,approx_in_hand,employer_pf,employer_esic,gratuity_provision,bonus_provision,leave_provision,other_ctc_component,ctc)
+values ('50000000-0000-0000-0002-000000000001','M50 Constraint Co','M50','9876550099','Ahmedabad','M50 Constraint Role',1,'ITI',true,'new','M50-CONSTRAINT','Ahmedabad',0,'admin_manual','draft','private','draft',100,10,20,111,9,250,10,5,5,0,230,10,5,2,3,222,8,500);
+
+do $$
+begin
+  if not exists(select 1 from public.employer_requirements r where r.id='50000000-0000-0000-0002-000000000001'
+    and r.gross_wages=coalesce(r.basic_da,0)+coalesce(r.attendance_bonus,0)+coalesce(r.monthly_bonus,0)+coalesce(r.leave_amount,0)+coalesce(r.other_fixed_earning,0)
+    and r.approx_in_hand=r.gross_wages-coalesce(r.employee_pf,0)-coalesce(r.employee_esic,0)-coalesce(r.canteen_deduction,0)-coalesce(r.other_deduction,0)
+    and r.ctc=r.gross_wages+coalesce(r.employer_pf,0)+coalesce(r.employer_esic,0)+coalesce(r.gratuity_provision,0)+coalesce(r.bonus_provision,0)+coalesce(r.leave_provision,0)+coalesce(r.other_ctc_component,0)
+    and r.leave_amount=111 and r.leave_provision=222) then
+    raise exception 'CHECKPOINT_050_FIXTURE_WAGE_TOTALS';
+  end if;
+end;
+$$;
 
 do $$
 declare v_bad jsonb; v_field text; v_value integer; v_status text; v_basis text;
