@@ -183,6 +183,21 @@ test('M050 checkpoint restores privileged context before private owner postcondi
   assert.match(contractor, /CHECKPOINT_050_CHANGED_BASE_REPLAY_ACCEPTED[\s\S]*reset role;[\s\S]*CHECKPOINT_050_CONFLICT_RESIDUE/);
 });
 
+test('M050 material review resets from Admin actions before private eligibility verification', () => {
+  const material = checkpoint.slice(checkpoint.indexOf('-- Admin approval'), checkpoint.indexOf('-- Legacy compatibility'));
+  const approval = material.indexOf('public.admin_approve_and_publish_vacancy');
+  const initialPrivateCheck = material.indexOf('CHECKPOINT_050_APPROVAL_PRECONDITION');
+  assert.ok(approval >= 0 && initialPrivateCheck > approval);
+  assert.match(material.slice(approval, initialPrivateCheck), /reset role;[\s\S]*private\.vacancy_is_application_eligible/);
+  assert.match(material, /CHECKPOINT_050_SCALAR_REREVIEW_GATE[\s\S]*set local role authenticated;[\s\S]*admin_approve_and_publish_vacancy[\s\S]*reset role;[\s\S]*CHECKPOINT_050_SCALAR_REAPPROVAL_GATE/);
+  assert.match(material, /CHECKPOINT_050_BENEFIT_REREVIEW_GATE[\s\S]*set local role authenticated;[\s\S]*admin_approve_and_publish_vacancy[\s\S]*reset role;[\s\S]*CHECKPOINT_050_BENEFIT_REAPPROVAL_GATE/);
+  const candidate = checkpoint.slice(checkpoint.indexOf('-- Pending Review'), checkpoint.indexOf('-- Legacy compatibility'));
+  assert.match(candidate, /set local role authenticated;[\s\S]*50000000-0000-0000-0000-000000000004[\s\S]*list_candidate_job_opportunities[\s\S]*reset role;/);
+  assert.match(candidate, /admin_approve_and_publish_vacancy[\s\S]*reset role;[\s\S]*set local role authenticated;[\s\S]*50000000-0000-0000-0000-000000000004/);
+  const legacy = checkpoint.slice(checkpoint.indexOf('-- Legacy compatibility'), checkpoint.indexOf('-- The transaction boundary'));
+  assert.match(legacy, /set local role authenticated;[\s\S]*50000000-0000-0000-0000-000000000004[\s\S]*list_candidate_job_opportunities[\s\S]*reset role;/);
+});
+
 test('M050 structured-CTC checkpoint mutations retain cadence except dedicated cadence failures', () => {
   assert.match(checkpoint, /create function pg_temp\.m50_constraint_terms[\s\S]*pg_temp\.m50_terms\('\[\]'::jsonb\).*\|\|/);
   assert.match(checkpoint, /pg_temp\.m50_constraint_terms\(\)-'compensation_cadence'/);

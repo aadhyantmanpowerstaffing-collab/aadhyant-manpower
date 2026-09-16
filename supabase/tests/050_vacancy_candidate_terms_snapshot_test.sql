@@ -390,13 +390,13 @@ $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
 select public.admin_approve_and_publish_vacancy(current_setting('m50.contractor_requirement')::uuid,null);
+reset role;
 do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
   if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_APPROVAL_PRECONDITION'; end if;
 end;
 $$;
-reset role;
 do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
@@ -411,6 +411,7 @@ reset role;
 do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
+  if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_SCALAR_REAPPROVAL_GATE'; end if;
   insert into private.vacancy_candidate_benefits(requirement_id,benefit_type,benefit_value_type) values(v_requirement,'uniform','provided');
   if private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_BENEFIT_REREVIEW_GATE'; end if;
 end;
@@ -432,6 +433,14 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
 select public.admin_approve_and_publish_vacancy(current_setting('m50.contractor_requirement')::uuid,null);
+reset role;
+do $$
+declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
+begin
+  if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_BENEFIT_REAPPROVAL_GATE'; end if;
+end;
+$$;
+set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000004',true);
 do $$
 declare v_row record;
