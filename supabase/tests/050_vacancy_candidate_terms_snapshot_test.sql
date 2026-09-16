@@ -70,6 +70,15 @@ returns jsonb language sql immutable as $$
     'benefits',p_benefits);
 $$;
 
+-- apply_vacancy_candidate_terms is deliberately a full snapshot replacement:
+-- omitted scalar keys become NULL and the benefits set is replaced.  Constraint
+-- fixture mutations therefore start with a complete monthly structured-CTC
+-- snapshot, then override only the field under test.
+create function pg_temp.m50_constraint_terms(p_patch jsonb default '{}'::jsonb)
+returns jsonb language sql immutable as $$
+  select pg_temp.m50_terms('[]'::jsonb) || coalesce(p_patch,'{}'::jsonb);
+$$;
+
 -- A direct synthetic row exercises every CHECK constraint without bypassing
 -- it. Legacy NULL values and explicit zero leave values are both valid.
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,qualification,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage,basic_da,attendance_bonus,monthly_bonus,leave_amount,other_fixed_earning,gross_wages,employee_pf,employee_esic,canteen_deduction,other_deduction,approx_in_hand,employer_pf,employer_esic,gratuity_provision,bonus_provision,leave_provision,other_ctc_component,ctc)
@@ -90,18 +99,36 @@ $$;
 do $$
 declare v_bad jsonb; v_field text; v_value integer; v_status text; v_basis text;
 begin
+  -- Cadence is a dedicated test: structured CTC accepts each approved cadence
+  -- and rejects both absent and unsupported cadence values.
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms());
+  if (select compensation_cadence from public.employer_requirements where id='50000000-0000-0000-0002-000000000001')<>'monthly' then raise exception 'CHECKPOINT_050_CADENCE_MONTHLY_FAILED'; end if;
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms('{"compensation_cadence":"annual"}'::jsonb));
+  if (select compensation_cadence from public.employer_requirements where id='50000000-0000-0000-0002-000000000001')<>'annual' then raise exception 'CHECKPOINT_050_CADENCE_ANNUAL_FAILED'; end if;
+  begin
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms()-'compensation_cadence');
+    raise exception 'CHECKPOINT_050_CADENCE_MISSING_ACCEPTED';
+  exception when check_violation or raise_exception then
+    if sqlerrm='CHECKPOINT_050_CADENCE_MISSING_ACCEPTED' then raise; end if;
+  end;
+  begin
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms('{"compensation_cadence":"weekly"}'::jsonb));
+    raise exception 'CHECKPOINT_050_CADENCE_INVALID_ACCEPTED';
+  exception when check_violation or raise_exception then
+    if sqlerrm='CHECKPOINT_050_CADENCE_INVALID_ACCEPTED' then raise; end if;
+  end;
   foreach v_field in array array['paid_leave_days_per_year','casual_leave_days_per_year','sick_leave_days_per_year','national_holiday_days_per_year','festival_holiday_days_per_year'] loop
     -- NULL is unknown/not supplied; 0, a positive annual value, and 366 are
     -- explicit valid annual values for every approved entitlement field.
-    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object(v_field,null,'benefits','[]'::jsonb));
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object(v_field,null)));
     if (select to_jsonb(r)->>v_field from public.employer_requirements r where r.id='50000000-0000-0000-0002-000000000001') is not null then raise exception 'CHECKPOINT_050_LEAVE_NULL_FAILED: %',v_field; end if;
     foreach v_value in array array[0,12,366] loop
-      perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object(v_field,v_value,'benefits','[]'::jsonb));
+      perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object(v_field,v_value)));
       if (select (to_jsonb(r)->>v_field)::integer from public.employer_requirements r where r.id='50000000-0000-0000-0002-000000000001')<>v_value then raise exception 'CHECKPOINT_050_LEAVE_VALID_FAILED: %=%',v_field,v_value; end if;
     end loop;
     foreach v_value in array array[-1,367] loop
       begin
-        perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object(v_field,v_value,'benefits','[]'::jsonb));
+        perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object(v_field,v_value)));
         raise exception 'CHECKPOINT_050_LEAVE_BOUND_ACCEPTED: %=%',v_field,v_value;
       exception when check_violation or raise_exception then
         if sqlerrm like 'CHECKPOINT_050_LEAVE_BOUND_ACCEPTED%' then raise; end if;
@@ -115,36 +142,36 @@ begin
   -- Complete structured Canteen matrix: NULL preserves legacy fallback;
   -- every non-chargeable state clears charges; every approved charge basis
   -- accepts a positive amount.
-  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('canteen_status',null,'benefits','[]'::jsonb));
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('canteen_status',null,'canteen_charge_amount',null,'canteen_charge_basis',null)));
   if (select canteen_status from public.employer_requirements where id='50000000-0000-0000-0002-000000000001') is not null then raise exception 'CHECKPOINT_050_CANTEEN_LEGACY_NULL'; end if;
   foreach v_status in array array['free','not_available','not_applicable'] loop
-    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('canteen_status',v_status,'benefits','[]'::jsonb));
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('canteen_status',v_status,'canteen_charge_amount',null,'canteen_charge_basis',null)));
     if exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and (canteen_status<>v_status or canteen_charge_amount is not null or canteen_charge_basis is not null)) then raise exception 'CHECKPOINT_050_CANTEEN_NONCHARGEABLE: %',v_status; end if;
   end loop;
   foreach v_basis in array array['per_day','per_meal','per_month'] loop
-    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('canteen_status','chargeable','canteen_charge_amount',30,'canteen_charge_basis',v_basis,'benefits','[]'::jsonb));
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('canteen_status','chargeable','canteen_charge_amount',30,'canteen_charge_basis',v_basis)));
     if not exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and canteen_status='chargeable' and canteen_charge_amount=30 and canteen_charge_basis=v_basis) then raise exception 'CHECKPOINT_050_CANTEEN_CHARGEABLE: %',v_basis; end if;
   end loop;
   -- Complete structured Transport matrix, including both approved charge bases.
-  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('transport_status',null,'benefits','[]'::jsonb));
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('transport_status',null,'transport_charge_amount',null,'transport_charge_basis',null)));
   if (select transport_status from public.employer_requirements where id='50000000-0000-0000-0002-000000000001') is not null then raise exception 'CHECKPOINT_050_TRANSPORT_LEGACY_NULL'; end if;
   foreach v_status in array array['free','not_available','not_applicable'] loop
-    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('transport_status',v_status,'benefits','[]'::jsonb));
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('transport_status',v_status,'transport_charge_amount',null,'transport_charge_basis',null)));
     if exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and (transport_status<>v_status or transport_charge_amount is not null or transport_charge_basis is not null)) then raise exception 'CHECKPOINT_050_TRANSPORT_NONCHARGEABLE: %',v_status; end if;
   end loop;
   foreach v_basis in array array['per_day','per_month'] loop
-    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',jsonb_build_object('transport_status','chargeable','transport_charge_amount',900,'transport_charge_basis',v_basis,'benefits','[]'::jsonb));
+    perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('transport_status','chargeable','transport_charge_amount',900,'transport_charge_basis',v_basis)));
     if not exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and transport_status='chargeable' and transport_charge_amount=900 and transport_charge_basis=v_basis) then raise exception 'CHECKPOINT_050_TRANSPORT_CHARGEABLE: %',v_basis; end if;
   end loop;
   foreach v_bad in array array[
     '{"compensation_cadence":"weekly"}'::jsonb,
     '{"working_days_per_week":6,"weekly_off_count":2}'::jsonb,
-    '{"overtime_rate":100}'::jsonb,
-    '{"overtime_rate_basis":"per_hour"}'::jsonb,
+    '{"overtime_rate":100,"overtime_rate_basis":null}'::jsonb,
+    '{"overtime_rate":null,"overtime_rate_basis":"per_hour"}'::jsonb,
     '{"overtime_rate":0,"overtime_rate_basis":"per_hour"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":0,"canteen_charge_basis":"per_day"}'::jsonb,
-    '{"canteen_status":"chargeable","canteen_charge_basis":"per_day"}'::jsonb,
-    '{"canteen_status":"chargeable","canteen_charge_amount":30}'::jsonb,
+    '{"canteen_status":"chargeable","canteen_charge_amount":null,"canteen_charge_basis":"per_day"}'::jsonb,
+    '{"canteen_status":"chargeable","canteen_charge_amount":30,"canteen_charge_basis":null}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":-1,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":30,"canteen_charge_basis":"invalid"}'::jsonb,
     '{"canteen_status":"free","canteen_charge_amount":30,"canteen_charge_basis":"per_day"}'::jsonb,
@@ -152,8 +179,8 @@ begin
     '{"canteen_status":"not_applicable","canteen_charge_amount":30,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"unsupported"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":30,"transport_charge_basis":"per_meal"}'::jsonb,
-    '{"transport_status":"chargeable","transport_charge_basis":"per_day"}'::jsonb,
-    '{"transport_status":"chargeable","transport_charge_amount":900}'::jsonb,
+    '{"transport_status":"chargeable","transport_charge_amount":null,"transport_charge_basis":"per_day"}'::jsonb,
+    '{"transport_status":"chargeable","transport_charge_amount":900,"transport_charge_basis":null}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":0,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":-1,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"free","transport_charge_amount":900,"transport_charge_basis":"per_day"}'::jsonb,
@@ -170,7 +197,7 @@ begin
     '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount":1}]}'::jsonb
   ] loop
     begin
-      perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',v_bad);
+      perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(v_bad));
       raise exception 'CHECKPOINT_050_INVALID_TERMS_ACCEPTED: %',v_bad;
     exception when check_violation or raise_exception then
       if sqlerrm like 'CHECKPOINT_050_INVALID_TERMS_ACCEPTED%' then raise; end if;

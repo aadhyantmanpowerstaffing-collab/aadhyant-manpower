@@ -127,12 +127,23 @@ test('M050 runtime checkpoint is rollback-scoped and covers owner, idempotency, 
     'CHECKPOINT_050_BENEFIT_REREVIEW_GATE', 'CHECKPOINT_050_PENDING_REVIEW_EXPOSED',
     'CHECKPOINT_050_CANDIDATE_SAFE_PROJECTION', 'CHECKPOINT_050_LEGACY_FALLBACK',
     'CHECKPOINT_050_LEAVE_NULL_FAILED', 'CHECKPOINT_050_LEAVE_VALID_FAILED', 'CHECKPOINT_050_LEAVE_BOUND_ACCEPTED',
+    'CHECKPOINT_050_CADENCE_MONTHLY_FAILED', 'CHECKPOINT_050_CADENCE_ANNUAL_FAILED',
+    'CHECKPOINT_050_CADENCE_MISSING_ACCEPTED', 'CHECKPOINT_050_CADENCE_INVALID_ACCEPTED',
     'CHECKPOINT_050_FIXTURE_WAGE_TOTALS',
     'CHECKPOINT_050_CANTEEN_LEGACY_NULL', 'CHECKPOINT_050_CANTEEN_NONCHARGEABLE', 'CHECKPOINT_050_CANTEEN_CHARGEABLE',
     'CHECKPOINT_050_TRANSPORT_LEGACY_NULL', 'CHECKPOINT_050_TRANSPORT_NONCHARGEABLE', 'CHECKPOINT_050_TRANSPORT_CHARGEABLE',
     'private.vacancy_candidate_benefits', 'private.contractor_vacancy_submission_term_requests'
   ]) assert.ok(checkpoint.includes(token), token);
   for (const protectedCode of ['AAD-2026-000353', 'AAD-2026-000354', 'AAD-2026-000355', 'AAD-2026-000360', 'AAD-2026-000361']) assert.ok(!checkpoint.includes(protectedCode));
+});
+
+test('M050 structured-CTC checkpoint mutations retain cadence except dedicated cadence failures', () => {
+  assert.match(checkpoint, /create function pg_temp\.m50_constraint_terms[\s\S]*pg_temp\.m50_terms\('\[\]'::jsonb\).*\|\|/);
+  assert.match(checkpoint, /pg_temp\.m50_constraint_terms\(\)-'compensation_cadence'/);
+  assert.match(checkpoint, /pg_temp\.m50_constraint_terms\('\{"compensation_cadence":"weekly"\}'::jsonb\)/);
+  const structuredFixtureCalls = checkpoint.split(/\r?\n/).filter((line) => line.includes("apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001'"));
+  assert.ok(structuredFixtureCalls.length > 0);
+  for (const call of structuredFixtureCalls) assert.match(call, /pg_temp\.m50_constraint_terms\(/);
 });
 
 test('M050 replay composes with M049 base validation before additive terms validation', () => {
