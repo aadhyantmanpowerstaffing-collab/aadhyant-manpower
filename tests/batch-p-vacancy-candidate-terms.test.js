@@ -154,6 +154,12 @@ test('M050 runtime checkpoint is rollback-scoped and covers owner, idempotency, 
   for (const protectedCode of ['AAD-2026-000353', 'AAD-2026-000354', 'AAD-2026-000355', 'AAD-2026-000360', 'AAD-2026-000361']) assert.ok(!checkpoint.includes(protectedCode));
 });
 
+test('M050 Company owner fixture follows the authoritative legacy facility vocabulary', () => {
+  const companyFixture = checkpoint.slice(checkpoint.indexOf('select * into v_company'), checkpoint.indexOf('-- Contractor submission'));
+  for (const token of ["p_canteen=>'Yes'", "p_transport=>'Yes'", "p_accommodation=>'Yes'"]) assert.ok(companyFixture.includes(token), token);
+  assert.doesNotMatch(companyFixture, /p_(canteen|transport|accommodation)=>'Available'/);
+});
+
 test('M050 structured-CTC checkpoint mutations retain cadence except dedicated cadence failures', () => {
   assert.match(checkpoint, /create function pg_temp\.m50_constraint_terms[\s\S]*pg_temp\.m50_terms\('\[\]'::jsonb\).*\|\|/);
   assert.match(checkpoint, /pg_temp\.m50_constraint_terms\(\)-'compensation_cadence'/);
