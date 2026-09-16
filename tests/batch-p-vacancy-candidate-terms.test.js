@@ -12,6 +12,9 @@ const companyHtml = read('company/requirements.html');
 const contractorHtml = read('contractor/vacancies.html');
 const company = read('company/batch2-vacancies.js');
 const contractor = read('contractor/batch2-vacancies.js');
+const localSupabaseConfig = read('supabase/config.toml');
+const localRuntimeHarness = read('scripts/ci/run-m050-local-validation.sh');
+const localRuntimeWorkflow = read('.github/workflows/m050-local-runtime-validation.yml');
 
 test('M050 is additive, private, closed-catalog, and Candidate-safe', () => {
   for (const token of ['compensation_cadence','paid_leave_days_per_year','casual_leave_days_per_year','sick_leave_days_per_year','national_holiday_days_per_year','festival_holiday_days_per_year','working_days_per_week','weekly_off_count','overtime_rate_basis','canteen_status','transport_status','employment_type','payroll_type','private.vacancy_candidate_benefits','production_incentive','ppe','primary key(requirement_id,benefit_type)','enable row level security','revoke all on table private.vacancy_candidate_benefits']) assert.ok(migration.includes(token), token);
@@ -222,4 +225,46 @@ test('material Candidate-facing edits are returned to review before publication'
   assert.match(migration, /requirement_visibility:='private'/);
   assert.match(migration, /requirement_stage:='draft'/);
   assert.match(migration, /submission_status='submitted'/);
+});
+
+test('M050 disposable local runtime harness is unlinked, exact-source, and fail-closed', () => {
+  assert.match(localSupabaseConfig, /project_id\s*=\s*"aadhyant-m050-local-validation"/);
+  assert.match(localSupabaseConfig, /\[auth\][\s\S]*enabled\s*=\s*true/);
+  assert.match(localSupabaseConfig, /\[storage\][\s\S]*enabled\s*=\s*true/);
+  assert.doesNotMatch(localSupabaseConfig, /zrluniaccvcdrvfwgrmj|wsuctjhbqiedttfnwjvf|\.supabase\.co|postgres(?:ql)?:\/\//i);
+
+  for (const token of [
+    'set -euo pipefail', 'SUPABASE_TELEMETRY_DISABLED=1', 'SUPABASE_ACCESS_TOKEN', 'SUPABASE_DB_PASSWORD', 'SUPABASE_SERVICE_ROLE_KEY',
+    'zrluniaccvcdrvfwgrmj', 'wsuctjhbqiedttfnwjvf', 'LOCAL_DB_HOST_REFUSED',
+    'LOCAL_WORKDIR', 'prepare_local_workdir', 'supabase --workdir "$LOCAL_WORKDIR" start',
+    'supabase --workdir "$LOCAL_WORKDIR" stop --no-backup',
+    'supabase/schema.sql', 'MIGRATION_SEQUENCE_AMBIGUOUS_OR_MISSING',
+    'seq 7 49', 'private.contractor_vacancy_submission_requests',
+    'EXPECTED_M050_SHA256', 'EXPECTED_CHECKPOINT_SHA256',
+    'supabase/migrations/050_vacancy_candidate_terms_snapshot.sql',
+    'supabase/tests/050_vacancy_candidate_terms_snapshot_test.sql',
+    'CHECKPOINT_SYNTHETIC_RESIDUE_ZERO', 'public.requirement_contractors',
+    'public.candidate_applications', 'public.application_stage_history',
+    'public.audit_logs', 'private.vacancy_candidate_benefits',
+    'M050_LOCAL_RUNTIME_RESULT=PASS'
+  ]) assert.ok(localRuntimeHarness.includes(token), token);
+  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="c7defc9fdef2e36e6753994f70942de476495f66f1e5aa29ce8a92e51f4a9596"/);
+  assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="cf6665916a282dbd5dbd65e53d31aa2604ffb05962ad75b43ef477048a5fe422"/);
+  assert.doesNotMatch(localRuntimeHarness, /supabase\s+link\b|supabase\s+db\s+push\b|supabase\s+migration\s+up\b/i);
+  assert.doesNotMatch(localRuntimeHarness, /supabase\s+stop\s+--all\b|supabase\s+--workdir\s+[^\n]+\s+stop\s+--all\b|\b(?:curl|wget)\b/i);
+  assert.match(localRuntimeHarness, /psql\s+"\$LOCAL_DB_URL"\s+-X\s+-q\s+-v\s+ON_ERROR_STOP=1/);
+  assert.match(localRuntimeHarness, /supabase --workdir "\$LOCAL_WORKDIR" status -o env[\s\S]*LOCAL_DB_URL=/);
+  assert.match(localRuntimeHarness, /mkdir -p "\$LOCAL_WORKDIR\/supabase"[\s\S]*cp "\$REPOSITORY_ROOT\/supabase\/config\.toml" "\$LOCAL_WORKDIR\/supabase\/config\.toml"/);
+  assert.match(localRuntimeHarness, /rm -f "\$RAW_OUTPUT" "\$STATUS_ENV"[\s\S]*supabase --workdir "\$LOCAL_WORKDIR" stop --no-backup[\s\S]*rm -rf "\$LOCAL_WORKDIR"/);
+
+  assert.match(localRuntimeWorkflow, /^on:\s*\n\s+workflow_dispatch:/m);
+  assert.doesNotMatch(localRuntimeWorkflow, /^\s*(push|pull_request|schedule):/m);
+  assert.match(localRuntimeWorkflow, /runs-on:\s*ubuntu-24\.04/);
+  assert.match(localRuntimeWorkflow, /timeout-minutes:\s*45/);
+  assert.match(localRuntimeWorkflow, /permissions:\s*\n\s+contents:\s*read/m);
+  assert.match(localRuntimeWorkflow, /actions\/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd/);
+  assert.match(localRuntimeWorkflow, /supabase\/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf/);
+  assert.match(localRuntimeWorkflow, /version:\s*2\.111\.0/);
+  assert.match(localRuntimeWorkflow, /bash scripts\/ci\/run-m050-local-validation\.sh/);
+  assert.doesNotMatch(localRuntimeWorkflow, /secrets\.|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|STAGING_SUPABASE|CLOUDFLARE|environment:/i);
 });

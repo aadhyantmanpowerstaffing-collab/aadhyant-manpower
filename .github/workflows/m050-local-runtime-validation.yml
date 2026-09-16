@@ -1,0 +1,28 @@
+name: Disposable local M050 runtime validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-local-m050:
+    name: Validate exact M050 on disposable local Supabase
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the selected revision without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.111.0
+
+      - name: Validate M050 on an unlinked disposable local stack
+        run: bash scripts/ci/run-m050-local-validation.sh
