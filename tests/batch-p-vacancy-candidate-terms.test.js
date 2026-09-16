@@ -22,10 +22,27 @@ test('M050 is additive, private, closed-catalog, and Candidate-safe', () => {
 
 test('M050 validates controlled conditional terms and preserves legacy nulls', () => {
   for (const token of ["('monthly','annual')",'working_days_per_week+weekly_off_count=7',"('per_hour','per_day','multiplier')","('per_day','per_meal','per_month')","('per_day','per_month')",'contract_duration_months between 1 and 120','probation_period_months between 1 and 24','training_period_days between 1 and 365','notice_period_days between 1 and 180','leave_amount','leave_provision']) assert.ok(migration.includes(token), token);
-  assert.match(migration, /canteen_status='chargeable' and canteen_charge_amount>0/);
-  assert.match(migration, /transport_status='chargeable' and transport_charge_amount>0/);
   assert.match(migration, /compensation cadence is required/i);
   for (const field of ['paid_leave_days_per_year','casual_leave_days_per_year','sick_leave_days_per_year','national_holiday_days_per_year','festival_holiday_days_per_year']) assert.match(migration, new RegExp(`${field} is null or ${field} between 0 and 366`));
+});
+
+test('M050 conditional checks reject invalid NULL pairings rather than allowing SQL UNKNOWN', () => {
+  const sql = migration.toLowerCase().replace(/\s+/g, ' ');
+  for (const contract of [
+    "when overtime_rate is null then overtime_rate_basis is null",
+    "when overtime_rate_basis is null then false",
+    "when canteen_status is null then canteen_charge_amount is null and canteen_charge_basis is null",
+    "when canteen_status='chargeable' then canteen_charge_amount is not null and canteen_charge_amount>0 and canteen_charge_basis is not null",
+    "when transport_status is null then transport_charge_amount is null and transport_charge_basis is null",
+    "when transport_status='chargeable' then transport_charge_amount is not null and transport_charge_amount>0 and transport_charge_basis is not null",
+    "contract_duration_months is null or (employment_type is not null and employment_type='contract')",
+    "when benefit_value_type='cash' then amount is not null and amount>0 and amount_basis is not null",
+    "when benefit_value_type='provided' then amount is null and amount_basis is null"
+  ]) assert.ok(sql.includes(contract), contract);
+  assert.match(checkpoint, /CHECKPOINT_050_OVERTIME_NULL_PAIR/);
+  assert.match(checkpoint, /\{"canteen_status":"chargeable","canteen_charge_amount":null,"canteen_charge_basis":null\}/);
+  assert.match(checkpoint, /\{"transport_status":"chargeable","transport_charge_amount":null,"transport_charge_basis":null\}/);
+  assert.match(checkpoint, /"benefit_value_type":"cash","amount":null/);
 });
 
 test('owner forms use controlled terms through owner RPCs and preserve M049 submit key', () => {

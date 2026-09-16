@@ -139,6 +139,12 @@ begin
      or (select leave_provision from public.employer_requirements where id='50000000-0000-0000-0002-000000000001')<>222 then
     raise exception 'CHECKPOINT_050_FINANCIAL_LEAVE_FIELDS_REPURPOSED';
   end if;
+  -- Overtime pairing is NULL-safe: exactly the null/null pair or a positive
+  -- rate with an approved non-null basis is valid.
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('overtime_rate',null,'overtime_rate_basis',null)));
+  if exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and (overtime_rate is not null or overtime_rate_basis is not null)) then raise exception 'CHECKPOINT_050_OVERTIME_NULL_PAIR'; end if;
+  perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms());
+  if not exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and overtime_rate=120 and overtime_rate_basis='per_hour') then raise exception 'CHECKPOINT_050_OVERTIME_VALID_PAIR'; end if;
   -- Complete structured Canteen matrix: NULL preserves legacy fallback;
   -- every non-chargeable state clears charges; every approved charge basis
   -- accepts a positive amount.
@@ -169,32 +175,46 @@ begin
     '{"overtime_rate":100,"overtime_rate_basis":null}'::jsonb,
     '{"overtime_rate":null,"overtime_rate_basis":"per_hour"}'::jsonb,
     '{"overtime_rate":0,"overtime_rate_basis":"per_hour"}'::jsonb,
+    '{"overtime_rate":-1,"overtime_rate_basis":"per_hour"}'::jsonb,
+    '{"overtime_rate":100,"overtime_rate_basis":"invalid"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":0,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":null,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":30,"canteen_charge_basis":null}'::jsonb,
+    '{"canteen_status":"chargeable","canteen_charge_amount":null,"canteen_charge_basis":null}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":-1,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"chargeable","canteen_charge_amount":30,"canteen_charge_basis":"invalid"}'::jsonb,
     '{"canteen_status":"free","canteen_charge_amount":30,"canteen_charge_basis":"per_day"}'::jsonb,
+    '{"canteen_status":"free","canteen_charge_amount":30,"canteen_charge_basis":null}'::jsonb,
+    '{"canteen_status":"free","canteen_charge_amount":null,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"not_available","canteen_charge_amount":30,"canteen_charge_basis":"per_day"}'::jsonb,
     '{"canteen_status":"not_applicable","canteen_charge_amount":30,"canteen_charge_basis":"per_day"}'::jsonb,
+    '{"canteen_status":null,"canteen_charge_amount":30,"canteen_charge_basis":null}'::jsonb,
     '{"canteen_status":"unsupported"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":30,"transport_charge_basis":"per_meal"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":null,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":900,"transport_charge_basis":null}'::jsonb,
+    '{"transport_status":"chargeable","transport_charge_amount":null,"transport_charge_basis":null}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":0,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"chargeable","transport_charge_amount":-1,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"free","transport_charge_amount":900,"transport_charge_basis":"per_day"}'::jsonb,
+    '{"transport_status":"free","transport_charge_amount":900,"transport_charge_basis":null}'::jsonb,
+    '{"transport_status":"free","transport_charge_amount":null,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"not_available","transport_charge_amount":900,"transport_charge_basis":"per_day"}'::jsonb,
     '{"transport_status":"not_applicable","transport_charge_amount":900,"transport_charge_basis":"per_day"}'::jsonb,
+    '{"transport_status":null,"transport_charge_amount":900,"transport_charge_basis":null}'::jsonb,
     '{"transport_status":"unsupported"}'::jsonb,
     '{"employment_type":"permanent","contract_duration_months":12}'::jsonb,
+    '{"employment_type":null,"contract_duration_months":12}'::jsonb,
     '{"employment_type":"contract","contract_duration_months":121}'::jsonb,
     '{"probation_period_months":25}'::jsonb,
     '{"training_period_days":366}'::jsonb,
     '{"notice_period_days":181}'::jsonb,
     '{"benefits":[{"benefit_type":"arbitrary","benefit_value_type":"provided"}]}'::jsonb,
     '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"cash","amount":0,"amount_basis":"per_month"}]}'::jsonb,
-    '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount":1}]}'::jsonb
+    '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"cash","amount":null,"amount_basis":"per_month"}]}'::jsonb,
+    '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"cash","amount":1,"amount_basis":null}]}'::jsonb,
+    '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount":1}]}'::jsonb,
+    '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount_basis":"per_month"}]}'::jsonb
   ] loop
     begin
       perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(v_bad));

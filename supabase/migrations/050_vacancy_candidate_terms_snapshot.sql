@@ -49,17 +49,28 @@ alter table public.employer_requirements
     and (working_days_per_week is null or weekly_off_count is null or working_days_per_week+weekly_off_count=7)),
   drop constraint if exists employer_requirements_overtime_rate_m050_check,
   add constraint employer_requirements_overtime_rate_m050_check check (
-    (overtime_rate is null and overtime_rate_basis is null) or (overtime_rate>0 and overtime_rate_basis in ('per_hour','per_day','multiplier'))),
+    case
+      when overtime_rate is null then overtime_rate_basis is null
+      when overtime_rate_basis is null then false
+      when overtime_rate<=0 then false
+      else overtime_rate_basis in ('per_hour','per_day','multiplier')
+    end),
   drop constraint if exists employer_requirements_canteen_terms_m050_check,
   add constraint employer_requirements_canteen_terms_m050_check check (
-    (canteen_status is null and canteen_charge_amount is null and canteen_charge_basis is null)
-    or (canteen_status='chargeable' and canteen_charge_amount>0 and canteen_charge_basis in ('per_day','per_meal','per_month'))
-    or (canteen_status in ('free','not_available','not_applicable') and canteen_charge_amount is null and canteen_charge_basis is null)),
+    case
+      when canteen_status is null then canteen_charge_amount is null and canteen_charge_basis is null
+      when canteen_status='chargeable' then canteen_charge_amount is not null and canteen_charge_amount>0 and canteen_charge_basis is not null and canteen_charge_basis in ('per_day','per_meal','per_month')
+      when canteen_status in ('free','not_available','not_applicable') then canteen_charge_amount is null and canteen_charge_basis is null
+      else false
+    end),
   drop constraint if exists employer_requirements_transport_terms_m050_check,
   add constraint employer_requirements_transport_terms_m050_check check (
-    (transport_status is null and transport_charge_amount is null and transport_charge_basis is null)
-    or (transport_status='chargeable' and transport_charge_amount>0 and transport_charge_basis in ('per_day','per_month'))
-    or (transport_status in ('free','not_available','not_applicable') and transport_charge_amount is null and transport_charge_basis is null)),
+    case
+      when transport_status is null then transport_charge_amount is null and transport_charge_basis is null
+      when transport_status='chargeable' then transport_charge_amount is not null and transport_charge_amount>0 and transport_charge_basis is not null and transport_charge_basis in ('per_day','per_month')
+      when transport_status in ('free','not_available','not_applicable') then transport_charge_amount is null and transport_charge_basis is null
+      else false
+    end),
   drop constraint if exists employer_requirements_employment_terms_m050_check,
   add constraint employer_requirements_employment_terms_m050_check check (
     (employment_type is null or employment_type in ('permanent','contract','temporary','trainee','apprentice'))
@@ -68,7 +79,7 @@ alter table public.employer_requirements
     and (probation_period_months is null or probation_period_months between 1 and 24)
     and (training_period_days is null or training_period_days between 1 and 365)
     and (notice_period_days is null or notice_period_days between 1 and 180)
-    and (contract_duration_months is null or employment_type='contract'));
+    and (contract_duration_months is null or (employment_type is not null and employment_type='contract')));
 
 create table private.vacancy_candidate_benefits (
   requirement_id uuid not null references public.employer_requirements(id) on delete cascade,
@@ -79,7 +90,13 @@ create table private.vacancy_candidate_benefits (
   created_at timestamptz not null default clock_timestamp(),
   updated_at timestamptz not null default clock_timestamp(),
   primary key(requirement_id,benefit_type),
-  check ((benefit_value_type='cash' and amount>0 and amount_basis in ('per_day','per_month','one_time','annual')) or (benefit_value_type='provided' and amount is null and amount_basis is null))
+  check (
+    case
+      when benefit_value_type='cash' then amount is not null and amount>0 and amount_basis is not null and amount_basis in ('per_day','per_month','one_time','annual')
+      when benefit_value_type='provided' then amount is null and amount_basis is null
+      else false
+    end
+  )
 );
 alter table private.vacancy_candidate_benefits enable row level security;
 revoke all on table private.vacancy_candidate_benefits from public,anon,authenticated;
