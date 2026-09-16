@@ -17,6 +17,15 @@ const contractor = read('contractor/batch2-vacancies.js');
 const localSupabaseConfig = read('supabase/config.toml');
 const localRuntimeHarness = read('scripts/ci/run-m050-local-validation.sh');
 const localRuntimeWorkflow = read('.github/workflows/m050-local-runtime-validation.yml');
+const checkpointDiagnosticPhases = [
+  'COMPENSATION_CADENCE', 'LEAVE_HOLIDAY', 'WORKING_WEEK', 'OVERTIME', 'CANTEEN', 'TRANSPORT',
+  'BENEFITS_SECURITY', 'EMPLOYMENT_TERMS', 'ACCOMMODATION_REGRESSION', 'COMPANY_OWNER_RPC',
+  'CONTRACTOR_OWNER_RPC', 'REPLAY_IDENTICAL', 'REPLAY_CHANGED_BASE', 'REPLAY_CHANGED_SCALAR',
+  'REPLAY_CHANGED_BENEFITS', 'REPLAY_CHANGED_BASE_AND_TERMS', 'MATERIAL_REVIEW_INITIAL_APPROVAL',
+  'MATERIAL_REVIEW_SCALAR_EDIT', 'MATERIAL_REVIEW_SCALAR_REAPPROVAL', 'MATERIAL_REVIEW_BENEFIT_EDIT',
+  'MATERIAL_REVIEW_BENEFIT_REAPPROVAL', 'CANDIDATE_PROJECTION', 'PENDING_REVIEW_EXCLUSION',
+  'LEGACY_COMPATIBILITY', 'FINAL_RESIDUE_PRE_ROLLBACK'
+];
 
 test('M050 is additive, private, closed-catalog, and Candidate-safe', () => {
   for (const token of ['compensation_cadence','paid_leave_days_per_year','casual_leave_days_per_year','sick_leave_days_per_year','national_holiday_days_per_year','festival_holiday_days_per_year','working_days_per_week','weekly_off_count','overtime_rate_basis','canteen_status','transport_status','employment_type','payroll_type','private.vacancy_candidate_benefits','production_incentive','ppe','primary key(requirement_id,benefit_type)','enable row level security','revoke all on table private.vacancy_candidate_benefits']) assert.ok(migration.includes(token), token);
@@ -251,7 +260,7 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
     'M050_LOCAL_RUNTIME_RESULT=PASS'
   ]) assert.ok(localRuntimeHarness.includes(token), token);
   assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="c7defc9fdef2e36e6753994f70942de476495f66f1e5aa29ce8a92e51f4a9596"/);
-  assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="cf6665916a282dbd5dbd65e53d31aa2604ffb05962ad75b43ef477048a5fe422"/);
+  assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"/);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+link\b|supabase\s+db\s+push\b|supabase\s+migration\s+up\b/i);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+stop\s+--all\b|supabase\s+--workdir\s+[^\n]+\s+stop\s+--all\b|\b(?:curl|wget)\b/i);
   assert.match(localRuntimeHarness, /psql\s+"\$LOCAL_DB_URL"\s+-X\s+-q\s+-v\s+ON_ERROR_STOP=1/);
@@ -269,6 +278,25 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
   assert.match(localRuntimeWorkflow, /version:\s*2\.111\.0/);
   assert.match(localRuntimeWorkflow, /bash scripts\/ci\/run-m050-local-validation\.sh/);
   assert.doesNotMatch(localRuntimeWorkflow, /secrets\.|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|STAGING_SUPABASE|CLOUDFLARE|environment:/i);
+});
+
+test('M050 checkpoint failure diagnostics are closed-catalog and redact raw psql output', () => {
+  const allowlist = localRuntimeHarness.match(/is_allowed_checkpoint_phase\(\) \{[\s\S]*?case "\$\{1:-\}" in([\s\S]*?)esac/);
+  assert.ok(allowlist);
+  for (const phase of checkpointDiagnosticPhases) {
+    assert.match(checkpoint, new RegExp(`CHECKPOINT_050_PHASE=${phase}`));
+    assert.match(allowlist[1], new RegExp(`\\b${phase}\\b`));
+  }
+  assert.match(localRuntimeHarness, /-v VERBOSITY=verbose -v SHOW_CONTEXT=errors/);
+  assert.match(localRuntimeHarness, /\^\[0-9A-Z\]\{5\}\$/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_CHECKPOINT_PHASE=/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQLSTATE=/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQL_ERROR=/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQL_CONTEXT=/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_CHECKPOINT=PASS/);
+  assert.match(localRuntimeHarness, /CHECKPOINT_ASSERTION:%s/);
+  assert.match(localRuntimeHarness, /PLPGSQL_INLINE_BLOCK/);
+  assert.doesNotMatch(localRuntimeHarness, /\b(?:cat|tee)\b[^\n]*RAW_OUTPUT/);
 });
 
 test('M050 disposable local runtime harness is valid Bash on Linux CI', (t) => {

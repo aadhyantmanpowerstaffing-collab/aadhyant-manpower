@@ -7,8 +7,9 @@ umask 077
 export SUPABASE_TELEMETRY_DISABLED=1
 
 readonly EXPECTED_M050_SHA256="c7defc9fdef2e36e6753994f70942de476495f66f1e5aa29ce8a92e51f4a9596"
-readonly EXPECTED_CHECKPOINT_SHA256="cf6665916a282dbd5dbd65e53d31aa2604ffb05962ad75b43ef477048a5fe422"
+readonly EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"
 readonly EXPECTED_SUPABASE_CLI_VERSION="2.111.0"
+readonly CHECKPOINT_FILENAME="050_vacancy_candidate_terms_snapshot_test.sql"
 readonly LOCAL_PROJECT_ID="aadhyant-m050-local-validation"
 readonly PARENT_NONPROD_REF="zrluniaccvcdrvfwgrmj"
 readonly PRODUCTION_PROJECT_REF="wsuctjhbqiedttfnwjvf"
@@ -93,9 +94,74 @@ sha256_file() {
 }
 
 psql_file() {
-  local file="$1"
-  psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -f "$file" > "$RAW_OUTPUT" 2>&1 \
-    || fail "SQL_FILE_FAILED:$(basename "$file")"
+  local file="$1" filename
+  filename="$(basename "$file")"
+  if [[ "$filename" == "$CHECKPOINT_FILENAME" ]]; then
+    if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=verbose -v SHOW_CONTEXT=errors -f "$file" > "$RAW_OUTPUT" 2>&1; then
+      fail_checkpoint_sql "$filename"
+    fi
+  elif ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -f "$file" > "$RAW_OUTPUT" 2>&1; then
+    fail "SQL_FILE_FAILED:$filename"
+  fi
+}
+
+is_allowed_checkpoint_phase() {
+  case "${1:-}" in
+    COMPENSATION_CADENCE|LEAVE_HOLIDAY|WORKING_WEEK|OVERTIME|CANTEEN|TRANSPORT|BENEFITS_SECURITY|EMPLOYMENT_TERMS|ACCOMMODATION_REGRESSION|COMPANY_OWNER_RPC|CONTRACTOR_OWNER_RPC|REPLAY_IDENTICAL|REPLAY_CHANGED_BASE|REPLAY_CHANGED_SCALAR|REPLAY_CHANGED_BENEFITS|REPLAY_CHANGED_BASE_AND_TERMS|MATERIAL_REVIEW_INITIAL_APPROVAL|MATERIAL_REVIEW_SCALAR_EDIT|MATERIAL_REVIEW_SCALAR_REAPPROVAL|MATERIAL_REVIEW_BENEFIT_EDIT|MATERIAL_REVIEW_BENEFIT_REAPPROVAL|CANDIDATE_PROJECTION|PENDING_REVIEW_EXCLUSION|LEGACY_COMPATIBILITY|FINAL_RESIDUE_PRE_ROLLBACK) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+latest_checkpoint_phase() {
+  local line phase latest="UNKNOWN"
+  while IFS= read -r line; do
+    if [[ "$line" =~ CHECKPOINT_050_PHASE=([A-Z0-9_]+) ]]; then
+      phase="${BASH_REMATCH[1]}"
+      if is_allowed_checkpoint_phase "$phase"; then
+        latest="$phase"
+      fi
+    fi
+  done < "$RAW_OUTPUT"
+  printf '%s\n' "$latest"
+}
+
+checkpoint_sqlstate() {
+  local sqlstate
+  sqlstate="$(sed -nE 's/.*ERROR:[[:space:]]+([0-9A-Z]{5}):.*/\1/p' "$RAW_OUTPUT" | tail -n 1 || true)"
+  if [[ "$sqlstate" =~ ^[0-9A-Z]{5}$ ]]; then
+    printf '%s\n' "$sqlstate"
+  else
+    printf '%s\n' "UNAVAILABLE"
+  fi
+}
+
+checkpoint_sql_error() {
+  local marker
+  marker="$(grep -oE 'CHECKPOINT_050_[A-Z0-9_]+' "$RAW_OUTPUT" | grep -v '^CHECKPOINT_050_PHASE' | tail -n 1 || true)"
+  if [[ "$marker" =~ ^CHECKPOINT_050_[A-Z0-9_]+$ ]]; then
+    printf 'CHECKPOINT_ASSERTION:%s\n' "$marker"
+  else
+    printf '%s\n' "REDACTED"
+  fi
+}
+
+checkpoint_sql_context() {
+  if grep -Eq 'CONTEXT:.*PL/pgSQL function inline_code_block line [0-9]+ at RAISE' "$RAW_OUTPUT"; then
+    printf '%s\n' "PLPGSQL_INLINE_BLOCK"
+  else
+    printf '%s\n' "REDACTED"
+  fi
+}
+
+fail_checkpoint_sql() {
+  local filename="$1"
+  log "M050_LOCAL_RUNTIME_RESULT=FAIL"
+  log "M050_LOCAL_RUNTIME_ERROR=SQL_FILE_FAILED:$filename"
+  log "M050_LOCAL_RUNTIME_CHECKPOINT_PHASE=$(latest_checkpoint_phase)"
+  log "M050_LOCAL_RUNTIME_SQLSTATE=$(checkpoint_sqlstate)"
+  log "M050_LOCAL_RUNTIME_SQL_ERROR=$(checkpoint_sql_error)"
+  log "M050_LOCAL_RUNTIME_SQL_CONTEXT=$(checkpoint_sql_context)"
+  exit 1
 }
 
 psql_scalar() {
@@ -207,6 +273,7 @@ main() {
   log "CHECKPOINT_SHA256=VERIFIED"
   log "EXACT_M050_APPLY=PASS"
   log "CHECKPOINT=PASS"
+  log "M050_LOCAL_RUNTIME_CHECKPOINT=PASS"
   log "SYNTHETIC_RESIDUE=ZERO"
 }
 

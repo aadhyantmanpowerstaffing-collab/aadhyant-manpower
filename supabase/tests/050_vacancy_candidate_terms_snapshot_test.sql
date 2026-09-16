@@ -99,6 +99,7 @@ $$;
 do $$
 declare v_bad jsonb; v_field text; v_value integer; v_status text; v_basis text;
 begin
+  raise notice 'CHECKPOINT_050_PHASE=COMPENSATION_CADENCE';
   -- Cadence is a dedicated test: structured CTC accepts each approved cadence
   -- and rejects both absent and unsupported cadence values.
   perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms());
@@ -117,6 +118,7 @@ begin
   exception when check_violation or raise_exception then
     if sqlerrm='CHECKPOINT_050_CADENCE_INVALID_ACCEPTED' then raise; end if;
   end;
+  raise notice 'CHECKPOINT_050_PHASE=LEAVE_HOLIDAY';
   foreach v_field in array array['paid_leave_days_per_year','casual_leave_days_per_year','sick_leave_days_per_year','national_holiday_days_per_year','festival_holiday_days_per_year'] loop
     -- NULL is unknown/not supplied; 0, a positive annual value, and 366 are
     -- explicit valid annual values for every approved entitlement field.
@@ -139,12 +141,14 @@ begin
      or (select leave_provision from public.employer_requirements where id='50000000-0000-0000-0002-000000000001')<>222 then
     raise exception 'CHECKPOINT_050_FINANCIAL_LEAVE_FIELDS_REPURPOSED';
   end if;
+  raise notice 'CHECKPOINT_050_PHASE=OVERTIME';
   -- Overtime pairing is NULL-safe: exactly the null/null pair or a positive
   -- rate with an approved non-null basis is valid.
   perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('overtime_rate',null,'overtime_rate_basis',null)));
   if exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and (overtime_rate is not null or overtime_rate_basis is not null)) then raise exception 'CHECKPOINT_050_OVERTIME_NULL_PAIR'; end if;
   perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms());
   if not exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and overtime_rate=120 and overtime_rate_basis='per_hour') then raise exception 'CHECKPOINT_050_OVERTIME_VALID_PAIR'; end if;
+  raise notice 'CHECKPOINT_050_PHASE=CANTEEN';
   -- Complete structured Canteen matrix: NULL preserves legacy fallback;
   -- every non-chargeable state clears charges; every approved charge basis
   -- accepts a positive amount.
@@ -158,6 +162,7 @@ begin
     perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('canteen_status','chargeable','canteen_charge_amount',30,'canteen_charge_basis',v_basis)));
     if not exists(select 1 from public.employer_requirements where id='50000000-0000-0000-0002-000000000001' and canteen_status='chargeable' and canteen_charge_amount=30 and canteen_charge_basis=v_basis) then raise exception 'CHECKPOINT_050_CANTEEN_CHARGEABLE: %',v_basis; end if;
   end loop;
+  raise notice 'CHECKPOINT_050_PHASE=TRANSPORT';
   -- Complete structured Transport matrix, including both approved charge bases.
   perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(jsonb_build_object('transport_status',null,'transport_charge_amount',null,'transport_charge_basis',null)));
   if (select transport_status from public.employer_requirements where id='50000000-0000-0000-0002-000000000001') is not null then raise exception 'CHECKPOINT_050_TRANSPORT_LEGACY_NULL'; end if;
@@ -216,6 +221,21 @@ begin
     '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount":1}]}'::jsonb,
     '{"benefits":[{"benefit_type":"insurance","benefit_value_type":"provided","amount_basis":"per_month"}]}'::jsonb
   ] loop
+    if v_bad ? 'compensation_cadence' then
+      raise notice 'CHECKPOINT_050_PHASE=COMPENSATION_CADENCE';
+    elsif v_bad ? 'working_days_per_week' then
+      raise notice 'CHECKPOINT_050_PHASE=WORKING_WEEK';
+    elsif v_bad ? 'overtime_rate' then
+      raise notice 'CHECKPOINT_050_PHASE=OVERTIME';
+    elsif v_bad ? 'canteen_status' then
+      raise notice 'CHECKPOINT_050_PHASE=CANTEEN';
+    elsif v_bad ? 'transport_status' then
+      raise notice 'CHECKPOINT_050_PHASE=TRANSPORT';
+    elsif v_bad ? 'employment_type' or v_bad ? 'contract_duration_months' or v_bad ? 'probation_period_months' or v_bad ? 'training_period_days' or v_bad ? 'notice_period_days' then
+      raise notice 'CHECKPOINT_050_PHASE=EMPLOYMENT_TERMS';
+    elsif v_bad ? 'benefits' then
+      raise notice 'CHECKPOINT_050_PHASE=BENEFITS_SECURITY';
+    end if;
     begin
       perform private.apply_vacancy_candidate_terms('50000000-0000-0000-0002-000000000001',pg_temp.m50_constraint_terms(v_bad));
       raise exception 'CHECKPOINT_050_INVALID_TERMS_ACCEPTED: %',v_bad;
@@ -223,6 +243,7 @@ begin
       if sqlerrm like 'CHECKPOINT_050_INVALID_TERMS_ACCEPTED%' then raise; end if;
     end;
   end loop;
+  raise notice 'CHECKPOINT_050_PHASE=ACCOMMODATION_REGRESSION';
   -- Existing M044 accommodation constraints remain authoritative.
   begin
     update public.employer_requirements set accommodation_status='free',accommodation_charge_amount=1 where id='50000000-0000-0000-0002-000000000001';
@@ -235,6 +256,7 @@ $$;
 -- Browser-role execution must not discover the private benefits table. Each
 -- restricted-role assertion is followed by RESET ROLE before a privileged
 -- checkpoint postcondition reads private state.
+\echo CHECKPOINT_050_PHASE=BENEFITS_SECURITY
 set local role anon;
 do $$
 begin
@@ -266,6 +288,7 @@ reset role;
 
 -- Company owner uses the M050-aware controlled RPC. No browser table write
 -- is used to create or serialize the Company snapshot.
+\echo CHECKPOINT_050_PHASE=COMPANY_OWNER_RPC
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000002',true);
 do $$
@@ -304,6 +327,7 @@ $$;
 
 -- Contractor submission exercises M049's base ledger plus the M050 terms
 -- ledger in one transaction. Same-key replays must remain one logical row.
+\echo CHECKPOINT_050_PHASE=CONTRACTOR_OWNER_RPC
 create function pg_temp.submit_m50(p_key uuid,p_terms jsonb,p_client_name text default 'M50 Client')
 returns table(id uuid,requirement_code text,submission_status text,requirement_stage text,updated_at timestamptz)
 language sql as $$
@@ -318,6 +342,7 @@ do $$
 declare v_first record; v_replay record; v_terms jsonb:=pg_temp.m50_terms();
 begin
   select * into v_first from pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',v_terms);
+  raise notice 'CHECKPOINT_050_PHASE=REPLAY_IDENTICAL';
   select * into v_replay from pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',v_terms);
   if v_first.id is null or v_first.id<>v_replay.id or v_first.submission_status<>'submitted' then
     raise exception 'CHECKPOINT_050_IDEMPOTENT_REPLAY';
@@ -349,21 +374,25 @@ do $$
 declare v_terms jsonb:=pg_temp.m50_terms();
 begin
   begin
+    raise notice 'CHECKPOINT_050_PHASE=REPLAY_CHANGED_BASE';
     perform pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',v_terms,'M50 Changed Base Client');
     raise exception 'CHECKPOINT_050_CHANGED_BASE_REPLAY_ACCEPTED';
   exception when raise_exception then if sqlerrm='CHECKPOINT_050_CHANGED_BASE_REPLAY_ACCEPTED' then raise; end if;
   end;
   begin
+    raise notice 'CHECKPOINT_050_PHASE=REPLAY_CHANGED_SCALAR';
     perform pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',jsonb_set(v_terms,'{paid_leave_days_per_year}','13'::jsonb));
     raise exception 'CHECKPOINT_050_CHANGED_SCALAR_REPLAY_ACCEPTED';
   exception when raise_exception then if sqlerrm='CHECKPOINT_050_CHANGED_SCALAR_REPLAY_ACCEPTED' then raise; end if;
   end;
   begin
+    raise notice 'CHECKPOINT_050_PHASE=REPLAY_CHANGED_BENEFITS';
     perform pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',jsonb_set(v_terms,'{benefits}','[{"benefit_type":"uniform","benefit_value_type":"provided"}]'::jsonb));
     raise exception 'CHECKPOINT_050_CHANGED_BENEFIT_REPLAY_ACCEPTED';
   exception when raise_exception then if sqlerrm='CHECKPOINT_050_CHANGED_BENEFIT_REPLAY_ACCEPTED' then raise; end if;
   end;
   begin
+    raise notice 'CHECKPOINT_050_PHASE=REPLAY_CHANGED_BASE_AND_TERMS';
     perform pg_temp.submit_m50('50000000-0000-0000-0003-000000000001',jsonb_set(v_terms,'{paid_leave_days_per_year}','13'::jsonb),'M50 Changed Base And Terms');
     raise exception 'CHECKPOINT_050_CHANGED_BASE_AND_TERMS_REPLAY_ACCEPTED';
   exception when raise_exception then if sqlerrm='CHECKPOINT_050_CHANGED_BASE_AND_TERMS_REPLAY_ACCEPTED' then raise; end if;
@@ -387,6 +416,7 @@ $$;
 
 -- Admin approval followed by scalar and benefit-only material changes must
 -- remove a vacancy from Candidate eligibility until explicit republication.
+\echo CHECKPOINT_050_PHASE=MATERIAL_REVIEW_INITIAL_APPROVAL
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
 select public.admin_approve_and_publish_vacancy(current_setting('m50.contractor_requirement')::uuid,null);
@@ -397,6 +427,7 @@ begin
   if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_APPROVAL_PRECONDITION'; end if;
 end;
 $$;
+\echo CHECKPOINT_050_PHASE=MATERIAL_REVIEW_SCALAR_EDIT
 do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
@@ -404,6 +435,7 @@ begin
   if private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_SCALAR_REREVIEW_GATE'; end if;
 end;
 $$;
+\echo CHECKPOINT_050_PHASE=MATERIAL_REVIEW_SCALAR_REAPPROVAL
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
 select public.admin_approve_and_publish_vacancy(current_setting('m50.contractor_requirement')::uuid,null);
@@ -412,6 +444,7 @@ do $$
 declare v_requirement uuid:=current_setting('m50.contractor_requirement')::uuid;
 begin
   if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_SCALAR_REAPPROVAL_GATE'; end if;
+  raise notice 'CHECKPOINT_050_PHASE=MATERIAL_REVIEW_BENEFIT_EDIT';
   insert into private.vacancy_candidate_benefits(requirement_id,benefit_type,benefit_value_type) values(v_requirement,'uniform','provided');
   if private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_BENEFIT_REREVIEW_GATE'; end if;
 end;
@@ -419,6 +452,7 @@ $$;
 
 -- Pending Review stays excluded from the Candidate RPC. After the explicit
 -- approval transition, the safe projection includes only approved fields.
+\echo CHECKPOINT_050_PHASE=PENDING_REVIEW_EXCLUSION
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000004',true);
 do $$
@@ -430,6 +464,7 @@ begin
 end;
 $$;
 reset role;
+\echo CHECKPOINT_050_PHASE=MATERIAL_REVIEW_BENEFIT_REAPPROVAL
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
 select public.admin_approve_and_publish_vacancy(current_setting('m50.contractor_requirement')::uuid,null);
@@ -440,6 +475,7 @@ begin
   if not private.vacancy_is_application_eligible(v_requirement) then raise exception 'CHECKPOINT_050_BENEFIT_REAPPROVAL_GATE'; end if;
 end;
 $$;
+\echo CHECKPOINT_050_PHASE=CANDIDATE_PROJECTION
 set local role authenticated;
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000004',true);
 do $$
@@ -457,6 +493,7 @@ reset role;
 
 -- Legacy compatibility: all M050 optional fields remain NULL and legacy
 -- salary/facility values are not converted to zero or fabricated terms.
+\echo CHECKPOINT_050_PHASE=LEGACY_COMPATIBILITY
 insert into public.employer_requirements(id,company_name,contact_person,mobile,company_location,job_role,required_headcount,qualification,consent,status,requirement_code,job_location,filled_positions,source_type,review_status,requirement_visibility,requirement_stage,salary_wage,canteen,transport,accommodation)
 values ('50000000-0000-0000-0002-000000000002','M50 Legacy Co','M50','9876550098','Ahmedabad','M50 Legacy Role',1,'ITI',true,'in_progress','M50-LEGACY','Ahmedabad',0,'admin_manual','approved','public','open','15000','Yes','No','Yes');
 set local role authenticated;
@@ -476,5 +513,6 @@ reset role;
 -- The transaction boundary is the zero-residue assertion: all M50-prefixed
 -- users, requirements, links, audit effects, idempotency rows, and benefits
 -- above are rolled back atomically. No cleanup statement targets real data.
+\echo CHECKPOINT_050_PHASE=FINAL_RESIDUE_PRE_ROLLBACK
 rollback;
 select 'CHECKPOINT_050_ZERO_RESIDUE_ROLLBACK_COMPLETE' as checkpoint;
