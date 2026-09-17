@@ -136,29 +136,38 @@ checkpoint_sqlstate() {
 }
 
 checkpoint_sql_error() {
-  local marker
-  marker="$(grep -oE 'CHECKPOINT_050_[A-Z0-9_]+' "$RAW_OUTPUT" | grep -v '^CHECKPOINT_050_PHASE' | tail -n 1 || true)"
-  if [[ "$marker" =~ ^CHECKPOINT_050_[A-Z0-9_]+$ ]]; then
-    printf 'CHECKPOINT_ASSERTION:%s\n' "$marker"
-  else
-    printf '%s\n' "REDACTED"
-  fi
+  printf '%s\n' "REDACTED"
 }
 
 checkpoint_sql_context() {
-  if grep -Eq 'CONTEXT:.*PL/pgSQL function inline_code_block line [0-9]+ at RAISE' "$RAW_OUTPUT"; then
-    printf '%s\n' "PLPGSQL_INLINE_BLOCK"
+  printf '%s\n' "REDACTED"
+}
+
+checkpoint_undefined_identifier() {
+  local sqlstate="$1" line identifier identifier_re='[A-Za-z_][A-Za-z0-9_$]*'
+  [[ "$sqlstate" == "42703" ]] || { printf '%s\n' "UNAVAILABLE"; return; }
+  while IFS= read -r line; do
+    if [[ "$line" =~ ERROR:[[:space:]]+42703:[[:space:]]+column[[:space:]]+\"($identifier_re)\" ]]; then
+      identifier="${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ ERROR:[[:space:]]+42703:[[:space:]]+record[[:space:]]+\"$identifier_re\"[[:space:]]+has[[:space:]]+no[[:space:]]+field[[:space:]]+\"($identifier_re)\" ]]; then
+      identifier="${BASH_REMATCH[1]}"
+    fi
+  done < "$RAW_OUTPUT"
+  if [[ "${identifier:-}" =~ ^[A-Za-z_][A-Za-z0-9_$]*$ ]]; then
+    printf '%s\n' "$identifier"
   else
-    printf '%s\n' "REDACTED"
+    printf '%s\n' "UNAVAILABLE"
   fi
 }
 
 fail_checkpoint_sql() {
-  local filename="$1"
+  local filename="$1" sqlstate
+  sqlstate="$(checkpoint_sqlstate)"
   log "M050_LOCAL_RUNTIME_RESULT=FAIL"
   log "M050_LOCAL_RUNTIME_ERROR=SQL_FILE_FAILED:$filename"
   log "M050_LOCAL_RUNTIME_CHECKPOINT_PHASE=$(latest_checkpoint_phase)"
-  log "M050_LOCAL_RUNTIME_SQLSTATE=$(checkpoint_sqlstate)"
+  log "M050_LOCAL_RUNTIME_SQLSTATE=$sqlstate"
+  log "M050_LOCAL_RUNTIME_UNDEFINED_IDENTIFIER=$(checkpoint_undefined_identifier "$sqlstate")"
   log "M050_LOCAL_RUNTIME_SQL_ERROR=$(checkpoint_sql_error)"
   log "M050_LOCAL_RUNTIME_SQL_CONTEXT=$(checkpoint_sql_context)"
   exit 1
@@ -277,4 +286,6 @@ main() {
   log "SYNTHETIC_RESIDUE=ZERO"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

@@ -293,10 +293,40 @@ test('M050 checkpoint failure diagnostics are closed-catalog and redact raw psql
   assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQLSTATE=/);
   assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQL_ERROR=/);
   assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_SQL_CONTEXT=/);
+  assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_UNDEFINED_IDENTIFIER=/);
   assert.match(localRuntimeHarness, /M050_LOCAL_RUNTIME_CHECKPOINT=PASS/);
-  assert.match(localRuntimeHarness, /CHECKPOINT_ASSERTION:%s/);
-  assert.match(localRuntimeHarness, /PLPGSQL_INLINE_BLOCK/);
+  assert.match(localRuntimeHarness, /checkpoint_undefined_identifier\(\)/);
+  assert.match(localRuntimeHarness, /\[A-Za-z_\]\[A-Za-z0-9_\$\]\*/);
   assert.doesNotMatch(localRuntimeHarness, /\b(?:cat|tee)\b[^\n]*RAW_OUTPUT/);
+});
+
+test('M050 SQLSTATE 42703 diagnostic exposes only a whitelisted identifier', (t) => {
+  if (process.platform === 'win32') {
+    t.skip('Ubuntu CI executes the Bash diagnostic extraction test.');
+    return;
+  }
+  const harnessPath = path.join('scripts', 'ci', 'run-m050-local-validation.sh');
+  const program = [
+    'source "$1"',
+    "printf 'psql: ERROR:  42703: record \"old\" has no field \"candidate_terms_status\"\\n' > \"$RAW_OUTPUT\"",
+    'checkpoint_undefined_identifier 42703',
+    "printf 'psql: ERROR:  42703: column \"unsafe;payload\" does not exist\\n' > \"$RAW_OUTPUT\"",
+    'checkpoint_undefined_identifier 42703',
+    "printf 'psql: ERROR:  42501: column \"candidate_terms_status\" does not exist\\n' > \"$RAW_OUTPUT\"",
+    'checkpoint_undefined_identifier 42501',
+    'checkpoint_sql_error',
+    'checkpoint_sql_context'
+  ].join('; ');
+  const result = spawnSync('bash', ['-c', program, 'bash', harnessPath], { encoding: 'utf8' });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.stdout.trim().split(/\r?\n/), [
+    'candidate_terms_status',
+    'UNAVAILABLE',
+    'UNAVAILABLE',
+    'REDACTED',
+    'REDACTED'
+  ]);
 });
 
 test('M050 disposable local runtime harness is valid Bash on Linux CI', (t) => {
