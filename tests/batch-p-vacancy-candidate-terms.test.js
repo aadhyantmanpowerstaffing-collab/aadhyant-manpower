@@ -269,6 +269,19 @@ test('M050 rereview logic does not depend on an approval timestamp outside the v
   assert.doesNotMatch(migration, /\bapproved_at\b/);
 });
 
+test('Candidate benefits projection strips only null optional values and keeps the safe ordered contract', () => {
+  const projection = migration.slice(
+    migration.indexOf('create or replace function private.vacancy_candidate_benefits_projection'),
+    migration.indexOf('create or replace function private.canonical_vacancy_candidate_terms')
+  );
+  assert.match(projection, /jsonb_agg\(jsonb_strip_nulls\(jsonb_build_object\('benefit_type',b\.benefit_type,'benefit_value_type',b\.benefit_value_type,'amount',b\.amount,'amount_basis',b\.amount_basis\)\) order by b\.benefit_type\)/);
+  const projectedBenefitObject = projection.slice(projection.indexOf("jsonb_build_object('benefit_type'"), projection.indexOf(')) order by b.benefit_type'));
+  assert.doesNotMatch(projectedBenefitObject, /(requirement_id|owner_id|user_id|internal_notes|margin|invoice)/i);
+  const candidateProjection = checkpoint.slice(checkpoint.indexOf('CHECKPOINT_050_PHASE=CANDIDATE_PROJECTION'), checkpoint.indexOf('-- Legacy compatibility'));
+  assert.match(candidateProjection, /jsonb_build_array\(jsonb_build_object\('benefit_type','insurance','benefit_value_type','provided'\),jsonb_build_object\('benefit_type','travel_allowance','benefit_value_type','cash','amount',500,'amount_basis','per_month'\),jsonb_build_object\('benefit_type','uniform','benefit_value_type','provided'\)\)/);
+  assert.match(candidateProjection, /CHECKPOINT_050_CANDIDATE_SAFE_PROJECTION/);
+});
+
 test('M050 disposable local runtime harness is unlinked, exact-source, and fail-closed', () => {
   assert.match(localSupabaseConfig, /project_id\s*=\s*"aadhyant-m050-local-validation"/);
   assert.match(localSupabaseConfig, /\[auth\][\s\S]*enabled\s*=\s*true/);
@@ -290,7 +303,7 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
     'public.audit_logs', 'private.vacancy_candidate_benefits',
     'M050_LOCAL_RUNTIME_RESULT=PASS'
   ]) assert.ok(localRuntimeHarness.includes(token), token);
-  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="3d3ad4e03fd6b57699a6e0c73db1838040062917fb394526a441862d66a0ad44"/);
+  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="762f2bfecfbc8c27265bdfa35e24b8a9bd081292e016b6bc489a6dace505b19b"/);
   assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"/);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+link\b|supabase\s+db\s+push\b|supabase\s+migration\s+up\b/i);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+stop\s+--all\b|supabase\s+--workdir\s+[^\n]+\s+stop\s+--all\b|\b(?:curl|wget)\b/i);

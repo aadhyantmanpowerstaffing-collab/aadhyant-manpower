@@ -118,7 +118,7 @@ revoke all on function private.vacancy_candidate_terms_projection(public.employe
 
 create or replace function private.vacancy_candidate_benefits_projection(p_requirement_id uuid)
 returns jsonb language sql stable security definer set search_path='' as $$
-  select coalesce(jsonb_agg(jsonb_build_object('benefit_type',b.benefit_type,'benefit_value_type',b.benefit_value_type,'amount',b.amount,'amount_basis',b.amount_basis) order by b.benefit_type),'[]'::jsonb)
+  select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object('benefit_type',b.benefit_type,'benefit_value_type',b.benefit_value_type,'amount',b.amount,'amount_basis',b.amount_basis)) order by b.benefit_type),'[]'::jsonb)
   from private.vacancy_candidate_benefits b where b.requirement_id=p_requirement_id;
 $$;
 revoke all on function private.vacancy_candidate_benefits_projection(uuid) from public,anon,authenticated;
