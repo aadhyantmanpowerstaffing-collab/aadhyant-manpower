@@ -17,6 +17,7 @@ const contractor = read('contractor/batch2-vacancies.js');
 const localSupabaseConfig = read('supabase/config.toml');
 const localRuntimeHarness = read('scripts/ci/run-m050-local-validation.sh');
 const localRuntimeWorkflow = read('.github/workflows/m050-local-runtime-validation.yml');
+const reviewWorkflow = read('supabase/migrations/039_unified_vacancy_review_workflow.sql');
 const checkpointDiagnosticPhases = [
   'COMPENSATION_CADENCE', 'LEAVE_HOLIDAY', 'WORKING_WEEK', 'OVERTIME', 'CANTEEN', 'TRANSPORT',
   'BENEFITS_SECURITY', 'EMPLOYMENT_TERMS', 'ACCOMMODATION_REGRESSION', 'COMPANY_OWNER_RPC',
@@ -238,6 +239,32 @@ test('material Candidate-facing edits are returned to review before publication'
   assert.match(migration, /submission_status='submitted'/);
 });
 
+test('M050 scalar Contractor material edits restore the M039 rereview transition without changing non-material replay', () => {
+  const rereview = migration.slice(
+    migration.indexOf('create or replace function private.require_vacancy_candidate_terms_rereview'),
+    migration.indexOf('create or replace function private.vacancy_candidate_terms_material_change')
+  );
+  const materialTrigger = migration.slice(
+    migration.indexOf('create or replace function private.vacancy_candidate_terms_material_change'),
+    migration.indexOf('create or replace function private.vacancy_candidate_benefit_material_change')
+  );
+  const contractorReset = "update public.requirement_contractors set submission_status='submitted',submitted_at=clock_timestamp(),reviewed_at=null";
+  const normalizeSql = (sql) => sql.replace(/\s+/g, ' ');
+  const normalizedRereview = normalizeSql(rereview);
+  const normalizedTrigger = normalizeSql(materialTrigger);
+  assert.ok(normalizedRereview.includes(`${contractorReset} where requirement_id=p_requirement_id and origin_type='contractor_submission'`));
+  const resetStart = normalizedTrigger.indexOf(contractorReset);
+  const resetBranch = normalizedTrigger.slice(resetStart, normalizedTrigger.indexOf('else', resetStart));
+  assert.ok(resetStart > normalizedTrigger.indexOf('private.vacancy_is_application_eligible(old.id)'), 'Contractor link reset must stay inside the material-change gate');
+  assert.ok(normalizedTrigger.includes(`if old.source_type='contractor_portal' then ${contractorReset} where requirement_id=old.id and origin_type='contractor_submission'`));
+  assert.doesNotMatch(resetBranch, /reviewed_by/);
+  assert.match(reviewWorkflow, /rc\.submission_status not in \('submitted','under_review'\)/);
+  assert.match(reviewWorkflow, /submission_status='approved',assignment_status='active',reviewed_at=now_at,reviewed_by=actor/);
+  const scalarPath = checkpoint.slice(checkpoint.indexOf('CHECKPOINT_050_PHASE=MATERIAL_REVIEW_SCALAR_EDIT'), checkpoint.indexOf('CHECKPOINT_050_PHASE=MATERIAL_REVIEW_BENEFIT_EDIT'));
+  assert.match(scalarPath, /jsonb_set\(pg_temp\.m50_terms\(\),'\{canteen_charge_amount\}','35'::jsonb\)/);
+  assert.match(scalarPath, /admin_approve_and_publish_vacancy[\s\S]*CHECKPOINT_050_SCALAR_REAPPROVAL_GATE/);
+});
+
 test('M050 rereview logic does not depend on an approval timestamp outside the vacancy review contract', () => {
   assert.doesNotMatch(migration, /\bapproved_at\b/);
 });
@@ -263,7 +290,7 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
     'public.audit_logs', 'private.vacancy_candidate_benefits',
     'M050_LOCAL_RUNTIME_RESULT=PASS'
   ]) assert.ok(localRuntimeHarness.includes(token), token);
-  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="f9c79a73df56c5dd736ad0b8a7a307c18d4e413407101f71d72952c8b1f5f274"/);
+  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="3d3ad4e03fd6b57699a6e0c73db1838040062917fb394526a441862d66a0ad44"/);
   assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"/);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+link\b|supabase\s+db\s+push\b|supabase\s+migration\s+up\b/i);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+stop\s+--all\b|supabase\s+--workdir\s+[^\n]+\s+stop\s+--all\b|\b(?:curl|wget)\b/i);
