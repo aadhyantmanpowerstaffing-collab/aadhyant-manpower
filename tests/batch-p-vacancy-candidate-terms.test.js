@@ -369,7 +369,8 @@ test('M050 SQLSTATE 42703 diagnostic exposes only a whitelisted identifier', (t)
     'UNAVAILABLE',
     'UNAVAILABLE',
     'REDACTED',
-    'REDACTED'
+    'REDACTED',
+    'LOCAL_SUPABASE_CLEANUP=COMPLETE'
   ]);
 });
 
