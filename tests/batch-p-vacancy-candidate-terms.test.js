@@ -238,6 +238,10 @@ test('material Candidate-facing edits are returned to review before publication'
   assert.match(migration, /submission_status='submitted'/);
 });
 
+test('M050 rereview logic does not depend on an approval timestamp outside the vacancy review contract', () => {
+  assert.doesNotMatch(migration, /\bapproved_at\b/);
+});
+
 test('M050 disposable local runtime harness is unlinked, exact-source, and fail-closed', () => {
   assert.match(localSupabaseConfig, /project_id\s*=\s*"aadhyant-m050-local-validation"/);
   assert.match(localSupabaseConfig, /\[auth\][\s\S]*enabled\s*=\s*true/);
@@ -259,7 +263,7 @@ test('M050 disposable local runtime harness is unlinked, exact-source, and fail-
     'public.audit_logs', 'private.vacancy_candidate_benefits',
     'M050_LOCAL_RUNTIME_RESULT=PASS'
   ]) assert.ok(localRuntimeHarness.includes(token), token);
-  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="c7defc9fdef2e36e6753994f70942de476495f66f1e5aa29ce8a92e51f4a9596"/);
+  assert.match(localRuntimeHarness, /EXPECTED_M050_SHA256="f9c79a73df56c5dd736ad0b8a7a307c18d4e413407101f71d72952c8b1f5f274"/);
   assert.match(localRuntimeHarness, /EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"/);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+link\b|supabase\s+db\s+push\b|supabase\s+migration\s+up\b/i);
   assert.doesNotMatch(localRuntimeHarness, /supabase\s+stop\s+--all\b|supabase\s+--workdir\s+[^\n]+\s+stop\s+--all\b|\b(?:curl|wget)\b/i);

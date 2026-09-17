@@ -6,7 +6,7 @@ umask 077
 # Local validation neither needs nor emits Supabase CLI telemetry.
 export SUPABASE_TELEMETRY_DISABLED=1
 
-readonly EXPECTED_M050_SHA256="c7defc9fdef2e36e6753994f70942de476495f66f1e5aa29ce8a92e51f4a9596"
+readonly EXPECTED_M050_SHA256="f9c79a73df56c5dd736ad0b8a7a307c18d4e413407101f71d72952c8b1f5f274"
 readonly EXPECTED_CHECKPOINT_SHA256="78881deb7e7d528052e216555e2ba779892d131bca1bffe9df96527569aef645"
 readonly EXPECTED_SUPABASE_CLI_VERSION="2.111.0"
 readonly CHECKPOINT_FILENAME="050_vacancy_candidate_terms_snapshot_test.sql"
