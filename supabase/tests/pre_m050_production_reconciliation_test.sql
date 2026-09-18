@@ -37,10 +37,17 @@ begin
     raise exception 'CHECKPOINT_PRE_M050_M038_DIRECT_WRITE';
   end if;
   if to_regprocedure('private.vacancy_is_application_eligible(uuid)') is null
+     or to_regprocedure('private.current_candidate_portal_id()') is null
      or to_regprocedure('public.manage_company_portal_requirement(text,uuid,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,timestamp with time zone,date,text)') is null
      or to_regprocedure('private.vacancy_compensation_projection(public.employer_requirements)') is null
      or to_regprocedure('public.list_company_portal_requirements(text,text,integer,integer)') is null then
     raise exception 'CHECKPOINT_PRE_M050_REVIEW_COMPANY_OR_PROJECTION';
+  end if;
+  if has_function_privilege('anon','private.current_candidate_portal_id()','execute')
+     or has_function_privilege('authenticated','private.current_candidate_portal_id()','execute')
+     or pg_get_function_result('public.list_contractor_portal_vacancies(text,text,integer,integer)'::regprocedure) !~ 'payable_days integer'
+     or pg_get_function_result('public.list_contractor_portal_vacancies(text,text,integer,integer)'::regprocedure) !~ 'accommodation_charge_basis text' then
+    raise exception 'CHECKPOINT_PRE_M050_CANDIDATE_IDENTITY_OR_CONTRACTOR_LIST_UPGRADE';
   end if;
   if to_regprocedure('public.admin_approve_and_publish_vacancy(uuid,timestamp with time zone)') is null
      or to_regprocedure('public.admin_list_vacancy_reviews(text,text,integer,integer)') is null

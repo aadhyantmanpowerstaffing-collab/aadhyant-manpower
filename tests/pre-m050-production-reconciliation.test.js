@@ -25,7 +25,7 @@ test('pre-M050 reconciler encodes only the approved generic two-row mapping', ()
   assert.match(sql, /set review_status='approved', review_feedback=null/);
   assert.match(sql, /set review_status='draft', review_feedback=null/);
   assert.match(sql, /M039 or M044 collision: expected schema additions are not wholly absent/);
-  assert.match(sql, /M039 through M047 function collision or partial state/);
+  assert.match(sql, /Contractor predecessor collision: expected audited detail\/review contracts are unavailable/);
   assert.doesNotMatch(sql, new RegExp(['AAD', '2026'].join('-'), 'i'));
 });
 
@@ -68,14 +68,16 @@ test('review, Company, compensation, projection, and M049 prerequisite contracts
   assert.match(sql, /M049\/M050 must remain absent/);
 });
 
-test('M045 audit and the preserved M046 Contractor projection are exact and fail closed', () => {
+test('M045 audit and the audited Contractor predecessor upgrade are exact and fail closed', () => {
   for (const action of [
     'company_vacancy_draft_deleted', 'company_vacancy_withdrawn', 'company_vacancy_closed',
     'contractor_vacancy_draft_deleted', 'contractor_vacancy_withdrawn', 'contractor_vacancy_closed',
   ]) assert.match(sql, new RegExp(`'${action}'`));
   assert.match(sql, /insert into public\.audit_logs/);
-  assert.match(sql, /Preserved Contractor list projection is not the exact M046 contract/);
-  assert.match(sql, /accommodation_charge_basis:text\|submission_status:text/);
+  assert.match(sql, /Contractor list collision: expected audited predecessor fingerprint is unavailable/);
+  assert.match(sql, /md5\(pg_get_function_result\(p\.oid\)\)='ba95d431fdb82d0ecf6f301e194d3fd3'/);
+  assert.match(sql, /drop function public\.list_contractor_portal_vacancies\(text,text,integer,integer\)/);
+  assert.match(sql, /accommodation_charge_basis text,submission_status text/);
   assert.match(sql, /not has_function_privilege\('anon',p\.oid,'execute'\)/);
   for (const semantic of ['rc\\.contractor_id\\s*=\\s*v_contractor_id', 'contractor_submission', 'r\\.payable_days', 'r\\.accommodation_charge_basis']) {
     assert.match(sql, new RegExp(semantic));
@@ -106,15 +108,30 @@ test('checkpoint and runbook keep reconciliation controlled and separate from M0
   assert.doesNotMatch(runbook, /\b[a-z0-9]{20}\b/i, 'runbook must not embed a project reference');
 });
 
-test('disposable model is synthetic, pre-M049/M050, and reproduces the audited security collision posture', () => {
+test('disposable model is synthetic, pre-M049/M050, and reproduces the audited predecessor posture', () => {
   assert.match(model, /Disposable-only model/);
   assert.match(model, /create policy "M7 admins create applications"/);
   assert.match(model, /grant select, insert, update on public\.candidate_applications/);
   assert.match(model, /create function public\.list_contractor_portal_vacancies/);
-  assert.match(model, /accommodation_charge_basis text,submission_status text/);
-  assert.match(model, /rc\.contractor_id=v_contractor_id/);
+  assert.doesNotMatch(model, /create function private\.current_candidate_portal_id/);
+  assert.match(model, /returns table\(id uuid,requirement_code text,client_name text,job_role text,job_location text,required_headcount integer,submission_status text/);
+  assert.match(model, /create function public\.get_contractor_portal_vacancy/);
+  assert.match(model, /create function public\.review_contractor_vacancy/);
   assert.match(model, /create table public\.audit_logs/);
   assert.match(model, /grant execute on function public\.register_candidate_requirement_interest[\s\S]* to anon/);
   assert.doesNotMatch(model, /contractor_vacancy_submission_requests|vacancy_candidate_benefits/);
   assert.doesNotMatch(model, /\b[a-z0-9]{20}\b/i, 'model must not embed a hosted project reference');
+});
+
+test('reconciler accepts only the audited absent Candidate helper and exact Contractor predecessors', () => {
+  assert.match(sql, /Candidate identity collision: expected canonical helper is absent/);
+  assert.match(sql, /Candidate identity prerequisite columns are unavailable/);
+  assert.match(sql, /create function private\.current_candidate_portal_id\(\)/);
+  assert.match(sql, /md5\(pg_get_function_result\(p\.oid\)\)='cd8a1292080b231b3e9a85d440b02023'/);
+  assert.match(sql, /md5\(pg_get_function_result\(p\.oid\)\)='d3f5ca5331c9a9e2169965e5c7da7bda'/);
+  assert.match(sql, /coalesce\(array_to_string\(p\.proconfig, ','\),''\) = 'search_path=""'/);
+  assert.doesNotMatch(sql, /proconfig, ','\),'?'\) like '%search_path=%'/);
+  assert.match(sql, /create or replace function public\.get_contractor_portal_vacancy/);
+  assert.match(sql, /create or replace function public\.review_contractor_vacancy/);
+  assert.match(checkpoint, /CHECKPOINT_PRE_M050_CANDIDATE_IDENTITY_OR_CONTRACTOR_LIST_UPGRADE/);
 });

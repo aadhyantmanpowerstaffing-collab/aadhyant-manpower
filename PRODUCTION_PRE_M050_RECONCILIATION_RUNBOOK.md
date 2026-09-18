@@ -49,10 +49,14 @@ decision and source review.
   `PUBLIC`/`anon` access, and grant only the documented `authenticated` owner
   RPCs.
 - Private helpers and later M049/M050 ledgers are not browser executable.
-- The existing Contractor management/listing and anonymous interest contracts
-  are not replaced. The Contractor list must match the exact reviewed M046
-  result-column contract, SECURITY DEFINER/empty-search-path posture, and
-  authenticated-only execution boundary; any mismatch stops the transaction.
+- The audited M021 Contractor detail/review/list predecessors are accepted
+  only when their exact signature/result/security fingerprints match the
+  approved catalog evidence. The reconciliation upgrades the list and detail/
+  review surfaces to the reviewed final M046 contract inside its transaction;
+  any unknown signature, result type, grant, or search-path posture stops it.
+- The absent M023 Candidate identity helper is restored only after its source
+  columns are proven present. Any pre-existing same-signature helper is an
+  unknown collision and stops reconciliation rather than being overwritten.
 - The reconciliation installs the reviewed M039 Admin review list/detail and
   Company review queue, plus the reviewed M046 Company/Contractor owner detail
   projections. These are owner/reviewer RPCs only; they do not grant table

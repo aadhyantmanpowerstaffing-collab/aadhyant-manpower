@@ -69,8 +69,8 @@ begin
                'enforce_candidate_application_vacancy_gate','lock_vacancy_review','admin_approve_and_publish_vacancy',
                'admin_request_vacancy_correction','admin_reject_vacancy','vacancy_compensation_projection',
                'vacancy_accommodation_projection','vacancy_has_recruitment_dependencies','list_company_portal_requirements',
-               'admin_list_vacancy_reviews','admin_get_vacancy_review_detail','list_company_portal_vacancy_reviews',
-               'get_company_portal_requirement','get_contractor_portal_vacancy','review_contractor_vacancy',
+                'admin_list_vacancy_reviews','admin_get_vacancy_review_detail','list_company_portal_vacancy_reviews',
+                'get_company_portal_requirement',
                'list_candidate_job_opportunities','delete_company_portal_draft_vacancy','withdraw_company_portal_vacancy',
                'close_company_portal_open_vacancy','delete_contractor_portal_draft_vacancy','withdraw_contractor_portal_vacancy',
                'close_contractor_portal_open_vacancy')
@@ -86,12 +86,21 @@ begin
      or to_regprocedure('private.can_manage_contractor_vacancies()') is null then
     raise exception 'The preserved Contractor base contract is unavailable';
   end if;
-  if to_regprocedure('private.current_candidate_portal_id()') is null then
-    raise exception 'The canonical Candidate portal identity contract is unavailable';
+  -- M023 was not installed in the audited predecessor.  Its canonical helper
+  -- is created below only when absent; any same-signature object is unknown
+  -- drift and must be reviewed rather than overwritten.
+  if to_regprocedure('private.current_candidate_portal_id()') is not null then
+    raise exception 'Candidate identity collision: expected canonical helper is absent';
+  end if;
+  if (select count(*) from information_schema.columns where table_schema='public' and table_name='candidates'
+      and column_name in ('user_id','profile_status','status')) <> 3
+     or (select count(*) from information_schema.columns where table_schema='public' and table_name='platform_users'
+         and column_name in ('user_id','account_type','account_status')) <> 3 then
+    raise exception 'Candidate identity prerequisite columns are unavailable';
   end if;
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
              where n.nspname='public' and p.proname='manage_contractor_portal_vacancy'
-               and (not p.prosecdef or coalesce(array_to_string(p.proconfig, ','),'') not like '%search_path=%'
+               and (not p.prosecdef or coalesce(array_to_string(p.proconfig, ','),'') <> 'search_path=""'
                  or has_function_privilege('anon',p.oid,'execute')
                  or not has_function_privilege('authenticated',p.oid,'execute'))) then
     raise exception 'Preserved Contractor management contract has incompatible security';
@@ -101,23 +110,30 @@ begin
     from pg_proc p
     where p.oid='public.list_contractor_portal_vacancies(text,text,integer,integer)'::regprocedure
       and p.prosecdef
-      and coalesce(array_to_string(p.proconfig, ','),'') like '%search_path=%'
+      and coalesce(array_to_string(p.proconfig, ','),'') = 'search_path=""'
       and not has_function_privilege('anon',p.oid,'execute')
       and has_function_privilege('authenticated',p.oid,'execute')
       -- The audited list is preserved only when its M046 tenant, lifecycle,
       -- and structured-compensation semantics are still present. This never
       -- prints function source and is deliberately stricter than signature.
-      and pg_get_functiondef(p.oid) ~ 'rc\.contractor_id\s*=\s*v_contractor_id'
-      and pg_get_functiondef(p.oid) ~ 'rc\.origin_type\s*=\s*''contractor_submission'''
-      and pg_get_functiondef(p.oid) ~ 'rc\.submission_status\s*=\s*v_filter_status'
-      and pg_get_functiondef(p.oid) ~ 'r\.payable_days'
-      and pg_get_functiondef(p.oid) ~ 'r\.accommodation_charge_basis'
-      and (select string_agg(coalesce(a.argname,'') || ':' || format_type(a.argtype,null), '|' order by a.ord)
-           from unnest(p.proallargtypes,p.proargmodes,p.proargnames) with ordinality a(argtype,argmode,argname,ord)
-           where a.argmode in ('o','t')) =
-          'id:uuid|requirement_code:text|client_name:text|job_role:text|job_location:text|required_headcount:integer|salary_min:numeric|salary_max:numeric|payable_days:integer|basic_da:numeric|attendance_bonus:numeric|monthly_bonus:numeric|leave_amount:numeric|other_fixed_earning:numeric|gross_wages:numeric|employee_pf:numeric|employee_esic:numeric|canteen_deduction:numeric|other_deduction:numeric|employer_pf:numeric|employer_esic:numeric|gratuity_provision:numeric|bonus_provision:numeric|leave_provision:numeric|other_ctc_component:numeric|approx_in_hand:numeric|ctc:numeric|accommodation_status:text|accommodation_charge_amount:numeric|accommodation_charge_basis:text|submission_status:text|requirement_stage:text|review_feedback:text|application_count:bigint|interview_count:bigint|selected_count:bigint|joined_count:bigint|created_at:timestamp with time zone|updated_at:timestamp with time zone'
+       and md5(pg_get_function_result(p.oid))='ba95d431fdb82d0ecf6f301e194d3fd3'
   ) then
-    raise exception 'Preserved Contractor list projection is not the exact M046 contract';
+    raise exception 'Contractor list collision: expected audited predecessor fingerprint is unavailable';
+  end if;
+  if not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.oid='public.get_contractor_portal_vacancy(uuid)'::regprocedure
+      and md5(pg_get_function_result(p.oid))='cd8a1292080b231b3e9a85d440b02023'
+      and p.prosecdef and coalesce(array_to_string(p.proconfig, ','),'') = 'search_path=""'
+      and not has_function_privilege('anon',p.oid,'execute') and has_function_privilege('authenticated',p.oid,'execute')
+  ) or not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.oid='public.review_contractor_vacancy(uuid,text,text)'::regprocedure
+      and md5(pg_get_function_result(p.oid))='d3f5ca5331c9a9e2169965e5c7da7bda'
+      and p.prosecdef and coalesce(array_to_string(p.proconfig, ','),'') = 'search_path=""'
+      and not has_function_privilege('anon',p.oid,'execute') and has_function_privilege('authenticated',p.oid,'execute')
+  ) then
+    raise exception 'Contractor predecessor collision: expected audited detail/review contracts are unavailable';
   end if;
   if to_regprocedure('public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text,integer,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,numeric,text)') is not null then
     raise exception 'M048 Contractor shape collision: expected extended overload is absent';
@@ -186,6 +202,23 @@ drop policy "M7 admins create applications" on public.candidate_applications;
 drop policy "M7 admins update applications" on public.candidate_applications;
 drop policy "M7 admins create joinings" on public.candidate_joinings;
 drop policy "M7 admins update joinings" on public.candidate_joinings;
+
+-- M023 prerequisite absent in Production: restore only the canonical private
+-- identity helper after its source columns have been guarded above.
+create function private.current_candidate_portal_id()
+returns uuid language plpgsql stable security definer set search_path='' as $$
+declare v_candidate_id uuid; v_count integer;
+begin
+  if (select auth.uid()) is null then return null; end if;
+  select count(*), (array_agg(c.id))[1] into v_count,v_candidate_id
+  from public.candidates c
+  join public.platform_users pu on pu.user_id=c.user_id
+  where c.user_id=(select auth.uid()) and pu.account_type='candidate'
+    and pu.account_status='active' and c.profile_status='active' and c.status<>'inactive';
+  return case when v_count=1 then v_candidate_id else null end;
+end;
+$$;
+revoke all on function private.current_candidate_portal_id() from public, anon, authenticated;
 
 -- M039 foundation and the approved, generic two-row mapping.  No reviewer or
 -- review timestamp is fabricated for either historical requirement.
@@ -386,7 +419,7 @@ $$;
 revoke all on function public.admin_list_vacancy_reviews(text,text,integer,integer),public.admin_get_vacancy_review_detail(uuid),public.list_company_portal_vacancy_reviews(text,text,integer,integer) from public,anon;
 grant execute on function public.admin_list_vacancy_reviews(text,text,integer,integer),public.admin_get_vacancy_review_detail(uuid),public.list_company_portal_vacancy_reviews(text,text,integer,integer) to authenticated;
 
-create function public.review_contractor_vacancy(p_requirement_id uuid,p_action text,p_feedback text default null)
+create or replace function public.review_contractor_vacancy(p_requirement_id uuid,p_action text,p_feedback text default null)
 returns table(requirement_id uuid,requirement_code text,submission_status text,requirement_stage text,requirement_visibility text)
 language plpgsql security definer set search_path='' as $$
 declare v_row public.employer_requirements%rowtype; v_link public.requirement_contractors%rowtype; v_action text:=lower(btrim(coalesce(p_action,'')));
@@ -513,6 +546,41 @@ create function private.vacancy_accommodation_projection(p_requirement public.em
 create function private.vacancy_has_recruitment_dependencies(p_requirement_id uuid,p_ignored_contractor_link_id uuid default null) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.candidate_applications a where a.requirement_id=p_requirement_id) or exists(select 1 from public.interviews i join public.candidate_applications a on a.id=i.application_id where a.requirement_id=p_requirement_id) or exists(select 1 from public.candidate_joinings j join public.candidate_applications a on a.id=j.application_id where a.requirement_id=p_requirement_id) or exists(select 1 from public.requirement_contractors rc where rc.requirement_id=p_requirement_id and rc.id is distinct from p_ignored_contractor_link_id); $$;
 revoke all on function private.vacancy_compensation_projection(public.employer_requirements), private.vacancy_accommodation_projection(public.employer_requirements), private.vacancy_has_recruitment_dependencies(uuid,uuid) from public, anon, authenticated;
 
+-- The audited Contractor list is the M021 predecessor, not the M046 result
+-- contract.  Its exact identity/result/security fingerprint was guarded above.
+-- A return-shape change requires DROP + CREATE; any dependent object makes
+-- DROP fail and the enclosing transaction rolls back rather than cascading.
+drop function public.list_contractor_portal_vacancies(text,text,integer,integer);
+create function public.list_contractor_portal_vacancies(p_search text default null,p_status text default null,p_limit integer default 25,p_offset integer default 0)
+returns table(id uuid,requirement_code text,client_name text,job_role text,job_location text,required_headcount integer,
+  salary_min numeric,salary_max numeric,payable_days integer,basic_da numeric,attendance_bonus numeric,monthly_bonus numeric,
+  leave_amount numeric,other_fixed_earning numeric,gross_wages numeric,employee_pf numeric,employee_esic numeric,canteen_deduction numeric,
+  other_deduction numeric,employer_pf numeric,employer_esic numeric,gratuity_provision numeric,bonus_provision numeric,leave_provision numeric,
+  other_ctc_component numeric,approx_in_hand numeric,ctc numeric,accommodation_status text,accommodation_charge_amount numeric,
+  accommodation_charge_basis text,submission_status text,requirement_stage text,review_feedback text,application_count bigint,interview_count bigint,
+  selected_count bigint,joined_count bigint,created_at timestamptz,updated_at timestamptz)
+language plpgsql stable security definer set search_path='' as $$
+declare v_contractor_id uuid := (select private.current_contractor_portal_id(true)); v_needle text := nullif(btrim(p_search),''); v_filter_status text := nullif(lower(btrim(p_status)), '');
+begin
+  if v_contractor_id is null then raise exception 'Active Contractor access is required'; end if;
+  if v_filter_status is not null and v_filter_status not in ('draft','submitted','under_review','correction_required','approved','rejected','closed','cancelled') then raise exception 'Unsupported submission status'; end if;
+  return query select r.id,r.requirement_code,r.company_name,r.job_role,r.job_location,r.required_headcount,r.salary_min,r.salary_max,
+    r.payable_days,r.basic_da,r.attendance_bonus,r.monthly_bonus,r.leave_amount,r.other_fixed_earning,r.gross_wages,
+    r.employee_pf,r.employee_esic,r.canteen_deduction,r.other_deduction,r.employer_pf,r.employer_esic,r.gratuity_provision,
+    r.bonus_provision,r.leave_provision,r.other_ctc_component,r.approx_in_hand,r.ctc,r.accommodation_status,
+    r.accommodation_charge_amount,r.accommodation_charge_basis,rc.submission_status,r.requirement_stage,rc.review_feedback,
+    count(distinct a.id),count(distinct i.id),count(distinct a.id) filter(where a.application_status='selected'),
+    count(distinct a.id) filter(where a.application_status='joined'),r.created_at,r.updated_at
+  from public.requirement_contractors rc join public.employer_requirements r on r.id=rc.requirement_id
+    left join public.candidate_applications a on a.requirement_id=r.id left join public.interviews i on i.application_id=a.id
+  where rc.contractor_id=v_contractor_id and rc.origin_type='contractor_submission' and (v_filter_status is null or rc.submission_status=v_filter_status)
+    and (v_needle is null or r.requirement_code ilike '%'||v_needle||'%' or r.job_role ilike '%'||v_needle||'%' or r.job_location ilike '%'||v_needle||'%')
+  group by r.id,rc.id order by r.created_at desc,r.id limit least(greatest(coalesce(p_limit,25),1),100) offset greatest(coalesce(p_offset,0),0);
+end;
+$$;
+revoke all on function public.list_contractor_portal_vacancies(text,text,integer,integer) from public, anon;
+grant execute on function public.list_contractor_portal_vacancies(text,text,integer,integer) to authenticated;
+
 -- M044's extended Company shape is a separate overload.  It preserves the
 -- M043 owner boundary and cannot be selected accidentally by legacy callers.
 create function public.manage_company_portal_requirement(p_action text,p_requirement_id uuid,p_department text,p_job_role text,p_job_location text,p_required_headcount integer,p_qualification text,p_iti_trade text,p_experience_requirement text,p_gender_preference text,p_age_min integer,p_age_max integer,p_salary_min numeric,p_salary_max numeric,p_shift_details text,p_working_hours text,p_overtime_details text,p_canteen text,p_transport text,p_accommodation text,p_interview_location text,p_interview_date timestamptz,p_expected_joining_date date,p_additional_notes text,p_payable_days integer,p_basic_da numeric,p_attendance_bonus numeric,p_monthly_bonus numeric,p_leave_amount numeric,p_other_fixed_earning numeric,p_gross_wages numeric,p_employee_pf numeric,p_employee_esic numeric,p_canteen_deduction numeric,p_other_deduction numeric,p_employer_pf numeric,p_employer_esic numeric,p_gratuity_provision numeric,p_bonus_provision numeric,p_leave_provision numeric,p_other_ctc_component numeric,p_approx_in_hand numeric,p_ctc numeric,p_accommodation_status text,p_accommodation_charge_amount numeric,p_accommodation_charge_basis text)
@@ -628,7 +696,7 @@ begin
 end;
 $$;
 
-create function public.get_contractor_portal_vacancy(p_requirement_id uuid)
+create or replace function public.get_contractor_portal_vacancy(p_requirement_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare v_contractor_id uuid := private.current_contractor_portal_id(true); v_result jsonb;
 begin

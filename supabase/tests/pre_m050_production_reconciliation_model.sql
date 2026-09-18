@@ -20,7 +20,7 @@ create table public.platform_users (user_id uuid primary key, account_type text 
 create table public.companies (id uuid primary key, legal_name text not null, account_status text not null default 'active');
 create table public.company_users (company_id uuid not null references public.companies(id), user_id uuid not null references public.platform_users(user_id), status text not null default 'active', role text not null);
 create table public.contractors (id uuid primary key, agency_name text, owner_name text);
-create table public.candidates (id uuid primary key);
+create table public.candidates (id uuid primary key, user_id uuid, profile_status text not null default 'active', status text not null default 'active');
 create table public.employer_requirements (
   id uuid primary key default gen_random_uuid(), requirement_code text not null unique, company_id uuid references public.companies(id), company_name text,
   department text, job_role text, job_location text, company_location text, required_headcount integer not null, filled_positions integer not null default 0,
@@ -47,7 +47,6 @@ create policy "M7 admins update joinings" on public.candidate_joinings for updat
 
 create function private.current_contractor_portal_id(p_require_active boolean default true) returns uuid language sql stable security definer set search_path='' as $$ select null::uuid $$;
 create function private.can_manage_contractor_vacancies() returns boolean language sql stable security definer set search_path='' as $$ select false $$;
-create function private.current_candidate_portal_id() returns uuid language sql stable security definer set search_path='' as $$ select null::uuid $$;
 create function private.is_admin() returns boolean language sql stable security definer set search_path='' as $$ select true $$;
 create function private.has_staff_role(p_role text) returns boolean language sql stable security definer set search_path='' as $$ select false $$;
 
@@ -56,13 +55,13 @@ returns table(id uuid,requirement_code text,submission_status text,requirement_s
 revoke all on function public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text) from public, anon;
 grant execute on function public.manage_contractor_portal_vacancy(text,uuid,text,text,text,text,integer,text,text,text,text,integer,integer,numeric,numeric,text,text,text,text,text,text,text,date,text) to authenticated;
 create function public.list_contractor_portal_vacancies(p_search text default null,p_status text default null,p_limit integer default 25,p_offset integer default 0)
-returns table(id uuid,requirement_code text,client_name text,job_role text,job_location text,required_headcount integer,salary_min numeric,salary_max numeric,payable_days integer,basic_da numeric,attendance_bonus numeric,monthly_bonus numeric,leave_amount numeric,other_fixed_earning numeric,gross_wages numeric,employee_pf numeric,employee_esic numeric,canteen_deduction numeric,other_deduction numeric,employer_pf numeric,employer_esic numeric,gratuity_provision numeric,bonus_provision numeric,leave_provision numeric,other_ctc_component numeric,approx_in_hand numeric,ctc numeric,accommodation_status text,accommodation_charge_amount numeric,accommodation_charge_basis text,submission_status text,requirement_stage text,review_feedback text,application_count bigint,interview_count bigint,selected_count bigint,joined_count bigint,created_at timestamptz,updated_at timestamptz)
+returns table(id uuid,requirement_code text,client_name text,job_role text,job_location text,required_headcount integer,submission_status text,requirement_stage text,review_feedback text,application_count bigint,interview_count bigint,selected_count bigint,joined_count bigint,created_at timestamptz,updated_at timestamptz)
 language plpgsql stable security definer set search_path='' as $$
 declare v_contractor_id uuid := private.current_contractor_portal_id(true); v_needle text := nullif(btrim(p_search),''); v_filter_status text := nullif(lower(btrim(p_status)), '');
 begin
   if v_contractor_id is null then raise exception 'Active Contractor access is required'; end if;
   if v_filter_status is not null and v_filter_status not in ('draft','submitted','under_review','correction_required','approved','rejected','closed','cancelled') then raise exception 'Unsupported submission status'; end if;
-  return query select r.id,r.requirement_code,r.company_name,r.job_role,r.job_location,r.required_headcount,r.salary_min,r.salary_max,r.payable_days,r.basic_da,r.attendance_bonus,r.monthly_bonus,r.leave_amount,r.other_fixed_earning,r.gross_wages,r.employee_pf,r.employee_esic,r.canteen_deduction,r.other_deduction,r.employer_pf,r.employer_esic,r.gratuity_provision,r.bonus_provision,r.leave_provision,r.other_ctc_component,r.approx_in_hand,r.ctc,r.accommodation_status,r.accommodation_charge_amount,r.accommodation_charge_basis,rc.submission_status,r.requirement_stage,rc.review_feedback,count(distinct a.id),count(distinct i.id),count(distinct a.id) filter(where a.application_status='selected'),count(distinct a.id) filter(where a.application_status='joined'),r.created_at,r.updated_at
+  return query select r.id,r.requirement_code,r.company_name,r.job_role,r.job_location,r.required_headcount,rc.submission_status,r.requirement_stage,rc.review_feedback,count(distinct a.id),count(distinct i.id),count(distinct a.id) filter(where a.application_status='selected'),count(distinct a.id) filter(where a.application_status='joined'),r.created_at,r.updated_at
   from public.requirement_contractors rc join public.employer_requirements r on r.id=rc.requirement_id left join public.candidate_applications a on a.requirement_id=r.id left join public.interviews i on i.application_id=a.id
   where rc.contractor_id=v_contractor_id and rc.origin_type='contractor_submission' and (v_filter_status is null or rc.submission_status=v_filter_status) and (v_needle is null or r.requirement_code ilike '%'||v_needle||'%' or r.job_role ilike '%'||v_needle||'%' or r.job_location ilike '%'||v_needle||'%')
   group by r.id,rc.id order by r.created_at desc,r.id limit least(greatest(coalesce(p_limit,25),1),100) offset greatest(coalesce(p_offset,0),0);
@@ -70,6 +69,15 @@ end;
 $$;
 revoke all on function public.list_contractor_portal_vacancies(text,text,integer,integer) from public, anon;
 grant execute on function public.list_contractor_portal_vacancies(text,text,integer,integer) to authenticated;
+create function public.get_contractor_portal_vacancy(p_requirement_id uuid)
+returns jsonb language sql stable security definer set search_path='' as $$ select null::jsonb $$;
+revoke all on function public.get_contractor_portal_vacancy(uuid) from public, anon;
+grant execute on function public.get_contractor_portal_vacancy(uuid) to authenticated;
+create function public.review_contractor_vacancy(p_requirement_id uuid,p_action text,p_feedback text default null)
+returns table(requirement_id uuid,requirement_code text,submission_status text,requirement_stage text,requirement_visibility text)
+language sql security definer set search_path='' as $$ select null::uuid,null::text,null::text,null::text,null::text where false $$;
+revoke all on function public.review_contractor_vacancy(uuid,text,text) from public, anon;
+grant execute on function public.review_contractor_vacancy(uuid,text,text) to authenticated;
 create function public.register_candidate_requirement_interest(p_requirement_code text,p_candidate jsonb) returns boolean language sql security definer set search_path='' as $$ select true $$;
 revoke all on function public.register_candidate_requirement_interest(text,jsonb) from public, authenticated;
 grant execute on function public.register_candidate_requirement_interest(text,jsonb) to anon;
