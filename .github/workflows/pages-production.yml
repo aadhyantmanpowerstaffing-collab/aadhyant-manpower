@@ -1,0 +1,60 @@
+name: Build allowlisted production Pages artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: Deploy the reviewed artifact after environment approval
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and validate dist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the authorized revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build deterministic production artifact
+        run: node scripts/build-production-artifact.js
+
+      - name: Run artifact boundary regression
+        run: node --test tests/production-artifact.test.js
+
+      - name: Run complete frontend regression
+        run: npm test
+
+      - name: Verify final artifact manifest and digest
+        run: node scripts/build-production-artifact.js --verify
+
+      - name: Upload dist only as the Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy reviewed artifact
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_production == true && github.ref == 'refs/heads/web-platform-development' }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the uploaded Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
