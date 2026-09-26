@@ -32,10 +32,10 @@ test('production browser dependency and config binding are explicit', () => {
   assert.match(client, /parsedUrl\.hostname/);
 });
 
-test('production sensitive intake is fail-closed', () => {
+test('production sensitive intake is enabled only after the reviewed Candidate repair', () => {
   const candidate = fs.readFileSync(path.join(root, 'candidate/portal/candidate.js'), 'utf8');
   const builder = fs.readFileSync(path.join(root, 'scripts/build-production-artifact.js'), 'utf8');
-  assert.match(builder, /sensitiveIntakeEnabled: false/);
+  assert.match(builder, /sensitiveIntakeEnabled: true/);
   assert.match(candidate, /productionSensitiveIntakeBlocked/);
   assert.match(candidate, /data-upload-form/);
   assert.match(candidate, /Sensitive profile, document, and joining-detail intake is temporarily unavailable/);
