@@ -64,7 +64,30 @@ test('owner forms use controlled terms through owner RPCs and preserve M049 subm
   for (const source of [company, contractor]) { assert.match(source, /p_candidate_terms/); assert.doesNotMatch(source, /\.from\s*\(/); }
   assert.match(contractor, /p_submission_idempotency_key: submissionKey/);
   assert.match(contractor, /submitInFlight/);
-  for (const html of [companyHtml, contractorHtml]) for (const token of ['CTC Cadence','Paid / Earned Leave','Canteen terms','Transport terms','Employment Type','Payroll Type','Other Candidate Benefits','data-add-candidate-benefit']) assert.ok(html.includes(token), token);
+  for (const html of [companyHtml, contractorHtml]) for (const token of ['CTC Cadence','Canteen terms','Transport terms','Employment Type','Payroll Type','Other Candidate Benefits','data-add-candidate-benefit']) assert.ok(html.includes(token), token);
+});
+
+test('simplified owner forms preserve existing omitted terms and clear edit state for a new vacancy', () => {
+  const window = {}; vm.runInNewContext(helperSource, { window });
+  const api = window.AadhyantVacancyCandidateTerms;
+  const removed = ['paidLeaveDaysPerYear', 'casualLeaveDaysPerYear', 'sickLeaveDaysPerYear', 'nationalHolidayDaysPerYear', 'festivalHolidayDaysPerYear', 'probationPeriodMonths'];
+  const stored = { paid_leave_days_per_year: 18, casual_leave_days_per_year: 7, sick_leave_days_per_year: 0, national_holiday_days_per_year: 3, festival_holiday_days_per_year: null, probation_period_months: 6 };
+  const plain = (value) => JSON.parse(JSON.stringify(value));
+  for (const html of [companyHtml, contractorHtml]) {
+    for (const key of removed) assert.doesNotMatch(html, new RegExp(`name="${key}"`));
+    for (const key of ['compensationCadence', 'workingDaysPerWeek', 'weeklyOffCount', 'trainingPeriodDays', 'noticePeriodDays']) assert.ok(html.includes(`name="${key}"`), key);
+    const form = { elements: { workingDaysPerWeek: { value: '6' }, weeklyOffCount: { value: '1' } }, querySelector: () => null, querySelectorAll: () => [] };
+    for (const current of [stored, { candidate_terms: stored }]) {
+      api.hydrate(form, current);
+      assert.deepEqual(plain(api.terms(form)), { ...stored, working_days_per_week: 6, weekly_off_count: 1, benefits: [] });
+      assert.equal(api.validate(form), null);
+    }
+    api.hydrate(form, {});
+    const fresh = plain(api.terms(form));
+    for (const key of Object.keys(stored)) assert.equal(fresh[key], null, `${key} must not leak from the previous vacancy`);
+    assert.equal(fresh.working_days_per_week, 6);
+    assert.equal(fresh.weekly_off_count, 1);
+  }
 });
 
 test('Candidate detail is collapsed, truthful, and contains no private browser access', () => {
@@ -82,12 +105,11 @@ test('term helper rejects invalid conditional client payloads before RPC', () =>
   assert.match(helperSource, /Clear .* charge terms/i);
 });
 
-test('Company and Contractor annual leave and holiday controls enforce whole annual days from 0 through 366', () => {
+test('legacy annual leave and holiday payloads still validate whole annual days from 0 through 366', () => {
   const window = {}; vm.runInNewContext(helperSource, { window });
   const control = (value = '') => ({ value, disabled: false });
   const api = window.AadhyantVacancyCandidateTerms;
   const fields = ['paidLeaveDaysPerYear','casualLeaveDaysPerYear','sickLeaveDaysPerYear','nationalHolidayDaysPerYear','festivalHolidayDaysPerYear'];
-  for (const html of [companyHtml, contractorHtml]) for (const field of fields) assert.match(html, new RegExp(`name="${field}" type="number" min="0" max="366" step="1"`));
   for (const field of fields) {
     const form = { elements: Object.fromEntries(fields.map((name) => [name, control()])), querySelector: () => null, querySelectorAll: () => [] };
     for (const value of ['', '0', '12', '366']) {

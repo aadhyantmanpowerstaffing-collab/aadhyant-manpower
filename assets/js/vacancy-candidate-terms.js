@@ -5,6 +5,10 @@
   const annualLeave = ['paidLeaveDaysPerYear','casualLeaveDaysPerYear','sickLeaveDaysPerYear','nationalHolidayDaysPerYear','festivalHolidayDaysPerYear'];
   const scalar = ['compensationCadence','paidLeaveDaysPerYear','casualLeaveDaysPerYear','sickLeaveDaysPerYear','nationalHolidayDaysPerYear','festivalHolidayDaysPerYear','workingDaysPerWeek','weeklyOffCount','overtimeRate','overtimeRateBasis','canteenStatus','canteenChargeAmount','canteenChargeBasis','transportStatus','transportChargeAmount','transportChargeBasis','employmentType','payrollType','contractDurationMonths','probationPeriodMonths','trainingPeriodDays','noticePeriodDays'];
   const column = Object.fromEntries(scalar.map((key) => [key, key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)]));
+  // The owner forms no longer edit these terms. Keep existing values in edit
+  // payloads: the server treats omitted term keys as null.
+  const retainedFields = [...annualLeave, 'probationPeriodMonths'];
+  const retainedByForm = new WeakMap();
   const number = (value) => value === '' || value == null ? null : Number(value);
   const normalizeFacility = (form, facility) => {
     const chargeable = form.elements[`${facility}Status`]?.value === 'chargeable';
@@ -20,7 +24,7 @@
   };
   const terms = (form) => {
     ['canteen', 'transport'].forEach((facility) => normalizeFacility(form, facility));
-    const values = {};
+    const values = { ...retainedByForm.get(form) };
     scalar.forEach((key) => { const control = form.elements[key]; if (!control) return; const value = [...annualLeave,'workingDaysPerWeek','weeklyOffCount','overtimeRate','canteenChargeAmount','transportChargeAmount','contractDurationMonths','probationPeriodMonths','trainingPeriodDays','noticePeriodDays'].includes(key) ? number(control.value) : String(control.value || '').trim() || null; values[column[key]] = value; });
     values.benefits = [];
     form.querySelectorAll('[data-candidate-benefit]').forEach((row) => { const type=row.querySelector('[name=benefitType]')?.value; const kind=row.querySelector('[name=benefitValueType]')?.value; if (!type || !kind) return; values.benefits.push({ benefit_type:type, benefit_value_type:kind, amount:number(row.querySelector('[name=benefitAmount]')?.value), amount_basis:row.querySelector('[name=benefitAmountBasis]')?.value || null }); });
@@ -37,7 +41,11 @@
     for (const benefit of t.benefits) { if (benefit.benefit_value_type==='cash' && (!(benefit.amount>0)||!benefit.amount_basis)) return err('Cash benefits require a positive amount and basis.'); if (benefit.benefit_value_type==='provided' && (benefit.amount!=null||benefit.amount_basis)) return err('Provided benefits cannot include a cash amount.'); }
     return null;
   };
-  const hydrate = (form, current={}) => { const source=current.candidate_terms||current; scalar.forEach((key)=>{const c=form.elements[key];if(c&&source[column[key]]!=null)c.value=source[column[key]];}); const host=form.querySelector('[data-candidate-benefits]'), template=form.querySelector('template[data-candidate-benefit-template]'); if(host&&template){host.replaceChildren();(current.candidate_benefits||[]).forEach((benefit)=>{const fragment=template.content.cloneNode(true);const row=fragment.querySelector('[data-candidate-benefit]');row.querySelector('[name=benefitType]').value=benefit.benefit_type||'';row.querySelector('[name=benefitValueType]').value=benefit.benefit_value_type||'provided';row.querySelector('[name=benefitAmount]').value=benefit.amount??'';row.querySelector('[name=benefitAmountBasis]').value=benefit.amount_basis||'';row.querySelectorAll('[data-benefit-cash]').forEach((node)=>{node.hidden=benefit.benefit_value_type!=='cash';});host.append(fragment);});} };
+  const hydrate = (form, current={}) => { const source=current.candidate_terms||current;
+    retainedByForm.set(form, Object.fromEntries(retainedFields
+      .filter((key) => !form.elements[key])
+      .map((key) => [column[key], source[column[key]] ?? null])));
+    scalar.forEach((key)=>{const c=form.elements[key];if(c&&source[column[key]]!=null)c.value=source[column[key]];}); const host=form.querySelector('[data-candidate-benefits]'), template=form.querySelector('template[data-candidate-benefit-template]'); if(host&&template){host.replaceChildren();(current.candidate_benefits||[]).forEach((benefit)=>{const fragment=template.content.cloneNode(true);const row=fragment.querySelector('[data-candidate-benefit]');row.querySelector('[name=benefitType]').value=benefit.benefit_type||'';row.querySelector('[name=benefitValueType]').value=benefit.benefit_value_type||'provided';row.querySelector('[name=benefitAmount]').value=benefit.amount??'';row.querySelector('[name=benefitAmountBasis]').value=benefit.amount_basis||'';row.querySelectorAll('[data-benefit-cash]').forEach((node)=>{node.hidden=benefit.benefit_value_type!=='cash';});host.append(fragment);});} };
   const wire = (form) => {
     const toggle=(facility)=>normalizeFacility(form, facility);
     ['canteen','transport'].forEach((facility)=>{form.elements[`${facility}Status`]?.addEventListener('change',()=>toggle(facility));toggle(facility);});
