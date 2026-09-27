@@ -1,0 +1,88 @@
+{
+  "status": "AWAITING_EXPLICIT_PRODUCTION_APPROVAL",
+  "base_commit": "fd73ee53fa7879fa6f80a35a462604472300c76e",
+  "project_ref": "wsuctjhbqiedttfnwjvf",
+  "branch": "web-platform-development",
+  "workflow": ".github/workflows/pages-production.yml",
+  "deploy_production": true,
+  "frontend_files": [
+    {
+      "path": "admin/index.html",
+      "sha256": "1e6ceb8995946c609755322e3fa3f1625fc199028a5cce8644c652cbdec3034c"
+    },
+    {
+      "path": "admin/recruitment-operations.js",
+      "sha256": "aa1c8a3a3e7d178f7dabb8a37765eee40ed3a8403a4f4b3eeaa2bb98ad6fec41"
+    },
+    {
+      "path": "assets/js/resume-sharing.js",
+      "sha256": "e3f48ee57605253e657f1eab3840ac8c408308d8c3c3980af3670b96f2194142"
+    },
+    {
+      "path": "candidate/portal/applications.html",
+      "sha256": "c32ef741c148ab4f2cc606568e81ec05036ac4c85e173e498d8cf309cec033f9"
+    },
+    {
+      "path": "candidate/portal/candidate.js",
+      "sha256": "1598514c38b2454c9576f4488ff64b766d2f877ccde8855ac14c91cb722c5be9"
+    },
+    {
+      "path": "company/applications.html",
+      "sha256": "7316f6497fd55549864a6b4bf8f7ba663d19fb64eac62412f235d431821d9514"
+    },
+    {
+      "path": "company/company.js",
+      "sha256": "49ce21dfea19e295ac1038c27edef218044def2923546d847778cfc594be09e8"
+    },
+    {
+      "path": "contractor/applications.html",
+      "sha256": "0911bb7bb1fd9e68a79b1da73702f20686103183a4783942988124f412a6c8db"
+    },
+    {
+      "path": "contractor/contractor.js",
+      "sha256": "9f1464bf057a71ed227a2b1c83db6c10e8a4d9f33a66e35ea0ae05e5d62d2309"
+    },
+    {
+      "path": "package.json",
+      "sha256": "b52f8396248ed22e2ac0c672b21f7497c07d2bd56610996fcb56639519249836"
+    },
+    {
+      "path": "scripts/build-production-artifact.js",
+      "sha256": "6574e03b9f9c791b3224302c39faf7b0a0f2c56330cc94ccaf2f18a30f2903bd"
+    },
+    {
+      "path": "tests/company-portal-ui.test.js",
+      "sha256": "9717a6cc4eb6037915f4aa3bc71d161574fdf9e73ce40dda5a03ae3499fc93f8"
+    },
+    {
+      "path": "tests/contractor-portal-ui.test.js",
+      "sha256": "626419a4e946678c2bfbc31836d9007b322017a7e6abb56f0367c66a79f4162e"
+    },
+    {
+      "path": "tests/resume-sharing.test.js",
+      "sha256": "9426ebc9e9d3f406d54b51543c0f6bc50b36979df3deeaff4fc17d8e1aedafa3"
+    }
+  ],
+  "database_files": [
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/forward_proposed.sql",
+      "sha256": "d67e84bdc6291bed18cd04a3a5d0dd4c74393ca86ed578589300bf042bdb3bfd"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/preflight_read_only.sql",
+      "sha256": "123d6577a15684e24d419b4c604aa1cdec9a5de9984760db50097171e54d8d18"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/postcheck_read_only.sql",
+      "sha256": "cc45a376b9903cd040817d86e7b666cde4b500d4ba5d70686df91007978708d1"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/rollback_guarded.sql",
+      "sha256": "3331daf6a47a9304fe74996722c321c682ab1921c2877aa9dde4f64e8898f62b"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/contracts.sql",
+      "sha256": "68c5d0eadc150e85c675b6fcc8aa4a3af2e38664a75bfeb454f5f6d5f8a18fcb"
+    }
+  ]
+}

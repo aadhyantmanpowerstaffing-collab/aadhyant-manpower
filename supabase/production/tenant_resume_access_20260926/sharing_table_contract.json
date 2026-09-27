@@ -1,0 +1,179 @@
+{
+  "source_sha256": "68c5d0eadc150e85c675b6fcc8aa4a3af2e38664a75bfeb454f5f6d5f8a18fcb",
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "application_id",
+      "type": "uuid",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "document_id",
+      "type": "uuid",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "recipient_type",
+      "type": "text",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "recipient_id",
+      "type": "uuid",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "consent_by",
+      "type": "uuid",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "consent_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "consent_revoked_at",
+      "type": "timestamp with time zone",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "consent_version",
+      "type": "text",
+      "default": "'application-resume-v1'::text",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "revision",
+      "type": "uuid",
+      "default": "gen_random_uuid()",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "object_id",
+      "type": "uuid",
+      "default": null,
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "object_version",
+      "type": "text",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "object_updated_at",
+      "type": "timestamp with time zone",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "shared_by",
+      "type": "uuid",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "shared_at",
+      "type": "timestamp with time zone",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "share_revoked_at",
+      "type": "timestamp with time zone",
+      "default": null,
+      "not_null": false,
+      "generated": ""
+    }
+  ],
+  "constraints": [
+    {
+      "name": "candidate_resume_shares_application_id_document_id_recipien_key",
+      "type": "u",
+      "validated": true,
+      "definition": "UNIQUE (application_id, document_id, recipient_type, recipient_id)"
+    },
+    {
+      "name": "candidate_resume_shares_application_id_fkey",
+      "type": "f",
+      "validated": true,
+      "definition": "FOREIGN KEY (application_id) REFERENCES candidate_applications(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "candidate_resume_shares_check",
+      "type": "c",
+      "validated": true,
+      "definition": "CHECK (((shared_by IS NULL) = (shared_at IS NULL)))"
+    },
+    {
+      "name": "candidate_resume_shares_check1",
+      "type": "c",
+      "validated": true,
+      "definition": "CHECK (((share_revoked_at IS NULL) OR (shared_at IS NOT NULL)))"
+    },
+    {
+      "name": "candidate_resume_shares_consent_by_fkey",
+      "type": "f",
+      "validated": true,
+      "definition": "FOREIGN KEY (consent_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "candidate_resume_shares_consent_version_check",
+      "type": "c",
+      "validated": true,
+      "definition": "CHECK ((consent_version = 'application-resume-v1'::text))"
+    },
+    {
+      "name": "candidate_resume_shares_document_id_fkey",
+      "type": "f",
+      "validated": true,
+      "definition": "FOREIGN KEY (document_id) REFERENCES candidate_documents(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "candidate_resume_shares_pkey",
+      "type": "p",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "candidate_resume_shares_recipient_type_check",
+      "type": "c",
+      "validated": true,
+      "definition": "CHECK ((recipient_type = ANY (ARRAY['company'::text, 'contractor'::text])))"
+    },
+    {
+      "name": "candidate_resume_shares_shared_by_fkey",
+      "type": "f",
+      "validated": true,
+      "definition": "FOREIGN KEY (shared_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    }
+  ]
+}

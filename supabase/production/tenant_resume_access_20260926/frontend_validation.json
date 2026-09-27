@@ -1,0 +1,6 @@
+{
+  "test_exit": 0,
+  "build_exit": 0,
+  "scope": "Clean HEAD snapshot plus exact current tracked edits and new resume module/test; no database connection or deployment",
+  "asset_in_dist": true
+}

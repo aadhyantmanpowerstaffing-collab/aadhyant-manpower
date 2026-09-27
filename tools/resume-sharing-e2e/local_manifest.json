@@ -1,0 +1,98 @@
+{
+  "scope": "Local-only test. No remote database dispatch.",
+  "revision": "2026-09-27-v3-browser-internal-resources",
+  "files": [
+    {
+      "path": "assets/js/resume-sharing.js",
+      "sha256": "e3f48ee57605253e657f1eab3840ac8c408308d8c3c3980af3670b96f2194142"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/contracts.sql",
+      "sha256": "68c5d0eadc150e85c675b6fcc8aa4a3af2e38664a75bfeb454f5f6d5f8a18fcb"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/forward_proposed.sql",
+      "sha256": "d67e84bdc6291bed18cd04a3a5d0dd4c74393ca86ed578589300bf042bdb3bfd"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/manifest.json",
+      "sha256": "091a8ac7d1730b10a842c0481de048540e80e5a92282c91870f590cce7b33899"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/postcheck_read_only.sql",
+      "sha256": "cc45a376b9903cd040817d86e7b666cde4b500d4ba5d70686df91007978708d1"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/preflight_read_only.sql",
+      "sha256": "123d6577a15684e24d419b4c604aa1cdec9a5de9984760db50097171e54d8d18"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/BROWSER_CHECK_UPDATE.md",
+      "sha256": "37522a05c35a9ef80b6ba0c1aec113e07dcbc50cf9c24828d96ff024e6fd7298"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/README.md",
+      "sha256": "3040911f7fc4344173f8ad06d1195bce1c97d6437d9a42388757252a2a8b2750"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/START_LOCAL_TEST.ps1",
+      "sha256": "0dcb08f0998f652f0beabf478216293ded9cbdec8c0a9121d22303d418ecf03b"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/bootstrap_local_supabase.sql",
+      "sha256": "a39c0525edff52310c78edb76ec9850c03fbe1916a663f47c70a300638d1d480"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/browser_download_evidence.mjs",
+      "sha256": "670a5777d9d6435c28daf21382b40e554f7b7a2060bc2ecf1b326a69bf8071af"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/browser_download_evidence.test.mjs",
+      "sha256": "af711f259015f9232b97e29f3d02e4f5e73f51db438211257d1a07a63ceb8eae"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/build_local_fixture.py",
+      "sha256": "978f189a828630996822dccda009ba55c7c5430270ba8584e8505aa8d10d1f26"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/configure_local_stack.mjs",
+      "sha256": "7b51055830f8d5acdc02b03085d693b907cedb80cb5cf59af979ec1b69541c47"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/evidence/browser_check_unit_results.json",
+      "sha256": "f3474e04c07792e41f61c0b4ddbfafc143f9e07598767bbe04fd6f2eaaa05515"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/evidence/browser_guard_v3_validation.json",
+      "sha256": "89f53006ad7dddb562b85ca696c1422e002a76a638b915207708baac3e40a03a"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/evidence/user_run_20260927.json",
+      "sha256": "586dcea48631612f0ca50912e44f20d032eb576800763a7c73e542c2a0406fb0"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/evidence/user_run_v2_20260927.json",
+      "sha256": "13e41ff5c77140955861a4912305c85bf0b0076b8ed2547d7e631dec121e4b5e"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/exercise_local_api.mjs",
+      "sha256": "a0fafe3333e327e7413898c9e0a8243cdb377de517168fb52a3139ce7be3ab37"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/package-lock.json",
+      "sha256": "b36bf9bd0313da7f2b6b35d861c6853af3062969082d0b839501159d4b508d8e"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/package.json",
+      "sha256": "ee70e89dfe3b1e2ad772830c142092879b31e343d5b7f56430492dd3a134e051"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/run_browser.mjs",
+      "sha256": "f7b4feee579b7265be3207eb60a6ef2de1245b2fc594622844f2356f8a5d090b"
+    },
+    {
+      "path": "tools/resume-sharing-e2e/synthetic_mapping.mjs",
+      "sha256": "551b3a6768153bd18d7f038813046bf787ebac5741721b80ea898d282e2dde4d"
+    }
+  ]
+}

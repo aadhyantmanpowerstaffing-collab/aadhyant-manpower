@@ -1,0 +1,9 @@
+{
+  "runId": "resume-e2e-ffd3fa337a44",
+  "result": "FAIL",
+  "stages": {},
+  "scope": "Fresh local resume-sharing Auth/Storage and browser component rehearsal",
+  "productionConnections": 0,
+  "failureStage": "LOCAL_HOST_PRECHECK",
+  "error": "Required local executable unavailable: docker"
+}

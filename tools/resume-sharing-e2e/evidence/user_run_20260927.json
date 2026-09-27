@@ -1,0 +1,26 @@
+{
+  "source": "User-supplied Windows output and screenshot 2026-09-27, run resume-e2e-832649893df3",
+  "genuine_stack": "PASS",
+  "fixture": "PASS",
+  "genuine_auth_accounts": "PASS",
+  "mapping": "PASS",
+  "preflight": "PASS",
+  "forward": "PASS",
+  "postcheck": "PASS",
+  "storage_upload_registration": "PASS",
+  "admin_verification": "PASS",
+  "unshared_company_denied": "PASS",
+  "browser_checks": {
+    "GENUINE_BROWSER_PASSWORD_LOGINS": "PASS",
+    "CANDIDATE_EXPLICIT_CONSENT": "PASS",
+    "CONSENT_WITHOUT_ADMIN_DENIED": "PASS",
+    "ADMIN_EXPLICIT_SHARE": "PASS"
+  },
+  "failureStage": "COMPANY_GENUINE_STORAGE_DOWNLOAD",
+  "error": "Expected PDF prefix %PDF-; Playwright response.body() returned empty buffer",
+  "nonlocalBackendRequests": 1,
+  "blocked_request_identity": "NOT_RECORDED",
+  "result": "FAIL",
+  "later_checks": "NOT_RUN",
+  "production_connections": 0
+}

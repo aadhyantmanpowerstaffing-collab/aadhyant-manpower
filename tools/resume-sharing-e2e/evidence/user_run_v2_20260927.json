@@ -1,0 +1,144 @@
+{
+  "source": "User-supplied Windows PowerShell output; not independently executed on this host",
+  "run_id": "resume-e2e-b9d85ff6bd3d",
+  "revision": "v2",
+  "checks": {
+    "GENUINE_LOCAL_STACK": "PASS",
+    "FIXTURE_BOOTSTRAP": "PASS",
+    "GENUINE_LOCAL_AUTH_ACCOUNTS": "PASS",
+    "AUTH_RECIPIENT_MAPPING": "PASS",
+    "LOCAL_REPAIR_PREFLIGHT": "PASS",
+    "LOCAL_RESUME_REPAIR": "PASS",
+    "LOCAL_RESUME_POSTCHECK": "PASS",
+    "LOCAL_RPC_SCHEMA_READY": "PASS",
+    "GENUINE_STORAGE_PDF_ROUNDTRIP": "PASS",
+    "GENUINE_CANDIDATE_STORAGE_UPLOAD_REGISTRATION": "PASS",
+    "GENUINE_ADMIN_VERIFICATION": "PASS",
+    "UNSHARED_COMPANY_RESUME_DENIED": "PASS",
+    "GENUINE_BROWSER_PASSWORD_LOGINS": "PASS",
+    "CANDIDATE_EXPLICIT_CONSENT": "PASS",
+    "CONSENT_WITHOUT_ADMIN_DENIED": "PASS",
+    "ADMIN_EXPLICIT_SHARE": "PASS",
+    "COMPANY_GENUINE_STORAGE_DOWNLOAD": "PASS",
+    "OTHER_COMPANY_DENIED": "PASS",
+    "CANDIDATE_REVOCATION": "PASS",
+    "CONTRACTOR_CONSENT_AND_ADMIN_SHARE": "PASS",
+    "CONTRACTOR_GENUINE_STORAGE_DOWNLOAD": "PASS",
+    "ADMIN_REVOCATION": "PASS"
+  },
+  "overall_result": "FAIL",
+  "reported_failure_stage": "ADMIN_REVOCATION",
+  "actual_failing_assertion": "expect(results.nonlocalBackendRequests).toBe(0)",
+  "expected": 0,
+  "received": 10,
+  "blocked_requests": [
+    {
+      "actor": "company",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "stylesheet"
+    },
+    {
+      "actor": "company",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "company",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "company",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "company",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "contractor",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "stylesheet"
+    },
+    {
+      "actor": "contractor",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "contractor",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "contractor",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "actor": "contractor",
+      "scheme": "chrome:",
+      "origin": "chrome://resources",
+      "method": "GET",
+      "resourceType": "script"
+    }
+  ],
+  "downloads": {
+    "company": {
+      "step": "PASS",
+      "status": 200,
+      "contentType": "application/pdf",
+      "resourceType": "fetch",
+      "capturedBodyBytes": 0,
+      "blob": {
+        "size": 414,
+        "type": "application/pdf",
+        "pending": false,
+        "prefix": "%PDF-",
+        "sha256": "99f21978f69ca643db051efefb505d92a546d9f119bb232cd20a909bf5f60a35"
+      },
+      "uiStatus": [
+        "Resume opened. Use it only for this application."
+      ]
+    },
+    "contractor": {
+      "step": "PASS",
+      "status": 200,
+      "contentType": "application/pdf",
+      "resourceType": "fetch",
+      "capturedBodyBytes": 0,
+      "blob": {
+        "size": 414,
+        "type": "application/pdf",
+        "pending": false,
+        "prefix": "%PDF-",
+        "sha256": "99f21978f69ca643db051efefb505d92a546d9f119bb232cd20a909bf5f60a35"
+      },
+      "uiStatus": [
+        "Resume opened. Use it only for this application."
+      ]
+    }
+  },
+  "classification": "All ten reported blocked requests were browser-internal chrome://resources GET script/stylesheet requests. The stage variable still held ADMIN_REVOCATION when the final network assertion failed. No blocked external HTTP(S) request appears in the supplied output.",
+  "v3_genuine_rerun": "PENDING"
+}

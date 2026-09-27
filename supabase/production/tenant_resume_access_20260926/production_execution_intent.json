@@ -1,0 +1,14 @@
+{
+  "user_approval": "Explicit ha to new resume-sharing Production database update plus scoped frontend commit/push/deployment",
+  "approval_time": "2026-09-27T09:13:04+05:30",
+  "project_ref": "wsuctjhbqiedttfnwjvf",
+  "forward_sha256": "d67e84bdc6291bed18cd04a3a5d0dd4c74393ca86ed578589300bf042bdb3bfd",
+  "postcheck_sha256": "cc45a376b9903cd040817d86e7b666cde4b500d4ba5d70686df91007978708d1",
+  "transport": "Supabase authenticated apply_migration; independent execute_sql read-only postcheck",
+  "dispatch_count": 1,
+  "retry_policy": "No automatic retry; inspect exact installed state if result is uncertain",
+  "business_operations": "No sharing of real candidate resumes or business-record mutation authorized by this release approval",
+  "state": "APPLIED_AND_VERIFIED",
+  "preflight": "PASS",
+  "postcheck": "PASS"
+}

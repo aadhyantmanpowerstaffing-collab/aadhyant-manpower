@@ -1,0 +1,167 @@
+{
+  "status": "LOCAL_DRAFT_NOT_APPROVED_FOR_PRODUCTION",
+  "project_ref": "wsuctjhbqiedttfnwjvf",
+  "targets": [
+    {
+      "identity": "private.resume_application_recipients(uuid)",
+      "name": "resume_application_recipients",
+      "schema": "private",
+      "args": [
+        "p_application_id"
+      ],
+      "result": "TABLE(recipient_type text, recipient_id uuid, recipient_name text)",
+      "lang": "sql",
+      "volatility": "s",
+      "hash": "e044e66d076088aef544e6b9ad4830ee",
+      "browser": false
+    },
+    {
+      "identity": "private.current_resume_recipient(text)",
+      "name": "current_resume_recipient",
+      "schema": "private",
+      "args": [
+        "p_portal"
+      ],
+      "result": "uuid",
+      "lang": "plpgsql",
+      "volatility": "s",
+      "hash": "18d8c3b5e8f57a7a745e9218015ca6a4",
+      "browser": false
+    },
+    {
+      "identity": "private.resume_share_effective(uuid)",
+      "name": "resume_share_effective",
+      "schema": "private",
+      "args": [
+        "p_share_id"
+      ],
+      "result": "boolean",
+      "lang": "sql",
+      "volatility": "s",
+      "hash": "da44d249141fe014783cf4ddd758729a",
+      "browser": false
+    },
+    {
+      "identity": "private.resume_sharing_context(uuid)",
+      "name": "resume_sharing_context",
+      "schema": "private",
+      "args": [
+        "p_application_id"
+      ],
+      "result": "jsonb",
+      "lang": "sql",
+      "volatility": "s",
+      "hash": "4584f105a4781e3193fa0a9ad3d7aa1e",
+      "browser": false
+    },
+    {
+      "identity": "public.get_candidate_resume_sharing(text)",
+      "name": "get_candidate_resume_sharing",
+      "schema": "public",
+      "args": [
+        "p_requirement_code"
+      ],
+      "result": "jsonb",
+      "lang": "plpgsql",
+      "volatility": "s",
+      "hash": "a56533d07cb4f34b9d43127f5a0d027d",
+      "browser": true
+    },
+    {
+      "identity": "public.set_candidate_resume_consent(uuid,uuid,text,uuid,boolean)",
+      "name": "set_candidate_resume_consent",
+      "schema": "public",
+      "args": [
+        "p_application_id",
+        "p_document_id",
+        "p_recipient_type",
+        "p_recipient_id",
+        "p_allow"
+      ],
+      "result": "boolean",
+      "lang": "plpgsql",
+      "volatility": "v",
+      "hash": "ce7501c3a633fe0afe841319d90cddc2",
+      "browser": true
+    },
+    {
+      "identity": "public.admin_list_application_resume_sharing(uuid)",
+      "name": "admin_list_application_resume_sharing",
+      "schema": "public",
+      "args": [
+        "p_application_id"
+      ],
+      "result": "jsonb",
+      "lang": "plpgsql",
+      "volatility": "s",
+      "hash": "766bad1700001ed4910ce4a8756d2ce9",
+      "browser": true
+    },
+    {
+      "identity": "public.admin_set_application_resume_share(uuid,uuid,boolean)",
+      "name": "admin_set_application_resume_share",
+      "schema": "public",
+      "args": [
+        "p_consent_id",
+        "p_revision",
+        "p_share"
+      ],
+      "result": "boolean",
+      "lang": "plpgsql",
+      "volatility": "v",
+      "hash": "5b73601fb57fb614a5f1c8c1baf82652",
+      "browser": true
+    },
+    {
+      "identity": "public.get_shared_application_resume(uuid,text)",
+      "name": "get_shared_application_resume",
+      "schema": "public",
+      "args": [
+        "p_application_id",
+        "p_portal"
+      ],
+      "result": "TABLE(document_id uuid, display_file_name text, verification_status text)",
+      "lang": "plpgsql",
+      "volatility": "s",
+      "hash": "b12a292bfb2ffdb22d15ddf860ada42f",
+      "browser": true
+    },
+    {
+      "identity": "public.get_shared_application_resume_access(uuid,uuid,text)",
+      "name": "get_shared_application_resume_access",
+      "schema": "public",
+      "args": [
+        "p_application_id",
+        "p_document_id",
+        "p_portal"
+      ],
+      "result": "TABLE(bucket_name text, object_name text)",
+      "lang": "plpgsql",
+      "volatility": "s",
+      "hash": "5ddc25094ac7658e3268a7bbc6013346",
+      "browser": true
+    },
+    {
+      "identity": "private.can_read_shared_candidate_resume(text)",
+      "name": "can_read_shared_candidate_resume",
+      "schema": "private",
+      "args": [
+        "p_object_name"
+      ],
+      "result": "boolean",
+      "lang": "sql",
+      "volatility": "s",
+      "hash": "3a3f6d9d12b973f9be19ee459316aee5",
+      "browser": true
+    }
+  ],
+  "files": {
+    "sharing_table_contract.json": "14119a3f853003193d928eb37c097443b8efa5a461ceb46287e9c7108c85b6e8",
+    "contracts.sql": "68c5d0eadc150e85c675b6fcc8aa4a3af2e38664a75bfeb454f5f6d5f8a18fcb",
+    "forward_proposed.sql": "d67e84bdc6291bed18cd04a3a5d0dd4c74393ca86ed578589300bf042bdb3bfd",
+    "preflight_read_only.sql": "123d6577a15684e24d419b4c604aa1cdec9a5de9984760db50097171e54d8d18",
+    "postcheck_read_only.sql": "cc45a376b9903cd040817d86e7b666cde4b500d4ba5d70686df91007978708d1",
+    "rollback_guarded.sql": "3331daf6a47a9304fe74996722c321c682ab1921c2877aa9dde4f64e8898f62b",
+    "fixture_sql_engine_only.sql": "9e8da5b0c9d9f81e4c88bfd65b77f4f53dcb7b04f87c83865ad3f5f55f824b6b"
+  }
+}

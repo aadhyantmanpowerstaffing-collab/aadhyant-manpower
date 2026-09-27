@@ -1,0 +1,12 @@
+{
+  "scope": "SQL-engine compilation of materialized Windows fixture and seed generator; synthetic SQL principals only. NOT genuine Auth/Storage/browser evidence.",
+  "result": "PASS",
+  "checks": [
+    "source_bootstrap",
+    "generated_mapping_constraints",
+    "guarded_forward",
+    "exact_resume_path_registration",
+    "existing_admin_review",
+    "unshared_company_denial"
+  ]
+}

@@ -16,7 +16,7 @@ test('correction and resubmission states are constrained',()=>{assert.match(js,/
 test('profile protects legal and account fields',()=>['agency_name','main_email','gstin','verification_status','account_status'].forEach(k=>assert.match(pages[5],new RegExp(`name="${k}" disabled`))));
 test('contractor profile uses the shared State/District control and preserves persisted values',()=>{assert.match(pages[5],/registration-options\.js/);assert.match(pages[5],/name="state" data-option-set="states"/);assert.match(pages[5],/name="district" disabled/);assert.match(js,/setupStateDistrict\(f,\{state:d\.state,district:d\.district\}\)/);assert.match(js,/p_district:String\(v\.get\('district'\)/);});
 test('profile mutation is allowlisted and confirmed',()=>{assert.match(js,/update_contractor_portal_profile/);assert.match(js,/if\(ok!==true\)/)});
-test('candidate projection is contact safe',()=>{assert.match(pages[2],/Contact details and internal notes are never shared/);assert.doesNotMatch(js,/candidate\.(mobile|whatsapp|internal_notes)/)});
+test('candidate projection is contact safe',()=>{assert.match(pages[2],/Resume access requires Candidate consent and explicit Admin sharing/);assert.doesNotMatch(js,/candidate\.(mobile|whatsapp|internal_notes)/)});
 test('application progress is read only',()=>{assert.match(js,/list_contractor_portal_applications/);assert.doesNotMatch(js,/transition_recruitment_application/)});
 test('interview workspace is read only',()=>{assert.match(pages[3],/read-only/);assert.doesNotMatch(js,/schedule_recruitment_interview|update_recruitment_interview|reschedule_recruitment_interview/)});
 test('joining workspace is read only',()=>{assert.match(pages[4],/read-only/);assert.doesNotMatch(js,/upsert_recruitment_joining/)});

@@ -1,0 +1,14 @@
+{
+  "scope": "v3 harness-only correction",
+  "command": "node --test tools/resume-sharing-e2e/browser_download_evidence.test.mjs tests/resume-sharing.test.js",
+  "exit_code": 0,
+  "tests": 22,
+  "pass_count": 22,
+  "fail_count": 0,
+  "harness_tests": 11,
+  "existing_module_tests": 11,
+  "js_parse": "PASS",
+  "diff_whitespace": "PASS",
+  "genuine_v3_browser_execution": "PENDING: Docker/Chrome unavailable on development host",
+  "preserved_security": "Unknown origins, unrelated Chrome hosts/extensions, non-GET requests and Chrome fetch/navigation remain blocked; nonempty/valid matching PDF bytes still required."
+}
