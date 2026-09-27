@@ -43,6 +43,7 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'admin/whatsapp-campaigns.js',
   'assets/css/password-recovery.css',
   'assets/css/public.css',
+  'assets/css/resume-sharing.css',
   'assets/css/vacancy-compensation.css',
   'assets/favicon.svg',
   'assets/js/jobs.js',

@@ -3,7 +3,7 @@
   "files": [
     {
       "path": "assets/js/resume-sharing.js",
-      "sha256": "02a9ebbe98767c73eda7e11ed4cbe2a44e64fe700ff0f7a684a2e5d9b184dc06"
+      "sha256": "dcbaa9724abdccff091e3e557c0cc5ff8c6648ef88cc71ba557e42fd9d103f4e"
     },
     {
       "path": "tools/document-sharing-e2e/START_LOCAL_TEST.ps1",
@@ -23,7 +23,7 @@
     },
     {
       "path": "tools/document-sharing-e2e/build_rehearsal.py",
-      "sha256": "cfb27e663aa97371df9e79984cdf4318f84e11bddc4a80897a322b262f0221dc"
+      "sha256": "020e12687adeab3097eb0a7324b16f263da654675f0c3a603eb50e9ca7c6035a"
     },
     {
       "path": "tools/document-sharing-e2e/configure_local_stack.mjs",
@@ -43,7 +43,7 @@
     },
     {
       "path": "tools/document-sharing-e2e/run_browser.mjs",
-      "sha256": "2796acce9f5ba96ab6f3c0aa3c3c620f7e5473a578f9da4dcecb458f95dd48bb"
+      "sha256": "d1548dde9108db1987cd42d4207c9182b71a480287a45877a22f7397a34fb552"
     },
     {
       "path": "tools/document-sharing-e2e/synthetic_mapping.mjs",
@@ -84,6 +84,10 @@
     {
       "path": "supabase/production/admin_document_sharing_20260927/preflight_read_only.sql",
       "sha256": "49e42c4559d6015a8152addce98d4567e5715da8b929840c0840a69c3a463b15"
+    },
+    {
+      "path": "assets/css/resume-sharing.css",
+      "sha256": "ca8ef20144c0d02cbb93eb8763f83569ff61f1651d9989abc2ac8afe6e43f8a1"
     }
   ]
 }
