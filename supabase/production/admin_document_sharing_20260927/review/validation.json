@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "scope": "Local psql17/PGlite SQL-to-PowerShell7.4.6 parser; not Production or genuine services",
+  "actualSqlReadOnlyExit": 0,
+  "actualSuccessLines": [
+    "BEGIN",
+    "SET",
+    "DO",
+    "ADMIN_DOCUMENT_PREFLIGHT=PASS",
+    "ROLLBACK"
+  ],
+  "parserChecks": 14,
+  "actualContractMismatchExit": 3,
+  "contractMismatchNoPass": true,
+  "productionConnections": 0,
+  "mockedTransportOrchestration": {
+    "success": "PASS",
+    "native_failure": "PASS",
+    "malformed": "PASS",
+    "missing_image": "PASS",
+    "wrong_ca": "PASS"
+  },
+  "transportScope": "Local PowerShell orchestration mocks; no actual Docker/Production connection"
+}

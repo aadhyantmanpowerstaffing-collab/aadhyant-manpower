@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "scope": "Actual native psql17/PGlite SQL-to-PowerShell7.4.6 parser. Not genuine services or Production.",
+  "executions": {
+    "preflight": {
+      "nativeExit": 0,
+      "lineCount": 5
+    },
+    "forward": {
+      "nativeExit": 0,
+      "lineCount": 75
+    },
+    "postcheck": {
+      "nativeExit": 0,
+      "lineCount": 5
+    }
+  },
+  "parserChecks": 27,
+  "secondExecutionNativeExit": 3,
+  "postcheckAfterRejectedReplay": "PASS",
+  "productionConnections": 0,
+  "mockedOrchestration": {
+    "success": "PASS",
+    "preflight_native": "PASS",
+    "preflight_malformed": "PASS",
+    "forward_native": "PASS",
+    "forward_missing_marker": "PASS",
+    "postcheck_native": "PASS",
+    "postcheck_malformed": "PASS",
+    "verify_success": "PASS",
+    "verify_failure": "PASS",
+    "missing_approval": "PASS",
+    "both_modes": "PASS",
+    "wrong_ca": "PASS",
+    "hash_mismatch": "PASS",
+    "missing_image": "PASS"
+  },
+  "orchestrationScope": "PowerShell with local Docker mocks; no Production connection"
+}

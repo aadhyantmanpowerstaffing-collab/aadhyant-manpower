@@ -1,0 +1,60 @@
+{
+  "scope": "Proposed Admin documents/joining-details upgrade; explicit Production approval required",
+  "files": [
+    {
+      "path": "preflight_read_only.sql",
+      "sha256": "49e42c4559d6015a8152addce98d4567e5715da8b929840c0840a69c3a463b15",
+      "bytes": 71210
+    },
+    {
+      "path": "forward_proposed.sql",
+      "sha256": "810a67ea870655a6df6df8e1bc8cdda8a853e659c10c86cc85f40ca8bc1f8229",
+      "bytes": 109106
+    },
+    {
+      "path": "postcheck_read_only.sql",
+      "sha256": "f1a285cdf9d0a88a487e36efb14b7d7cf5a44c35e76d9b728c07877ef4274dba",
+      "bytes": 13516
+    },
+    {
+      "path": "Execution.Core.psm1",
+      "sha256": "bba56142885c337e852f912eece341b6d9c82bb4e6ea1731a67d27a466b6de8a",
+      "bytes": 3327
+    },
+    {
+      "path": "test_execution_parser.ps1",
+      "sha256": "ab6097b936f064aa1ac8850ad972f9d75e6b9c883eb2fe4745ef9eb809aeee32",
+      "bytes": 1108
+    },
+    {
+      "path": "fixtures/preflight-success.txt",
+      "sha256": "96353d8d6bde5282d827ffbc5f9d6dc850c93477e08819e4ac9473c98a8abb16",
+      "bytes": 52
+    },
+    {
+      "path": "fixtures/forward-success.txt",
+      "sha256": "6f09c48bf0c1726a5ecc6664edc5157a072931cdd30f75b4c124f17fc42754f2",
+      "bytes": 836
+    },
+    {
+      "path": "fixtures/postcheck-success.txt",
+      "sha256": "7a8bdba0223718da937466a93b6c4b73e7363743d10b7554d352c3227b9ed40a",
+      "bytes": 52
+    },
+    {
+      "path": "START_APPROVED_UPGRADE.ps1",
+      "sha256": "cf036803763db9ccbe76bb6ee285a8a40188b5b817deb3b41d701b428921fb4f",
+      "bytes": 8329
+    },
+    {
+      "path": "README.md",
+      "sha256": "6ec9cc17d8fd15fb0764b071f5e686036b091c8d443c996ac5e8a168797b5d1b",
+      "bytes": 4755
+    },
+    {
+      "path": "validation.json",
+      "sha256": "571fb13c9558a9e2da7977ed8bca71e85e7fef25ea313385cfa3e092c27fd362",
+      "bytes": 1035
+    }
+  ]
+}

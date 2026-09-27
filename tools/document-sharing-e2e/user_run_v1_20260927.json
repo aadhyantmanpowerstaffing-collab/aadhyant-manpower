@@ -1,0 +1,21 @@
+{
+  "source": "User-supplied PowerShell transcript",
+  "run_id": "resume-e2e-4565af18c65b",
+  "result": "FAIL",
+  "stage": "DOCUMENT_UPGRADE",
+  "native_exit": 3,
+  "error": "column o.is_delete_marker does not exist",
+  "verified_stages": [
+    "GENUINE_LOCAL_STACK",
+    "FIXTURE_BOOTSTRAP",
+    "GENUINE_LOCAL_AUTH_ACCOUNTS",
+    "AUTH_RECIPIENT_MAPPING",
+    "LOCAL_REPAIR_PREFLIGHT",
+    "LOCAL_RESUME_REPAIR",
+    "LOCAL_RESUME_POSTCHECK",
+    "DOCUMENT_UPGRADE_PREFLIGHT"
+  ],
+  "new_upgrade_committed_marker": false,
+  "new_browser_flow": "NOT_REACHED",
+  "evidence_path": "D:\\Aadhyant-Review\\Document-Joining-Sharing-Evidence\\resume-e2e-4565af18c65b"
+}

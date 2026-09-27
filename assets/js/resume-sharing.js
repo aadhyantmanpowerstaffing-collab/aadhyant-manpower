@@ -17,79 +17,94 @@
     catch (_) { if (control.isConnected) { message.textContent = 'This change could not be saved. Reload the application and try again.'; control.disabled = false; } }
     finally { pendingControls.delete(control); }
   };
+  const title = 'Documents and joining details';
+  const fields = { account_holder_name: 'Account holder', bank_name: 'Bank', bank_account_number: 'Account number', bank_account_last4: 'Saved account ending', ifsc: 'IFSC', has_existing_uan: 'Existing UAN', uan_number: 'UAN number', has_existing_esic_ip: 'Existing ESIC IP', esic_ip_number: 'ESIC IP number' };
+  function detailControl(root, client, applicationId, record, portal) {
+    const details = node('section'); const feedback = status(details, ''); let shown = false;
+    const view = button('View details', async () => {
+      if (view.disabled) return;
+      if (shown) { details.replaceChildren(view, feedback); feedback.textContent = ''; view.textContent = 'View details'; shown = false; return; }
+      view.disabled = true; feedback.textContent = 'Loading…';
+      try {
+        const data = await rpc(client, portal ? 'get_shared_application_joining_detail' : 'admin_get_application_joining_detail', {
+          p_application_id: applicationId, p_item_key: record.item_key, ...(portal ? { p_portal: portal } : {})
+        });
+        if (!view.isConnected) return;
+        if (!data) throw Error('Unavailable');
+        Object.entries(fields).forEach(([key, label]) => { if (Object.hasOwn(data, key) && data[key] !== null) details.append(node('p', `${label}: ${typeof data[key] === 'boolean' ? (data[key] ? 'Yes' : 'No') : data[key]}`)); });
+        if (data.full_account_available === false) details.append(node('p', 'The full account number was not saved by the earlier system. The Candidate needs to save it once.'));
+        view.textContent = 'Hide details'; shown = true; feedback.textContent = '';
+        // Do not leave financial identifiers visible indefinitely in an open modal.
+        setTimeout(() => { if (shown && view.isConnected) { details.replaceChildren(view, feedback); shown = false; view.textContent = 'View details'; } }, 60000);
+      } catch (_) { if (view.isConnected) feedback.textContent = 'These details are unavailable. Reload this application.'; }
+      finally { if (view.isConnected) view.disabled = false; }
+    }); details.append(view); root.append(details);
+  }
   async function candidate(root, client, requirementCode) {
-    const message = panel(root, 'Resume sharing');
+    const message = panel(root, title);
     try {
-      const data = await rpc(client, 'get_candidate_resume_sharing', { p_requirement_code: requirementCode });
+      const data = await rpc(client, 'get_candidate_document_sharing', { p_requirement_code: requirementCode });
       if (!root.isConnected) return;
-      root.replaceChildren(node('h3', 'Resume sharing'));
-      if (!data?.recipients?.length) { status(root, 'No Company or Contractor is currently eligible to receive a resume for this application.'); return; }
-      data.recipients.forEach(record => {
-        const card = node('section'); card.append(node('h4', `${record.recipient_name} (${record.recipient_type})`));
-        card.append(node('p', record.file_name || 'Upload a resume in Documents first.'));
-        const feedback = status(card, record.shared ? 'Shared by Admin.' : record.consented ? 'Consent recorded. Waiting for Admin to verify and share this resume.' : 'Your resume has not been shared.');
-        const args = { p_application_id: data.application_id, p_document_id: record.document_id, p_recipient_type: record.recipient_type, p_recipient_id: record.recipient_id };
-        const reload = () => candidate(root, client, requirementCode);
-        if (record.consented) {
-          const withdraw = button('Withdraw consent', () => lockedAction(withdraw, feedback, () => rpc(client, 'set_candidate_resume_consent', { ...args, p_allow: false }), reload));
-          card.append(withdraw);
-        } else if (record.document_id) {
-          const label = node('label'); const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = false;
-          label.append(checkbox, document.createTextNode(` I allow Admin to share this resume, including any contact details it contains, with ${record.recipient_name} for this application.`));
-          const allow = button('Allow Admin to share', () => { if (checkbox.checked) return lockedAction(allow, feedback, () => rpc(client, 'set_candidate_resume_consent', { ...args, p_allow: true }), reload); });
-          allow.disabled = true; checkbox.addEventListener('change', () => { allow.disabled = pendingControls.has(allow) || !checkbox.checked; });
-          card.append(label, allow);
-        }
-        card.append(node('p', 'You can withdraw consent for future access. Already downloaded copies cannot be recalled. Other documents are not included.'));
-        root.append(card);
-      });
-    } catch (_) { if (root.isConnected) message.textContent = 'Resume sharing is temporarily unavailable. Your application is unchanged.'; }
+      root.replaceChildren(node('h3', title));
+      status(root, 'Admin manages sharing with the Company or Contractor for this application. No separate sharing action is required from you.');
+      const shared = data?.items?.filter(record => record.shared) || [];
+      if (!shared.length) status(root, 'Admin has not shared any current items for this application.');
+      shared.forEach(record => root.append(node('p', `${record.label} — shared with ${record.recipient_name} (${record.recipient_type}).`)));
+    } catch (_) { if (root.isConnected) message.textContent = 'Sharing status is temporarily unavailable. Your application is unchanged.'; }
   }
   async function admin(root, client, applicationId) {
-    const message = panel(root, 'Share Resume');
+    const message = panel(root, title);
     try {
-      const data = await rpc(client, 'admin_list_application_resume_sharing', { p_application_id: applicationId });
+      const data = await rpc(client, 'admin_list_application_document_sharing', { p_application_id: applicationId });
       if (!root.isConnected) return;
-      root.replaceChildren(node('h3', 'Share Resume'));
-      if (!data?.recipients?.length) { status(root, 'No eligible Company or Contractor for this application.'); return; }
-      data.recipients.forEach(record => {
-        const card = node('section'); card.append(node('h4', `${record.recipient_name} (${record.recipient_type})`), node('p', record.file_name || 'No active resume.'));
-        const feedback = status(card, record.shared ? 'Shared with this recipient.' : !record.consented ? 'Candidate consent is required.' : !record.verified ? 'Verify the resume under Candidates → View before sharing.' : 'Ready for Admin sharing.');
-        const change = (control, shared) => lockedAction(control, feedback, () => rpc(client, 'admin_set_application_resume_share', { p_consent_id: record.consent_id, p_revision: record.revision, p_share: shared }), () => admin(root, client, applicationId));
+      root.replaceChildren(node('h3', title));
+      status(root, 'Choose each item and recipient. Nothing is shared automatically. Stopping sharing prevents future access; already downloaded copies cannot be recalled.');
+      if (!data?.items?.length) { status(root, 'No eligible Company or Contractor for this application.'); return; }
+      data.items.forEach(record => {
+        const card = node('section'); card.setAttribute('data-sharing-item', record.item_key);
+        card.append(node('h4', `${record.recipient_name} (${record.recipient_type})`), node('p', record.label));
+        const feedback = status(card, record.shared ? 'Shared with this recipient.' : !record.available ? 'Save joining details or verify the uploaded document before sharing.' : 'Ready for Admin sharing.');
+        const change = (control, shared) => lockedAction(control, feedback, () => rpc(client, 'admin_set_application_document_share', {
+          p_application_id: applicationId, p_item_key: record.item_key, p_recipient_type: record.recipient_type, p_recipient_id: record.recipient_id,
+          p_source_token: record.source_token, p_revision: record.revision, p_share: shared
+        }), () => admin(root, client, applicationId));
         if (record.has_grant) { const revoke = button('Stop sharing', () => change(revoke, false)); card.append(revoke); }
-        else if (record.consented && record.verified) { const share = button('Share Resume', () => change(share, true)); card.append(share); }
+        if (record.available && !record.shared) { const share = button('Share item', () => change(share, true)); card.append(share); }
+        if (['bank', 'uan', 'esic'].includes(record.item_kind)) detailControl(card, client, applicationId, record);
         root.append(card);
       });
-    } catch (_) { if (root.isConnected) message.textContent = 'Resume sharing is available only to authorized Admins. Reload if access has changed.'; }
+    } catch (_) { if (root.isConnected) message.textContent = 'Document sharing is available only to authorized Admins. Reload if access has changed.'; }
   }
   async function tenant(root, client, applicationId, portal) {
-    const message = panel(root, 'Resume');
+    const message = panel(root, title);
     try {
-      const rows = await rpc(client, 'get_shared_application_resume', { p_application_id: applicationId, p_portal: portal });
+      const rows = await rpc(client, 'get_shared_application_items', { p_application_id: applicationId, p_portal: portal });
       if (!root.isConnected) return;
-      root.replaceChildren(node('h3', 'Resume'));
-      if (!rows?.length) { status(root, 'No resume has been made available by Admin for this application.'); return; }
+      root.replaceChildren(node('h3', title));
+      if (!rows?.length) { status(root, 'Admin has not made any documents or joining details available for this application.'); return; }
       rows.forEach(record => {
-        root.append(node('p', record.display_file_name)); const feedback = status(root, 'Shared by Admin with Candidate consent.');
-        const view = button('View Resume', async () => {
-          if (view.disabled) return; view.disabled = true; feedback.textContent = 'Opening resume…';
+        const card = node('section'); card.setAttribute('data-sharing-item', record.item_key); card.append(node('h4', record.label)); root.append(card);
+        if (['bank', 'uan', 'esic'].includes(record.item_kind)) { detailControl(card, client, applicationId, record, portal); return; }
+        if (record.item_kind !== 'document') return;
+        const feedback = status(card, 'Shared by Admin for this application.');
+        const view = button('View document', async () => {
+          if (view.disabled) return; view.disabled = true; feedback.textContent = 'Opening document…';
           const opened = window.open('about:blank', '_blank'); if (opened) opened.opener = null;
           try {
-            const access = (await rpc(client, 'get_shared_application_resume_access', { p_application_id: applicationId, p_document_id: record.document_id, p_portal: portal }))?.[0];
-            if (!access || access.bucket_name !== 'candidate-private') throw Error('Unavailable');
-            // Authenticated download rechecks current Storage RLS. No public or signed URL is created by this UI.
+            const access = (await rpc(client, 'get_shared_application_document_access', { p_application_id: applicationId, p_document_id: record.document_id, p_portal: portal }))?.[0];
+            if (!access || access.bucket_name !== 'candidate-private' || !['application/pdf', 'image/jpeg', 'image/png'].includes(access.mime_type)) throw Error('Unavailable');
             const { data, error } = await client.storage.from(access.bucket_name).download(access.object_name);
             if (error || !data || data.size < 1 || data.size > 10485760 || !view.isConnected) throw Error('Unavailable');
-            const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' })); ownedUrls.add(url);
+            const url = URL.createObjectURL(new Blob([data], { type: access.mime_type })); ownedUrls.add(url);
             if (opened) opened.location.replace(url);
-            else { const link = node('a', 'Open downloaded resume'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; root.append(link); }
+            else { const link = node('a', 'Open downloaded document'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; card.append(link); }
             setTimeout(() => { URL.revokeObjectURL(url); ownedUrls.delete(url); }, 60000);
-            feedback.textContent = opened ? 'Resume opened. Use it only for this application.' : 'Resume downloaded. Use the link to open it.';
-          } catch (_) { opened?.close(); if (view.isConnected) feedback.textContent = 'The resume is no longer available or could not be opened. Reload this application.'; }
+            feedback.textContent = 'Document opened. Use it only for this application.';
+          } catch (_) { opened?.close(); if (view.isConnected) feedback.textContent = 'The document is no longer available or could not be opened. Reload this application.'; }
           finally { if (view.isConnected) view.disabled = false; }
-        }); root.append(view);
+        }); card.append(view);
       });
-    } catch (_) { if (root.isConnected) message.textContent = 'Resume access is unavailable for this account or application.'; }
+    } catch (_) { if (root.isConnected) message.textContent = 'Shared information is unavailable for this account or application.'; }
   }
   window.AadhyantResumeSharing = Object.freeze({ candidate, admin, tenant });
 }());

@@ -1,0 +1,22 @@
+{
+  "result": "LOCAL_REHEARSAL_PASS",
+  "javascript_syntax": "PASS",
+  "manifest": "PASS",
+  "new_genuine_e2e": "PASS: user-supplied v2 Windows run resume-e2e-998030b5be06",
+  "docker_blocker": "command -v docker: exit 1; executable unavailable",
+  "powershell_parse": "Earlier copied runtime failed; clean 7.4.6 runtime now validates the read-only review parser and transport. Genuine local Windows runner PASS is separately user-supplied.",
+  "frontend_tests": {
+    "passed": 317,
+    "failed": 0
+  },
+  "production_connections": 0,
+  "commit_push_deploy": false,
+  "revision": "v2",
+  "sql_groups_per_schema": {
+    "standard": 22,
+    "versioned": 22
+  },
+  "reproduced_user_native_sql_error": true,
+  "evidence_record": "user_run_v2_20260927.json",
+  "windows_runner": "PASS: exact delivered v2 runner executed by user"
+}

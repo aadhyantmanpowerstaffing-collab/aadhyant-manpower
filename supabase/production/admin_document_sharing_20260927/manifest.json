@@ -1,0 +1,13 @@
+{
+  "scope": "Draft Admin document and joining-details upgrade. Production execution not authorized by this manifest.",
+  "base_commit": "7bb195d5574f8e994fe5d363b542f87d27594011",
+  "files": {
+    "contracts.sql": "e78ed9a525b768eb19903d6971fe6f8eb601e4735493466bd307a73bb6a899cc",
+    "forward_proposed.sql": "810a67ea870655a6df6df8e1bc8cdda8a853e659c10c86cc85f40ca8bc1f8229",
+    "preflight_read_only.sql": "49e42c4559d6015a8152addce98d4567e5715da8b929840c0840a69c3a463b15",
+    "postcheck_read_only.sql": "f1a285cdf9d0a88a487e36efb14b7d7cf5a44c35e76d9b728c07877ef4274dba",
+    "fixture_onboarding.sql": "efc37f7c7b2470e7f9ffedc45a2b6f0ede5cd0475611d18f2bae60c2d8f71774",
+    "function_contracts.json": "63f88092573511e7187d923e044db07975910cb4046ee88e61040586e1615d37",
+    "pause_sharing_guarded.sql": "4beb354e169d771efc0d9fc4fe1a9d379fc0d00e4aa547842aa1454e4c010c03"
+  }
+}

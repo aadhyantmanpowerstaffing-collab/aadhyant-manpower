@@ -1,0 +1,11 @@
+{
+  "name": "aadhyant-resume-sharing-local-e2e",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
+  }
+}

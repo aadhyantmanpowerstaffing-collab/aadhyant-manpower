@@ -1,0 +1,121 @@
+[
+  {
+    "identity": "private.rotate_onboarding_share_revision()",
+    "hash": "cca5cd93e0b37774e831bca8c52757a6",
+    "browser": false,
+    "volatility": "v",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.update_candidate_onboarding_details(text,text,text,text,boolean,text,boolean,text)",
+    "hash": "2c3d9fddfb01b2c77c176e880798dde3",
+    "browser": true,
+    "volatility": "v",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "private.application_sharing_candidate_active(uuid,uuid)",
+    "hash": "b4edf1ea12ded087af3c77f71f515cfa",
+    "browser": false,
+    "volatility": "s",
+    "language": "sql"
+  },
+  {
+    "identity": "private.application_sharing_items(uuid)",
+    "hash": "8ea5ea8e3ebc5eec17dfa3398c1ce72c",
+    "browser": false,
+    "volatility": "s",
+    "language": "sql"
+  },
+  {
+    "identity": "private.resume_share_effective(uuid)",
+    "hash": "f377e9c0959270c5b94c7aca1e02541e",
+    "browser": false,
+    "volatility": "s",
+    "language": "sql"
+  },
+  {
+    "identity": "private.application_document_sharing_context(uuid)",
+    "hash": "bc140739b510a494f7f2cc28ad2f3b5b",
+    "browser": false,
+    "volatility": "s",
+    "language": "sql"
+  },
+  {
+    "identity": "public.admin_list_application_document_sharing(uuid)",
+    "hash": "8257366389dccaad9426b7ec0414739b",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.get_candidate_document_sharing(text)",
+    "hash": "bb6c9c313e3580dfc005801890a331c7",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.admin_set_application_document_share(uuid,text,text,uuid,text,uuid,boolean)",
+    "hash": "72a7b3d2e49ca36f72df46c1640bd777",
+    "browser": true,
+    "volatility": "v",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.get_shared_application_items(uuid,text)",
+    "hash": "9f4ad069ffcb8e23bf13cba6870ea97d",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.get_shared_application_document_access(uuid,uuid,text)",
+    "hash": "4e45a889a3b9d1773edfc859dd0be0a3",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "private.application_joining_detail(uuid,text)",
+    "hash": "92b6e5798c79fcc717e8b64c071f61cb",
+    "browser": false,
+    "volatility": "s",
+    "language": "sql"
+  },
+  {
+    "identity": "public.admin_get_application_joining_detail(uuid,text)",
+    "hash": "022862b78e73d98ac6f8187975850b07",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.get_shared_application_joining_detail(uuid,text,text)",
+    "hash": "ceec3745eabcc93a43d69bd47f154a12",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.set_candidate_resume_consent(uuid,uuid,text,uuid,boolean)",
+    "hash": "8a13645564ecdd45d81bec4c3240b1fd",
+    "browser": true,
+    "volatility": "v",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.admin_set_application_resume_share(uuid,uuid,boolean)",
+    "hash": "a8cf853114b0d7115870fbd5c1d26205",
+    "browser": true,
+    "volatility": "v",
+    "language": "plpgsql"
+  },
+  {
+    "identity": "public.get_shared_application_resume(uuid,text)",
+    "hash": "1aec9de203627d8e7fb36b8ef808b2e6",
+    "browser": true,
+    "volatility": "s",
+    "language": "plpgsql"
+  }
+]

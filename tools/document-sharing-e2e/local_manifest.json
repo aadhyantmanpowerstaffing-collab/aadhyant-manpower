@@ -1,0 +1,89 @@
+{
+  "scope": "Local-only new upgrade rehearsal; no Production dispatch",
+  "files": [
+    {
+      "path": "assets/js/resume-sharing.js",
+      "sha256": "02a9ebbe98767c73eda7e11ed4cbe2a44e64fe700ff0f7a684a2e5d9b184dc06"
+    },
+    {
+      "path": "tools/document-sharing-e2e/START_LOCAL_TEST.ps1",
+      "sha256": "253ae35adcc37ce34e800521486e73548c4b17bb34c192d8b4ad116da0d812a9"
+    },
+    {
+      "path": "tools/document-sharing-e2e/authoring_validation.json",
+      "sha256": "fa89097fc36ba5a1de8ec6fba68e553be7ac85b9ac351be20aaef731a6870171"
+    },
+    {
+      "path": "tools/document-sharing-e2e/bootstrap_local_supabase.sql",
+      "sha256": "8f9802471c1aff71d3f074c9fbaae96c284665ab4941eb768ea357c8b4f912fd"
+    },
+    {
+      "path": "tools/document-sharing-e2e/browser_download_evidence.mjs",
+      "sha256": "cdfcebcafd29043d32513892fac999f9683f40d102608fbc737e433bd5d9b2be"
+    },
+    {
+      "path": "tools/document-sharing-e2e/build_rehearsal.py",
+      "sha256": "cfb27e663aa97371df9e79984cdf4318f84e11bddc4a80897a322b262f0221dc"
+    },
+    {
+      "path": "tools/document-sharing-e2e/configure_local_stack.mjs",
+      "sha256": "7b51055830f8d5acdc02b03085d693b907cedb80cb5cf59af979ec1b69541c47"
+    },
+    {
+      "path": "tools/document-sharing-e2e/exercise_local_api.mjs",
+      "sha256": "9e0c95efee34a6da39bab94c3b4f34e25a1a01d47c0c834409b1a491450f5601"
+    },
+    {
+      "path": "tools/document-sharing-e2e/package-lock.json",
+      "sha256": "b36bf9bd0313da7f2b6b35d861c6853af3062969082d0b839501159d4b508d8e"
+    },
+    {
+      "path": "tools/document-sharing-e2e/package.json",
+      "sha256": "ee70e89dfe3b1e2ad772830c142092879b31e343d5b7f56430492dd3a134e051"
+    },
+    {
+      "path": "tools/document-sharing-e2e/run_browser.mjs",
+      "sha256": "2796acce9f5ba96ab6f3c0aa3c3c620f7e5473a578f9da4dcecb458f95dd48bb"
+    },
+    {
+      "path": "tools/document-sharing-e2e/synthetic_mapping.mjs",
+      "sha256": "551b3a6768153bd18d7f038813046bf787ebac5741721b80ea898d282e2dde4d"
+    },
+    {
+      "path": "tools/document-sharing-e2e/user_run_v1_20260927.json",
+      "sha256": "dc1c2ff493e54c2c5a8b6a03cad1b010f2ad820915ab6aae0531f4a02a2e7585"
+    },
+    {
+      "path": "tools/document-sharing-e2e/user_run_v2_20260927.json",
+      "sha256": "7fc0418bb4077892c20c21efcd6abd3f45fff3a132041648910e7733b60b873f"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/forward_proposed.sql",
+      "sha256": "d67e84bdc6291bed18cd04a3a5d0dd4c74393ca86ed578589300bf042bdb3bfd"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/postcheck_read_only.sql",
+      "sha256": "cc45a376b9903cd040817d86e7b666cde4b500d4ba5d70686df91007978708d1"
+    },
+    {
+      "path": "supabase/production/tenant_resume_access_20260926/preflight_read_only.sql",
+      "sha256": "123d6577a15684e24d419b4c604aa1cdec9a5de9984760db50097171e54d8d18"
+    },
+    {
+      "path": "supabase/production/admin_document_sharing_20260927/fixture_onboarding.sql",
+      "sha256": "efc37f7c7b2470e7f9ffedc45a2b6f0ede5cd0475611d18f2bae60c2d8f71774"
+    },
+    {
+      "path": "supabase/production/admin_document_sharing_20260927/forward_proposed.sql",
+      "sha256": "810a67ea870655a6df6df8e1bc8cdda8a853e659c10c86cc85f40ca8bc1f8229"
+    },
+    {
+      "path": "supabase/production/admin_document_sharing_20260927/postcheck_read_only.sql",
+      "sha256": "f1a285cdf9d0a88a487e36efb14b7d7cf5a44c35e76d9b728c07877ef4274dba"
+    },
+    {
+      "path": "supabase/production/admin_document_sharing_20260927/preflight_read_only.sql",
+      "sha256": "49e42c4559d6015a8152addce98d4567e5715da8b929840c0840a69c3a463b15"
+    }
+  ]
+}

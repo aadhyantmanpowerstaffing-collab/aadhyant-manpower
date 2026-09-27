@@ -1,0 +1,15 @@
+{
+  "source": "User-supplied screenshot/OCR, lines 53-57; sanitized evidence folder not independently downloaded",
+  "date": "2026-09-27",
+  "run_id": "document-preflight-864a86a72b5b",
+  "result": "PASS",
+  "markers": {
+    "ADMIN_DOCUMENT_PREFLIGHT": "PASS",
+    "PRODUCTION_MUTATION": "NOT_DISPATCHED"
+  },
+  "evidence_path": "D:\\Aadhyant-Review\\Document-Joining-Production-Evidence\\document-preflight-864a86a72b5b",
+  "sql_sha256": "49e42c4559d6015a8152addce98d4567e5715da8b929840c0840a69c3a463b15",
+  "production_upgrade": "NOT_APPLIED",
+  "approval_for_new_upgrade": "PENDING",
+  "commit_push_deploy": "NOT_PERFORMED"
+}
