@@ -4,6 +4,80 @@ const pages=['index','requirements','applications','interviews','joinings','prof
 const html=Object.fromEntries(pages.map((name)=>[name,fs.readFileSync(`company/${name}.html`,'utf8')]));
 const registration=fs.readFileSync('company/register.html','utf8');
 
+// Unit-level execution of the real page script; these adapters are not Auth E2E evidence.
+async function loginPage({session={user:{id:'test-account'}},contextError=null,transportError=false,recovery=false,passwordError=null}={}){
+  const vm=require('node:vm');
+  const events={},formEvents={},redirects=[],calls={session:0,context:0,signOut:0,password:0};
+  const message={textContent:'',className:''},button={disabled:false,textContent:'Sign In'};
+  const form={elements:{email:{value:'fixture@example.invalid'},password:{value:'unit-fixture-only'}},
+    addEventListener:(name,handler)=>{formEvents[name]=handler;},
+    querySelector:()=>button};
+  const client={auth:{
+    getSession:async()=>{calls.session++;return{data:{session}};},
+    signOut:async()=>{calls.signOut++;session=null;return{error:null};},
+    signInWithPassword:async()=>{calls.password++;if(!passwordError)session={user:{id:'test-account'}};return{error:passwordError};}
+  },rpc:async(name)=>{
+    assert.equal(name,'get_company_portal_context');calls.context++;
+    if(transportError)throw new Error('Test transport unavailable');
+    return{data:contextError?null:[{company_id:'synthetic-company'}],error:contextError};
+  }};
+  const sandbox={window:{aadhyantSupabase:{isConfigured:true,client},
+    aadhyantPasswordRecovery:{isRecoveryCallback:()=>recovery},
+    location:{replace:(url)=>redirects.push(url)},
+    addEventListener:(name,handler)=>{events[name]=handler;}},
+    document:{body:{dataset:{companyPage:'login'}},querySelector:(selector)=>
+      selector==='[data-login-form]'?form:selector==='[data-page-message]'?message:null}};
+  vm.runInNewContext(js,sandbox,{filename:'company/company.js'});
+  await new Promise(resolve=>setImmediate(resolve));
+  return{calls,message,button,redirects,session:()=>session,
+    submit:()=>formEvents.submit({preventDefault(){}}),
+    callback:()=>events['aadhyant-auth-callback-not-recovery']()};
+}
+
+test('opening Company Login with another portal session preserves that session and denies Company redirect',async()=>{
+  const page=await loginPage({contextError:{message:'Company Portal access is required'}});
+  assert.equal(page.calls.signOut,0);assert.ok(page.session());assert.deepEqual(page.redirects,[]);
+  assert.match(page.message.textContent,/Employer access could not be confirmed/);assert.equal(page.button.disabled,false);
+});
+test('passive Company context transport failure preserves the signed-in session',async()=>{
+  const page=await loginPage({transportError:true});
+  assert.equal(page.calls.signOut,0);assert.ok(page.session());assert.deepEqual(page.redirects,[]);
+  assert.match(page.message.textContent,/Employer access could not be confirmed/);
+});
+test('non-recovery callback denial also preserves the existing portal session',async()=>{
+  const page=await loginPage({contextError:{message:'Company Portal access is required'}});
+  await page.callback();assert.equal(page.calls.signOut,0);assert.ok(page.session());
+  assert.equal(page.calls.context,2);assert.deepEqual(page.redirects,[]);
+});
+test('confirmed Company session still redirects through the authoritative context check',async()=>{
+  const page=await loginPage();assert.equal(page.calls.context,1);
+  assert.equal(page.calls.signOut,0);assert.deepEqual(page.redirects,['index.html']);
+});
+test('Company login without a session waits for credentials and ignores an empty callback',async()=>{
+  const page=await loginPage({session:null});await page.callback();
+  assert.equal(page.calls.context,0);assert.equal(page.calls.signOut,0);assert.deepEqual(page.redirects,[]);
+});
+test('Company password recovery callback retains ownership of session initialization',async()=>{
+  const page=await loginPage({recovery:true});
+  assert.equal(page.calls.session,0);assert.equal(page.calls.context,0);assert.equal(page.calls.signOut,0);
+  await page.callback();assert.equal(page.calls.context,1);assert.deepEqual(page.redirects,['index.html']);
+});
+test('explicit credentials without Company access still sign out the rejected login',async()=>{
+  const page=await loginPage({session:null,contextError:{message:'Company Portal access is required'}});
+  await page.submit();assert.equal(page.calls.password,1);assert.equal(page.calls.signOut,1);
+  assert.equal(page.session(),null);assert.deepEqual(page.redirects,[]);assert.equal(page.button.disabled,false);
+  assert.match(page.message.textContent,/does not have Company Portal access/);
+});
+test('explicit correct Company credentials still reach the portal',async()=>{
+  const page=await loginPage({session:null});await page.submit();
+  assert.equal(page.calls.context,1);assert.equal(page.calls.signOut,0);assert.deepEqual(page.redirects,['index.html']);
+});
+test('bad Company password reports a safe error without context or sign-out calls',async()=>{
+  const page=await loginPage({session:null,passwordError:{message:'Invalid login credentials'}});await page.submit();
+  assert.equal(page.calls.context,0);assert.equal(page.calls.signOut,0);assert.equal(page.button.disabled,false);
+  assert.match(page.message.textContent,/Unable to sign in/);
+});
+
 test('company portal uses only narrow W4 RPCs for authenticated portal data',()=>{['get_company_portal_context','get_company_dashboard_metrics','get_company_profile','list_company_portal_requirements','get_company_portal_requirement','manage_company_portal_requirement','list_company_portal_applications','get_company_portal_application','list_company_portal_interviews','list_company_portal_joinings'].forEach((name)=>assert.match(js,new RegExp(name)));assert.doesNotMatch(js,/\.from\s*\(/);});
 test('company portal keeps a purpose-built operational navigation and labels the vacancy workspace clearly',()=>{pages.forEach((name)=>['Dashboard','Candidates / Applications','Interviews','Joining Status','Company Profile'].forEach((label)=>assert.match(html[name],new RegExp(label.replace('/','\\/')))));assert.match(html.requirements,/My Vacancies/);});
 test('dashboard exposes only company-scoped recruitment metrics',()=>{['active_requirements','total_openings','applications','screening','shortlisted','interviews','selected','joining_pending','joined'].forEach((metric)=>assert.match(html.index,new RegExp(`data-metric="${metric}"`)));assert.doesNotMatch(html.index,/Candidate Master/);});
