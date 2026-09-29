@@ -8,3 +8,52 @@ test('Admin uses the unified canonical review/detail RPCs and requires a reason 
 test('Match Candidates mirrors the complete server eligibility predicate rather than raw stage alone',()=>{assert.match(operations,/normalized_review_status === 'approved'/);assert.match(operations,/requirement_stage === 'open'/);assert.match(operations,/requirement_visibility === 'public'/);assert.match(operations,/Number\(requirement\?\.remaining_positions\) > 0/);});
 test('Candidate opportunities use only the approved projection and prevent duplicate Apply clicks',()=>{['list_candidate_job_opportunities','apply_candidate_job','already_applied','Apply','Applied','Salary Summary','Salary Breakup','Company / Worksite','Canteen','Transport','Accommodation'].forEach(token=>assert.match(`${candidateHtml}\n${candidate}`,new RegExp(token)));assert.match(candidate,/apply\.disabled = true/);assert.doesNotMatch(candidate,/\.from\s*\(/);});
 test('shared controlled vacancy options have one source of truth',()=>{['vacancyExperience','vacancyGender','vacancyShifts','vacancyFacilities'].forEach(token=>assert.match(options,new RegExp(token)));assert.match(companyHtml,/registration-options\.js/);assert.match(contractorHtml,/registration-options\.js/);});
+
+// Presentation-only fixture: execute the real review module and its event handlers.
+// Synthetic read responses do not represent an Auth/backend E2E test.
+function reviewDialogFixture(reviewStatus){
+  const vm=require('node:vm'),calls=[];
+  const descendants=node=>node.children.flatMap(child=>[child,...descendants(child)]);
+  const matches=(node,selector)=>selector.split(',').some(part=>{
+    const s=part.trim();if(s.startsWith('.'))return node.className.split(' ').includes(s.slice(1));
+    const a=s.match(/^\[data-([\w-]+)(?:="([^"]*)")?\]$/);
+    if(a){const key=a[1].replace(/-([a-z])/g,(_,c)=>c.toUpperCase());return key in node.dataset&&(a[2]===undefined||node.dataset[key]===a[2]);}
+    return node.tagName===s.toUpperCase();
+  });
+  class Element {
+    constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes={};this.listeners={};this.className='';this.value='';this.textContent='';this.classList={add(){}};}
+    append(...nodes){nodes.forEach(node=>{node.parent=this;this.children.push(node);});}
+    insertBefore(node,reference){node.parent=this;const at=this.children.indexOf(reference);this.children.splice(at<0?this.children.length:at,0,node);}
+    replaceChildren(...nodes){this.children=[];this.append(...nodes);}
+    setAttribute(name,value){this.attributes[name]=value;}
+    querySelectorAll(selector){return descendants(this).filter(node=>matches(node,selector));}
+    querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
+    addEventListener(name,handler){this.listeners[name]=handler;}
+    showModal(){this.open=true;}close(){this.open=false;}
+    remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
+    focus(){}click(){if(!this.disabled)return this.onclick?.();}
+  }
+  const body=new Element('body'),group=new Element('nav'),main=new Element('main'),staff=new Element('section');
+  group.dataset.navGroup='recruitment';main.className='admin-main';staff.dataset.panel='staff';main.append(staff);body.append(group,main);
+  const document={body,createElement:tag=>new Element(tag),querySelector:s=>body.querySelector(s),querySelectorAll:s=>body.querySelectorAll(s)};
+  const window={};vm.runInNewContext(admin,{window,document});
+  const client={rpc:async(name,args)=>{calls.push({name,args});
+    if(name==='admin_list_vacancy_reviews')return {data:[{requirement_id:'synthetic-vacancy',requirement_code:'TEST-CLOSE',job_role:'Synthetic',normalized_review_status:reviewStatus}]};
+    if(name==='admin_get_vacancy_review_detail')return {data:{vacancy:{requirement_code:'TEST-CLOSE',job_role:'Synthetic'},review:{normalized_status:reviewStatus},lifecycle:{requirement_stage:'open',requirement_visibility:'public'},progress:{joined:0}}};
+    throw Error('Unexpected mutation RPC: '+name);
+  }};
+  return {body,calls,async initialize(){await window.aadhyantVacancyReview.initialize({client,authorization:{bootstrap_admin:true}});await group.querySelector('button').click();},
+    async open(){await body.querySelectorAll('button').find(node=>node.textContent==='View & Review').click();return body.querySelector('dialog');}};
+}
+for(const control of ['top X','bottom Close','Escape'])test(`Admin review ${control} dismisses the dialog without a review mutation`,async()=>{
+  for(const status of ['approved','pending_review']){
+    const x=reviewDialogFixture(status);await x.initialize();const dialog=await x.open();assert.equal(dialog.open,true);
+    const callsBefore=x.calls.length;
+    if(control==='top X')await dialog.querySelectorAll('button').find(node=>node.attributes['aria-label']==='Close vacancy review').click();
+    else if(control==='bottom Close')await dialog.querySelectorAll('button').find(node=>node.textContent==='Close').click();
+    else {let prevented=false;dialog.listeners.cancel({preventDefault(){prevented=true;}});assert.equal(prevented,true);}
+    assert.equal(dialog.open,false);assert.equal(x.body.querySelector('dialog'),null);assert.equal(x.calls.length,callsBefore);
+    assert.equal((await x.open()).open,true);assert.equal(x.body.querySelectorAll('dialog').length,1);
+    assert.ok(x.calls.every(call=>['admin_list_vacancy_reviews','admin_get_vacancy_review_detail'].includes(call.name)));
+  }
+});
