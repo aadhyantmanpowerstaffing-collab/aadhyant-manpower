@@ -263,3 +263,90 @@ test('public product layer remains free of backend, Admin and messaging mutation
   assert.doesNotMatch(combined, /admin_manage_|admin_create_|whatsapp-webhook|graph\.facebook|service_role/i);
   assert.doesNotMatch(jobs, /insert\(|update\(|delete\(/);
 });
+
+// Execute the actual public-page handlers with presentation-only projected rows.
+// This does not simulate authentication or establish a backend E2E result.
+async function publicJobHistoryFixture(initialSearch = '') {
+  const all = (node) => node.children.flatMap((child) => [child, ...all(child)]);
+  const matches = (node, selector) => {
+    const last = selector.split(' ').at(-1);
+    if (last.startsWith('.')) return node.className.split(' ').includes(last.slice(1));
+    if (last.startsWith('[data-')) {
+      const key = last.slice(6, -1).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      return key in node.dataset;
+    }
+    return node.tagName === last;
+  };
+  class Element {
+    constructor(tag = 'div') { this.tagName = tag; this.children = []; this.dataset = {}; this.className = ''; this.textContent = ''; this.hidden = false; this.handlers = {}; }
+    append(...nodes) { this.children.push(...nodes); }
+    replaceChildren(...nodes) { this.children = nodes; }
+    querySelectorAll(selector) { return all(this).filter((node) => matches(node, selector)); }
+    querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
+    setAttribute() {}
+    addEventListener(name, handler) { this.handlers[name] = handler; }
+    scrollIntoView() {}
+    click() { return this.handlers.click?.({ preventDefault() {} }); }
+  }
+  const selectors = ['job-filters', 'jobs-list', 'jobs-loading', 'jobs-empty', 'jobs-error', 'jobs-count', 'jobs-load-more', 'jobs-view', 'job-detail'];
+  const nodes = Object.fromEntries(selectors.map((name) => [`[data-${name}]`, new Element()]));
+  const form = nodes['[data-job-filters]'];
+  form.values = { keyword: '', location: '', qualification: '', experience: '' };
+  const detail = nodes['[data-job-detail]']; detail.hidden = true;
+  ['code', 'title', 'department', 'posted', 'location', 'openings', 'list', 'apply'].forEach((name) => {
+    const node = new Element(); node.dataset[`detail${name[0].toUpperCase()}${name.slice(1)}`] = ''; detail.append(node);
+  });
+  nodes['[data-jobs-error]'].append(new Element('h3'), new Element('p'));
+  const document = { readyState: 'complete', title: 'Browse jobs', createElement: (tag) => new Element(tag), querySelector: (selector) => nodes[selector] || null };
+  const calls = [], handlers = {}, location = { search: initialSearch, reloads: 0, reload() { this.reloads += 1; } };
+  const records = [{ requirement_code: 'TEST-A', job_role: 'Associate', job_location: 'Sanand' }, { requirement_code: 'TEST-B', job_role: 'Helper', job_location: 'Ahmedabad' }];
+  const window = { location, addEventListener(name, handler) { handlers[name] = handler; }, history: { pushState(_state, _title, url) { location.search = url; } },
+    aadhyantSupabase: { isConfigured: true, client: { async rpc(name, args) { calls.push({ name, args }); return { data: records }; } } } };
+  vm.runInNewContext(jobs, { window, document, Intl, URLSearchParams, console, requestAnimationFrame: (fn) => fn(), FormData: class { constructor(element) { return Object.entries(element.values); } } });
+  await new Promise(setImmediate);
+  return { nodes, document, calls, location, form, detail,
+    cards: () => nodes['[data-jobs-list]'].children,
+    pop(search) { location.search = search; handlers.popstate?.(); },
+    open(index) { nodes['[data-jobs-list]'].children[index].querySelector('.public-button--primary').click(); } };
+}
+
+test('public job Back restores the filtered listing and Forward restores the selected Apply target', async () => {
+  const x = await publicJobHistoryFixture();
+  x.form.values.keyword = 'Associate'; x.form.handlers.input();
+  assert.deepEqual(x.cards().map((card) => card.hidden), [false, true]);
+  x.open(0);
+  assert.equal(x.nodes['[data-jobs-view]'].hidden, true);
+  x.pop('');
+  assert.equal(x.nodes['[data-jobs-view]'].hidden, false);
+  assert.equal(x.detail.hidden, true);
+  assert.equal(x.document.title, 'Browse jobs');
+  assert.equal(x.form.values.keyword, 'Associate');
+  assert.equal(x.nodes['[data-jobs-count]'].textContent, '1 opportunity shown');
+  assert.deepEqual(x.cards().map((card) => card.hidden), [false, true]);
+  x.pop('?requirement=TEST-A');
+  assert.equal(x.detail.hidden, false);
+  assert.equal(x.document.title, 'Associate | Aadhyant Jobs');
+  assert.equal(x.detail.querySelector('[data-detail-apply]').href, '../candidate/portal/login.html?requirement=TEST-A');
+  assert.equal(x.calls.length, 1);
+  assert.equal(x.calls[0].name, 'get_public_job_requirements');
+});
+
+test('history selects each cached job without leaving a stale title or Apply link', async () => {
+  const x = await publicJobHistoryFixture('?requirement=TEST-A');
+  x.pop('?requirement=test-b');
+  assert.equal(x.detail.querySelector('[data-detail-code]').textContent, 'TEST-B');
+  assert.equal(x.document.title, 'Helper | Aadhyant Jobs');
+  assert.equal(x.detail.querySelector('[data-detail-apply]').href, '../candidate/portal/login.html?requirement=TEST-B');
+  x.pop('');
+  assert.equal(x.detail.hidden, true);
+  assert.equal(x.nodes['[data-jobs-count]'].textContent, '2 opportunities shown');
+  assert.equal(x.calls.length, 1);
+});
+
+test('an uncached history target reloads through the existing bounded lookup', async () => {
+  const x = await publicJobHistoryFixture();
+  x.open(0); x.pop('?requirement=NOT-CACHED');
+  assert.equal(x.location.reloads, 1);
+  assert.equal(x.location.search, '?requirement=NOT-CACHED');
+  assert.equal(x.calls.length, 1);
+});

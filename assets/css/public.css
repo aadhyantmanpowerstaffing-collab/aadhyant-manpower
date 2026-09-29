@@ -485,6 +485,7 @@
 .public-site .public-job-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .public-site .public-job-grid--featured { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .public-site .public-job-card { position: relative; display: flex; flex-direction: column; min-height: 23rem; padding: 1.6rem; background: #fff; border: 1px solid var(--public-border); border-radius: .85rem; box-shadow: var(--public-shadow-sm); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.public-site .public-job-card[hidden] { display: none; }
 .public-site .public-job-card:hover { border-color: #9db0ba; transform: translateY(-2px); box-shadow: 0 18px 42px rgba(6,20,38,.11); }
 .public-site .public-job-card__top { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
 .public-site .public-job-code { margin: 0; color: var(--public-action-strong); font-size: .68rem; font-weight: 850; letter-spacing: .1em; }

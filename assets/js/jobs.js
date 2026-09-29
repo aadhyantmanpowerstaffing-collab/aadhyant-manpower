@@ -128,6 +128,7 @@
     const loadMore = document.querySelector('[data-jobs-load-more]');
     const listing = document.querySelector('[data-jobs-view]');
     const detail = document.querySelector('[data-job-detail]');
+    const listingTitle = document.title;
     const requestedCode = text(new URLSearchParams(window.location.search).get('requirement')).toUpperCase();
     const jobs = [];
     let offset = 0;
@@ -207,6 +208,22 @@
       detail.hidden = false;
       document.title = `${text(job.job_role) || 'Job Opportunity'} | Aadhyant Jobs`;
     };
+
+    window.addEventListener('popstate', () => {
+      const code = text(new URLSearchParams(window.location.search).get('requirement')).toUpperCase();
+      const match = jobs.find((job) => text(job.requirement_code).toUpperCase() === code);
+      if (match) {
+        showDetail(match);
+      } else if (code) {
+        // Reuse the bounded initial lookup if this history entry is not cached.
+        window.location.reload();
+      } else {
+        if (listing) listing.hidden = false;
+        if (detail) detail.hidden = true;
+        document.title = listingTitle;
+        applyFilters();
+      }
+    });
 
     form.addEventListener('submit', (event) => { event.preventDefault(); applyFilters(); });
     form.addEventListener('input', applyFilters);
