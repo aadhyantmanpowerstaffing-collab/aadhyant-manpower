@@ -1,0 +1,45 @@
+name: Process an approved WhatsApp queue
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: whatsapp-approved-production-queue
+  cancel-in-progress: false
+
+jobs:
+  bounded-worker:
+    # Installation lock: a separately approved code change is required to activate.
+    if: >-
+      false &&
+      github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
+      github.ref == 'refs/heads/main' && github.event_name == 'schedule' &&
+      vars.WHATSAPP_QUEUE_AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    environment: whatsapp-production
+    steps:
+      - name: Require reviewed immutable source
+        env:
+          APPROVED_SHA: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
+        run: |
+          [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+      - name: Check out reviewed scheduler source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
+          persist-credentials: false
+      - name: Invoke at most one canonical worker attempt
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WHATSAPP_WORKER_SECRET: ${{ secrets.WHATSAPP_WORKER_SECRET }}
+          WHATSAPP_QUEUE_AUTOMATION_ENABLED: ${{ vars.WHATSAPP_QUEUE_AUTOMATION_ENABLED }}
+          WHATSAPP_QUEUE_APPROVED_SOURCE_SHA: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
+          WHATSAPP_QUEUE_APPROVED_FROM: ${{ vars.WHATSAPP_QUEUE_APPROVED_FROM }}
+          WHATSAPP_QUEUE_APPROVED_UNTIL: ${{ vars.WHATSAPP_QUEUE_APPROVED_UNTIL }}
+        run: node scripts/whatsapp/run-approved-queue.cjs
