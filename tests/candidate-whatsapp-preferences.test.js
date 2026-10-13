@@ -60,7 +60,7 @@ test('older pending read cannot replace a newer preference mount',async()=>{
 });
 test('profile integration is gated and allowlisted independently of profile save',()=>{
   const html=fs.readFileSync('candidate/portal/profile.html','utf8'),js=fs.readFileSync('candidate/portal/candidate.js','utf8');
-  assert.match(html,/<\/form>[\s\S]*data-whatsapp-preferences/);assert.match(html,/assets\/js\/candidate-whatsapp-preferences.js/);
-  assert.match(js,/async function profile\(\)\{if\(!await gate\(\)\)return;void window.AadhyantWhatsAppPreferences/);
-  assert.match(fs.readFileSync('scripts/build-production-artifact.js','utf8'),/'assets\/js\/candidate-whatsapp-preferences.js'/);
+  assert.doesNotMatch(html,/data-whatsapp-preferences|candidate-whatsapp-preferences.js/);
+  assert.doesNotMatch(js,/AadhyantWhatsAppPreferences/);assert.match(js,/async function profile\(\)\{if\(!await gate\(\)\)return;/);
+  assert.doesNotMatch(fs.readFileSync('scripts/build-production-artifact.js','utf8'),/'assets\/js\/candidate-whatsapp-preferences.js'/);
 });

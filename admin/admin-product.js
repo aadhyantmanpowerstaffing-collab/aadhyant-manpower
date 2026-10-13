@@ -1,10 +1,7 @@
 (() => {
   'use strict';
 
-  const operationsDefinitions=Object.freeze([
-    Object.freeze({key:'whatsappInbound',label:'Incoming / Replies',group:'whatsapp'}),
-    Object.freeze({key:'whatsappAttention',label:'Failed / Attention',group:'whatsapp'})
-  ]);
+  const operationsDefinitions=Object.freeze([]);
   const make=(tag,className='',text='')=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=='')node.textContent=String(text);return node;};
   const call=async(client,name,args={})=>{const{data,error}=await client.rpc(name,args);if(error)throw error;return data;};
   const readable=(value)=>String(value??'—').replaceAll('_',' ').replace(/\b\w/g,(letter)=>letter.toUpperCase());
@@ -37,12 +34,10 @@
   const afterNavigation=(key)=>{lastModule=key||lastModule;const sidebar=document.querySelector('[data-admin-sidebar]');const toggle=document.querySelector('[data-nav-toggle]');sidebar?.classList.remove('is-open');if(toggle)toggle.setAttribute('aria-expanded','false');const selected=document.querySelector('[aria-selected="true"]');if(selected)document.title=`${selected.textContent.trim()} | Aadhyant Admin`;window.history?.replaceState?.(null,'',`#${lastModule}`);document.querySelector('#admin-workspace')?.focus({preventScroll:true});};
 
   const initialize=async({client,authorization})=>{
-    const tabs=document.querySelector('.admin-tabs');const main=document.querySelector('.admin-main');const group=document.querySelector('[data-nav-group="whatsapp"]');if(!tabs||!main||!group)return false;
+    const tabs=document.querySelector('.admin-tabs');const main=document.querySelector('.admin-main');if(!tabs||!main)return false;
     const sessionCard=document.querySelector('.admin-session-card');if(sessionCard){sessionCard.hidden=false;const name=sessionCard.querySelector('[data-staff-session-name]');const roles=sessionCard.querySelector('[data-staff-session-roles]');name.textContent=authorization?.display_name||'Aadhyant staff';roles.textContent=(authorization?.roles||[]).map(readable).join(', ')||(authorization?.bootstrap_admin?'Bootstrap Admin':'Authorized access');}
-    const canViewWhatsApp=Boolean(authorization?.bootstrap_admin||authorization?.staff_management_access);const controllers=new Map();
-    if(canViewWhatsApp)operationsDefinitions.forEach((definition)=>{const tab=make('button','',definition.label);tab.type='button';tab.dataset.productTab=definition.key;tab.setAttribute('aria-selected','false');const panel=make('section','record-panel product-panel');panel.dataset.panel=definition.key;panel.hidden=true;const heading=make('div','panel-heading');const copy=make('div');copy.append(make('p','admin-eyebrow','Safe operations projection'),make('h2','',definition.label),make('p','',definition.key==='whatsappInbound'?'Masked structured inbound metadata from W7A.':'Failed communication and overdue interview items requiring review.'));heading.append(copy);const message=make('div','admin-message');message.dataset.productMessage='';message.setAttribute('role','status');message.setAttribute('aria-live','polite');const workspace=make('div','product-workspace');workspace.dataset.productWorkspace='';panel.append(heading,message,workspace);group.append(tab);main.insertBefore(panel,document.querySelector('[data-panel="staff"]'));const controller=definition.key==='whatsappInbound'?createInboundController(client,panel):createAttentionController(client,panel);controllers.set(definition.key,controller);tab.addEventListener('click',()=>{setSelected(tab,panel,definition.key);controller.render();});});
     const toggle=document.querySelector('[data-nav-toggle]');const sidebar=document.querySelector('[data-admin-sidebar]');toggle?.addEventListener('click',()=>{const open=!sidebar.classList.contains('is-open');sidebar.classList.toggle('is-open',open);toggle.setAttribute('aria-expanded',String(open));});
-    document.addEventListener('click',(event)=>{const action=event.target.closest?.('[data-open-module]');if(!action)return;const target=document.querySelector(`[data-w3-tab="${action.dataset.openModule}"],[data-product-tab="${action.dataset.openModule}"]`);target?.click();if(action.dataset.openModule==='whatsappCampaigns')setTimeout(()=>document.querySelector('[data-panel="whatsappCampaigns"] .panel-heading .admin-button-primary')?.focus(),0);});
+    document.addEventListener('click',(event)=>{const action=event.target.closest?.('[data-open-module]');if(!action)return;const target=document.querySelector(`[data-w3-tab="${action.dataset.openModule}"],[data-product-tab="${action.dataset.openModule}"]`);target?.click();});
     const requested=window.location?.hash?.slice(1)||'';const initial=document.querySelector(`[data-w3-tab="${requested}"],[data-product-tab="${requested}"],[data-tab="${requested}"]:not([hidden])`)||document.querySelector('[data-w3-tab="recruitmentDashboard"]')||document.querySelector('[data-tab="staff"]:not([hidden])');initial?.click();return true;
   };
 

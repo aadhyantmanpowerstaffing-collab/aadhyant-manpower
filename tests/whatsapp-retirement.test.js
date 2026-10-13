@@ -1,0 +1,34 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+const {PGlite}=require('@electric-sql/pglite');
+const sql=fs.readFileSync('supabase/production/retire_whatsapp_20261013/purge.sql','utf8');
+const names=['whatsapp_message_events','whatsapp_inbound_messages','whatsapp_campaign_recipients','whatsapp_outbound_messages','whatsapp_campaigns','whatsapp_webhook_events','whatsapp_contacts'];
+async function setup(){const db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role;
+ create table public.candidates(id int primary key);insert into public.candidates values(1);
+ create table public.employer_requirements(id int primary key);insert into public.employer_requirements values(1);
+ create table public.candidate_applications(id int primary key,candidate_id int references public.candidates(id));insert into public.candidate_applications values(1,1);
+ create table public.whatsapp_contacts(id int primary key,candidate_id int references public.candidates(id));insert into public.whatsapp_contacts values(1,1);
+ create table public.whatsapp_webhook_events(id int primary key);insert into public.whatsapp_webhook_events values(1);
+ create table public.whatsapp_campaigns(id int primary key,requirement_id int references public.employer_requirements(id));insert into public.whatsapp_campaigns values(1,1);
+ create table public.whatsapp_outbound_messages(id int primary key,contact_id int references public.whatsapp_contacts(id),state text);insert into public.whatsapp_outbound_messages values(1,1,'queued');
+ create table public.whatsapp_campaign_recipients(id int primary key,campaign_id int references public.whatsapp_campaigns(id),contact_id int references public.whatsapp_contacts(id),outbound_message_id int references public.whatsapp_outbound_messages(id));insert into public.whatsapp_campaign_recipients values(1,1,1,1);
+ create table public.whatsapp_inbound_messages(id int primary key,contact_id int references public.whatsapp_contacts(id),webhook_event_id int references public.whatsapp_webhook_events(id),recipient_id int references public.whatsapp_campaign_recipients(id),application_id int references public.candidate_applications(id));insert into public.whatsapp_inbound_messages values(1,1,1,1,1);
+ create table public.whatsapp_message_events(id int primary key,outbound_message_id int references public.whatsapp_outbound_messages(id),webhook_event_id int references public.whatsapp_webhook_events(id));insert into public.whatsapp_message_events values(1,1,1);
+ create table public.audit_logs(action text,entity_type text);insert into public.audit_logs values('whatsapp.sent','whatsapp_message'),('application.created','candidate_application');`);
+ for(const m of sql.matchAll(/revoke all on function ([^;]+) from public,anon,authenticated,service_role;/g))await db.exec(`create function ${m[1]} returns boolean language sql as $$select true$$;grant execute on function ${m[1]} to anon,authenticated,service_role;`);
+ return db;
+}
+test('retirement deletes WhatsApp dependency graph and revokes entrypoints while retaining recruitment',async t=>{const db=await setup();t.after(()=>db.close());await db.exec(sql);
+ for(const name of names)assert.equal((await db.query(`select count(*)::int n from public.${name}`)).rows[0].n,0);
+ for(const name of ['candidates','employer_requirements','candidate_applications','audit_logs'])assert.equal((await db.query(`select count(*)::int n from public.${name}`)).rows[0].n,1);
+ for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'public.upsert_whatsapp_inbound_contact(text)','execute') ok",[role])).rows[0].ok,false);
+});
+test('in-flight sender blocks destructive deletion transaction',async t=>{const db=await setup();t.after(()=>db.close());await db.exec("update public.whatsapp_outbound_messages set state='sending'");await assert.rejects(db.exec(sql),/In-flight sender/);await db.exec('rollback');assert.equal((await db.query('select count(*)::int n from public.whatsapp_contacts')).rows[0].n,1);});
+test('active site no longer ships or initializes WhatsApp campaign and preference controls',()=>{
+ const page=fs.readFileSync('admin/index.html','utf8'),bootstrap=fs.readFileSync('admin/admin.js','utf8'),build=fs.readFileSync('scripts/build-production-artifact.js','utf8');
+ assert.doesNotMatch(page,/data-nav-group="whatsapp"|job-alerts\.js|whatsapp-campaigns\.js|sharing-contacts\.js/);
+ assert.doesNotMatch(bootstrap,/AadhyantJobAlerts|AadhyantSharingContacts|aadhyantWhatsAppCampaigns/);
+ assert.doesNotMatch(build,/'admin\/(?:job-alerts|whatsapp-campaigns|sharing-contacts)\./);
+ assert.doesNotMatch(fs.readFileSync('job-updates/index.html','utf8'),/data-sharing-subscribe|sharing-subscription\.js/);
+ assert.doesNotMatch(fs.readFileSync('jobs/index.html','utf8'),/data-detail-share|href="\.\.\/job-updates\//);
+});

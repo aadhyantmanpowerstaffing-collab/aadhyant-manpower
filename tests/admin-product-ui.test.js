@@ -19,7 +19,7 @@ vm.runInNewContext(productSource, { window: productWindow, document: {}, Date, S
 const product = productWindow.aadhyantAdminProduct;
 
 test('product shell exposes grouped business navigation without duplicate primary modules', () => {
-  for (const group of ['dashboard','recruitment','whatsapp','network','administration']) assert.match(page, new RegExp(`data-nav-group="${group}"`));
+  for (const group of ['dashboard','recruitment','network','administration']) assert.match(page, new RegExp(`data-nav-group="${group}"`));
   for (const label of ['Companies','Contractors','Users / Roles']) assert.match(page, new RegExp(`>${label}<`));
   assert.match(page, /data-nav-group="compatibility" hidden/);
   assert.match(page, /admin-nav-toggle[^>]+aria-controls="admin-primary-navigation"/);
@@ -28,18 +28,15 @@ test('product shell exposes grouped business navigation without duplicate primar
 
 test('product navigation initializes after canonical recruitment and campaign modules', () => {
   assert.match(page, /admin-product\.js/);
-  assert.match(admin, /aadhyantRecruitmentOperations\?\.initialize[\s\S]*aadhyantWhatsAppCampaigns\?\.initialize[\s\S]*aadhyantAdminProduct\?\.initialize/);
-  assert.deepEqual(JSON.parse(JSON.stringify(product.operationsDefinitions)), [
-    { key: 'whatsappInbound', label: 'Incoming / Replies', group: 'whatsapp' },
-    { key: 'whatsappAttention', label: 'Failed / Attention', group: 'whatsapp' }
-  ]);
+  assert.match(admin, /aadhyantRecruitmentOperations\?\.initialize[\s\S]*aadhyantAdminProduct\?\.initialize/);
+  assert.deepEqual(JSON.parse(JSON.stringify(product.operationsDefinitions)), []);
   for (const source of [admin,recruitmentSource,campaignSource,productSource]) assert.match(source, /\[data-tab\],\[data-w3-tab\],\[data-product-tab\]/);
 });
 
 test('dashboard uses bounded safe projections and accurately labelled metrics', () => {
-  for (const rpc of ['get_recruitment_dashboard','get_whatsapp_core_health','admin_list_whatsapp_campaigns','list_whatsapp_recent_inbound']) assert.match(recruitmentSource, new RegExp(rpc));
-  for (const label of ['Open requirements','New candidates','Applications','Upcoming interviews','Active campaigns','Campaign audience','Queued','Sent','Delivered','Read','Failed','Recent replies']) assert.match(recruitmentSource, new RegExp(label));
-  assert.match(recruitmentSource, /p_limit:6,p_offset:0/);
+  for (const rpc of ['get_recruitment_dashboard']) assert.match(recruitmentSource, new RegExp(rpc));
+  for (const label of ['Open requirements','New candidates','Applications','Upcoming interviews']) assert.match(recruitmentSource, new RegExp(label));
+  assert.doesNotMatch(recruitmentSource, /get_whatsapp_core_health|list_whatsapp_recent_inbound/);
   const totals = recruitment.summarizeCampaigns([
     { campaign_status: 'approved', audience_count: 4, queued_count: 1, sent_count: 1 },
     { campaign_status: 'completed', audience_count: 3, delivered_count: 2, read_count: 1, failed_count: 1 }
@@ -48,7 +45,7 @@ test('dashboard uses bounded safe projections and accurately labelled metrics', 
 });
 
 test('dashboard quick actions target only supported canonical modules', () => {
-  for (const key of ['recruitmentRequirements','recruitmentCandidates','recruitmentApplications','recruitmentInterviews','whatsappCampaigns']) assert.match(recruitmentSource, new RegExp(`'${key}'`));
+  for (const key of ['recruitmentRequirements','recruitmentCandidates','recruitmentApplications','recruitmentInterviews']) assert.match(recruitmentSource, new RegExp(`'${key}'`));
   assert.match(productSource, /\[data-open-module\]/);
   assert.doesNotMatch(recruitmentSource, /Create Requirement/);
 });
@@ -99,7 +96,7 @@ test('campaign portfolio adds bounded status paging, cancellation and exact eigh
   assert.match(campaignSource, /p_status:filter\.value\|\|null,p_limit:25,p_offset:offset/);
   assert.match(campaignSource, /admin_cancel_whatsapp_campaign/);
   assert.match(campaignSource, /responsive-table/);
-  assert.deepEqual(Array.from(productWindow.aadhyantAdminProduct.operationsDefinitions).length, 2);
+  assert.deepEqual(Array.from(productWindow.aadhyantAdminProduct.operationsDefinitions).length, 0);
 });
 
 test('inbound and attention screens use only safe Admin RPC projections', () => {
