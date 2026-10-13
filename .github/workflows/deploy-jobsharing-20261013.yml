@@ -18,7 +18,7 @@ jobs:
       github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
       github.ref == 'refs/heads/web-platform-development' &&
       github.event_name == 'push' && github.run_attempt == 1 &&
-      github.event.head_commit.message == 'Deploy approved job sharing release eb0e542'
+      github.event.head_commit.message == 'Deploy approved job sharing release 95b52f3'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -39,7 +39,7 @@ jobs:
       - name: Check out the exact reviewed source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: eb0e5420b21f43832b4961bc799356839be9e6a5
+          ref: 95b52f3493b054f37df437c6e93adf788e9be33e
           persist-credentials: false
       - name: Build and validate the allowlisted artifact
         run: |
