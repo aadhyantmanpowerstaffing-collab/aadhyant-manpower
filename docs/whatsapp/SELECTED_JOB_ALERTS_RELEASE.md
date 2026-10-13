@@ -53,8 +53,11 @@ denial. PGlite executes the migration and lifecycle against canonical table
 contracts with a stub outbox provider; no real provider call occurs.
 
 Browser visual QA was not performed: the supported control-browser capability is
-unavailable. The production database upgrade, source publication and deployment
-have not been performed for this release. No real campaign was created or sent.
+unavailable. The production upgrade and deployment were explicitly authorized at
+2026-10-13 14:59:30 IST. Migration ledger version `20261013093109` is installed
+on Aadhyant `wsuctjhbqiedttfnwjvf`; source remains the reviewed migration above.
+Pages run `38377334432` completed every build/test/upload/deployment step.
+No real campaign was created or sent.
 
 ## Production and rollback
 
@@ -68,3 +71,18 @@ any actual test/campaign delivery require separately reviewed scope and recipien
 Rollback the frontend to the preceding release if necessary; keep the additive
 schema and existing rows. Do not remove selected_contacts while campaigns of that
 mode exist. Use a reviewed forward correction for database issues.
+
+## Production postflight — 13 October 2026
+
+- Published source: `b53ca60da18758093fdf79c017f8f6f27b2e5019`.
+- Artifact digest: `876e1c39db717a1fbe38f63701c8ec8c8819b510f37621855dc60d1186a325bc`.
+- Live HTML, controller, stylesheet, Admin bootstrap and digest match local dist.
+- Read-only Admin RPC validation returned 4 registered candidates, 3 imported
+  contacts and no new selected-audience campaigns. Non-admin execution is denied.
+- Contacts, candidates, campaigns and outbound row fingerprints match preflight;
+  queued/sending remains zero. Existing hard-disabled scheduler is preserved.
+- Security advisor flags authenticated SECURITY DEFINER RPCs by design; Admin
+  checks, empty search_path and anonymous execute denial were verified live.
+- Initial CI attempt lacked the PGlite dependency; corrected publication installed
+  locked dependencies before 361 tests. Manual production/staging workflows now
+  install the same pinned test dependencies. The one-shot publisher is retired.
