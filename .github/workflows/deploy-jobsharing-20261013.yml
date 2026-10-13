@@ -18,7 +18,7 @@ jobs:
       github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
       github.ref == 'refs/heads/web-platform-development' &&
       github.event_name == 'push' && github.run_attempt == 1 &&
-      github.event.head_commit.message == 'Deploy approved job alerts release b53ca60'
+      github.event.head_commit.message == 'Deploy approved job alerts release b53ca60 with pinned test dependencies'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -43,6 +43,7 @@ jobs:
           persist-credentials: false
       - name: Build and validate the allowlisted artifact
         run: |
+          npm ci --ignore-scripts
           node scripts/build-production-artifact.js
           npm test
           node scripts/build-production-artifact.js --verify
