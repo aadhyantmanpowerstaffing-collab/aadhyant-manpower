@@ -2,6 +2,10 @@
   'use strict';
   const make=(tag,text='')=>{const n=document.createElement(tag);n.textContent=text;return n;};
   const call=async(client,name,args={})=>{const r=await client.rpc(name,args);if(r.error)throw r.error;return r.data;};
+  const selectPublishedVacancies=(requirements,published)=>{
+    const codes=new Set(published.map(row=>row.requirement_code));
+    return requirements.filter(row=>row.id&&row.requirement_stage==='open'&&codes.has(row.requirement_code));
+  };
   async function initialize({client,authorization}){
     if(!authorization?.bootstrap_admin&&!authorization?.staff_management_access)return false;
     const group=document.querySelector('[data-nav-group="whatsapp"]'),main=document.querySelector('.admin-main');if(!group||!main)return false;
@@ -68,8 +72,8 @@
       pending=true;prepare.disabled=true;try{await call(client,'admin_prepare_sharing_campaign',{p_requirement_id:vacancy.value,p_operation_key:operation,p_contact_ids:[...selected],...Object.fromEntries(Object.entries(templateFields).map(([k,n])=>['p_'+k,n.value.trim()]))});reset();await loadCampaigns();notice('Audience frozen. Review and approve the campaign before queueing.');}catch(_){notice('Preparation was not confirmed. The same operation identity is retained for a safe retry.',true);}finally{pending=false;prepare.disabled=false;}
     });
     tab.addEventListener('click',async()=>{document.querySelectorAll('[data-tab],[data-w3-tab],[data-product-tab]').forEach(n=>n.setAttribute('aria-selected',String(n===tab)));document.querySelectorAll('[data-panel]').forEach(n=>n.hidden=n!==panel);
-      try{if(vacancy.options.length===1){const rows=await call(client,'list_recruitment_requirements',{p_search:null,p_stage:'open',p_limit:100,p_offset:0});for(const r of rows)if(r.requirement_visibility==='public')vacancy.append(new Option(`${r.requirement_code} · ${r.job_role}`,r.id));}await loadContacts();await loadCampaigns();}catch(_){notice('Sharing Contacts requires the reviewed release before use.',true);}finally{window.aadhyantAdminProduct?.afterNavigation?.('sharingContacts');}
+      try{if(vacancy.options.length===1){const [rows,published]=await Promise.all([call(client,'list_recruitment_requirements',{p_search:null,p_stage:'open',p_limit:100,p_offset:0}),call(client,'get_public_job_requirements',{p_limit:50,p_offset:0})]);for(const r of selectPublishedVacancies(rows,published))vacancy.append(new Option(`${r.requirement_code} · ${r.job_role}`,r.id));}await loadContacts();await loadCampaigns();}catch(_){notice('Sharing Contacts requires the reviewed release before use.',true);}finally{window.aadhyantAdminProduct?.afterNavigation?.('sharingContacts');}
     });return true;
   }
-  window.AadhyantSharingContacts=Object.freeze({initialize});
+  window.AadhyantSharingContacts=Object.freeze({initialize,selectPublishedVacancies});
 })();
