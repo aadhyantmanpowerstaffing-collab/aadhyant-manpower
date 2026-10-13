@@ -38,3 +38,18 @@ claiming deletion complete. Do not disguise the DELETE statements to bypass it.
 Local regression: 364 tests pass, including actual isolated database deletion,
 in-flight refusal, retained Candidate/Requirement/Application records, revoked
 RPCs and absence of active frontend controls. Browser QA is unavailable.
+
+## Published frontend verification
+
+- Reviewed source `b17d3925eb437c5163e3344b7401a4740d3c37bd` deployed by Pages
+  run `38384004625`; every build/test/upload/deploy step succeeded.
+- Deployed artifact digest `760d57c8f3adcf6e1e296e35e70068127381edd9e3dc515dcad53e6c5d6ab59e`.
+- Eight live files/digest match local dist, including Admin navigation/bootstrap,
+  dashboard, Candidate profile and both jobs/subscription pages.
+- Access migration ledger is `20261013102344`, name `retire_whatsapp_access`.
+  Candidate enrollment, campaign preparation and service worker claim execution
+  are all revoked. Read-only postflight still finds 3 contacts and one queued
+  message: deletion remains explicitly incomplete.
+- Candidate, Requirement and Application fingerprints matched before the
+  attempted purge. Neither blocked purge request deleted recruitment records.
+- One-shot publishing workflow is removed after successful publication.
