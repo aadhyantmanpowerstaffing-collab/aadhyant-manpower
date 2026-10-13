@@ -30,19 +30,19 @@ begin
  select coalesce(jsonb_agg(to_jsonb(t)),'[]'::jsonb) into result from (
   select w.id contact_id,w.candidate_id,
     left(coalesce(c.full_name,w.imported_profile->>'Name','Contact'),1)||'•••' name_masked,
-    '+91XXXXXX'||right(w.indian_mobile_key,4) mobile_masked,
+    case when w.id is null then 'Unavailable' else '+91XXXXXX'||right(w.indian_mobile_key,4) end mobile_masked,
     c.highest_qualification qualification,c.specialization trade,
     coalesce(c.current_location,w.imported_profile->>'District') location,
     w.marketing_consent_status consent,w.sharing_subscription->>'scope' alert_scope,
     private.selected_job_contact_eligible(w.id,req.id) eligible,
-    case when w.resolution_status in ('blocked','ambiguous') then 'Contact blocked or ambiguous'
+    case when w.id is null then 'WhatsApp contact unavailable' when w.resolution_status in ('blocked','ambiguous') then 'Contact blocked or ambiguous'
       when w.marketing_consent_status<>'opted_in' then 'Consent required'
       when w.candidate_id is not null and (c.profile_status<>'active' or c.status='inactive') then 'Inactive candidate'
       when exists(select 1 from public.candidate_applications a where a.candidate_id=w.candidate_id and a.requirement_id=req.id) then 'Already applied'
       when w.sharing_subscription<>'{}'::jsonb and not private.sharing_contact_eligible(w.id,req.id) then 'Subscriber preference does not match'
       when private.selected_job_contact_eligible(w.id,req.id) then 'Can select' else 'Contact needs review' end status,
     coalesce(m.suggested,false) suggested,m.reasons match_reasons
-  from public.whatsapp_contacts w left join public.candidates c on c.id=w.candidate_id
+  from public.whatsapp_contacts w full join public.candidates c on c.id=w.candidate_id
   cross join lateral (select array_remove(array[
     case when nullif(btrim(req.qualification),'') is not null and lower(coalesce(c.highest_qualification,''))<>lower(req.qualification) then 'Qualification differs' end,
     case when nullif(btrim(req.iti_trade),'') is not null and lower(coalesce(c.specialization,''))<>lower(req.iti_trade) then 'Trade differs' end,
@@ -53,9 +53,9 @@ begin
       lower(coalesce(c.state,''))<>lower(coalesce(req.job_location,req.company_location)) then 'Location differs' end
   ],null) reasons) reasons
   cross join lateral (select reasons.reasons, c.id is not null and cardinality(reasons.reasons)=0 suggested) m
-  where w.provider='whatsapp' and ((p_source='registered' and c.id is not null) or (p_source='contacts' and w.imported_profile<>'{}'::jsonb))
+  where (w.provider='whatsapp' or w.id is null) and ((p_source='registered' and c.id is not null) or (p_source='contacts' and w.imported_profile<>'{}'::jsonb))
     and (p_view='all' or p_source='contacts' or m.suggested)
-  order by m.suggested desc,w.created_at desc,w.id limit 100 offset p_offset
+  order by m.suggested desc,w.created_at desc nulls last,w.id,c.id limit 100 offset p_offset
  ) t;
  return result;
 end; $$;

@@ -91,3 +91,8 @@ test('admin-only RPCs and bounded query filters reject unauthorized callers',asy
  await db.exec("select set_config('test.admin','no',false)");await assert.rejects(db.query(prepareSql,args(id)),/Admin access/);
  await db.exec("select set_config('test.admin','yes',false)");await assert.rejects(db.query('select public.admin_preview_selected_job_contacts($1,\'registered\',\'all\',6000)',[requirement]),/Invalid/);
 });
+test('registered candidates without contact are shown as unavailable, never silently selectable',async t=>{
+ const db=await setup();t.after(()=>db.close());await db.exec("insert into public.candidates(id,profile_status,status,full_name) values('00000000-0000-0000-0000-000000000045','active','new','No WhatsApp Contact')");
+ const rows=(await value(db,"select public.admin_preview_selected_job_contacts($1,'registered','all',0) list",[requirement])).list;
+ assert.equal(rows.length,1);assert.equal(rows[0].contact_id,null);assert.equal(rows[0].eligible,false);assert.equal(rows[0].status,'WhatsApp contact unavailable');
+});
