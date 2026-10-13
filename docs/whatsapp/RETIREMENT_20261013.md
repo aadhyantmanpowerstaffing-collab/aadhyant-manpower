@@ -53,3 +53,7 @@ RPCs and absence of active frontend controls. Browser QA is unavailable.
 - Candidate, Requirement and Application fingerprints matched before the
   attempted purge. Neither blocked purge request deleted recruitment records.
 - One-shot publishing workflow is removed after successful publication.
+
+## Follow-up verification — 13 October 2026
+
+The separately authorized pending purge succeeded using the native execute_sql tool. Read-only postcheck confirms all seven WhatsApp tables and WhatsApp audit rows are empty. The new console migration was then installed and template-sync Edge v1 deployed with JWT verification. The worker/webhook remain retired and sender_ready=false. Frontend console release was blocked by automatic approval review pending explicit release approval; production branch remains unchanged. This supersedes the earlier pending-purge status without changing the historical error record.
