@@ -24,9 +24,9 @@ test('retirement deletes WhatsApp dependency graph and revokes entrypoints while
  for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'public.upsert_whatsapp_inbound_contact(text)','execute') ok",[role])).rows[0].ok,false);
 });
 test('in-flight sender blocks destructive deletion transaction',async t=>{const db=await setup();t.after(()=>db.close());await db.exec("update public.whatsapp_outbound_messages set state='sending'");await assert.rejects(db.exec(sql),/In-flight sender/);await db.exec('rollback');assert.equal((await db.query('select count(*)::int n from public.whatsapp_contacts')).rows[0].n,1);});
-test('active site no longer ships or initializes WhatsApp campaign and preference controls',()=>{
+test('retired campaign modules and preferences remain absent after the authorized console replacement',()=>{
  const page=fs.readFileSync('admin/index.html','utf8'),bootstrap=fs.readFileSync('admin/admin.js','utf8'),build=fs.readFileSync('scripts/build-production-artifact.js','utf8');
- assert.doesNotMatch(page,/data-nav-group="whatsapp"|job-alerts\.js|whatsapp-campaigns\.js|sharing-contacts\.js/);
+ assert.doesNotMatch(page,/job-alerts\.js|whatsapp-campaigns\.js|sharing-contacts\.js/);
  assert.doesNotMatch(bootstrap,/AadhyantJobAlerts|AadhyantSharingContacts|aadhyantWhatsAppCampaigns/);
  assert.doesNotMatch(build,/'admin\/(?:job-alerts|whatsapp-campaigns|sharing-contacts)\./);
  assert.doesNotMatch(fs.readFileSync('job-updates/index.html','utf8'),/data-sharing-subscribe|sharing-subscription\.js/);

@@ -1,0 +1,114 @@
+(() => {
+ 'use strict';
+ const make=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;};
+ const call=async(client,name,args={})=>{const r=await client.rpc(name,args);if(r.error)throw r.error;return r.data;};
+ const labels=value=>[...new Set(value.split(',').map(x=>x.trim()).filter(Boolean))];
+ const renderMessage=(template,job)=>template.body.replaceAll('{{1}}',job.requirement_code).replaceAll('{{2}}',job.job_role);
+ const selectedIds=rows=>[...rows.values()].filter(r=>r.eligible).map(r=>r.contact_id);
+ const dueTime=(mode,value)=>{if(mode==='now')return null;const d=new Date(value);if(!value||!Number.isFinite(d.getTime())||d.getTime()<=Date.now())throw new Error('Choose a future date and time.');return d.toISOString();};
+ const availableTemplate=t=>t.status==='APPROVED'&&t.compatible&&Date.now()-new Date(t.synced_at).getTime()<86400000;
+ async function initialize({client,authorization}){
+  if(!authorization?.bootstrap_admin&&!authorization?.staff_management_access)return false;
+  const main=document.querySelector('.admin-main'),group=document.querySelector('[data-nav-group="whatsapp"]');if(!main||!group)return false;
+  const tab=make('button','WhatsApp Manager');tab.type='button';tab.dataset.w3Tab='whatsappConsole';tab.setAttribute('role','tab');tab.setAttribute('aria-selected','false');group.append(tab);
+  const panel=make('section','','record-panel wa-console');panel.hidden=true;panel.dataset.panel='whatsappConsole';main.append(panel);
+  const header=make('header','','panel-heading'),copy=make('div');copy.append(make('p','AADHYANT WHATSAPP','admin-eyebrow'),make('h2','WhatsApp Manager'),make('p','Contacts, approved templates, campaigns and delivery reports.'));header.append(copy);
+  const status=make('p','','admin-message');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const tabs=make('div','','wa-console-tabs'),content=make('div','','wa-console-content');tabs.setAttribute('role','tablist');panel.append(header,status,tabs,content);
+  let section='Contacts',busy=false,templates=[],senderReady=false,contacts=[],campaigns=[],jobs=[],offset=0,filterList='',filterTag='',draft=null,audience=[],report=null;const contactSelection=new Set();
+  const notice=(text,error=false)=>{status.textContent=text;status.classList.toggle('is-error',error);};
+  const button=(text,fn,primary=false)=>{const n=make('button',text,'admin-button '+(primary?'admin-button-primary':'admin-button-secondary'));n.type='button';n.addEventListener('click',()=>fn(n));return n;};
+  const run=async(fn)=>{if(busy)return;busy=true;content.querySelectorAll('button,input,select').forEach(n=>n.disabled=true);try{await fn();notice('');}catch(error){notice(error.message||'Action not confirmed. Refresh before retrying.',true);}finally{busy=false;render();}};
+  const field=(text,input)=>{const n=make('label',text);n.append(input);return n;};
+  const input=(placeholder='')=>{const n=make('input');n.placeholder=placeholder;return n;};
+  const table=(headers,rows)=>{const wrap=make('div','','table-wrap'),t=make('table'),head=make('thead'),tr=make('tr');headers.forEach(h=>tr.append(make('th',h)));head.append(tr);const body=make('tbody');rows.forEach(row=>{const r=make('tr');row.forEach(v=>{const td=make('td');if(v&&typeof v==='object')td.append(v);else td.textContent=String(v??'—');r.append(td);});body.append(r);});t.append(head,body);wrap.append(t);return wrap;};
+  const loadContacts=async()=>{contacts=await call(client,'admin_console_contacts',{p_list:filterList||null,p_tag:filterTag||null,p_offset:offset});};
+  const loadTemplates=async()=>{const d=await call(client,'admin_console_templates');templates=d.templates;senderReady=d.sender_ready;};
+  const loadCampaigns=async()=>{campaigns=await call(client,'admin_console_campaigns',{p_offset:offset});};
+  const load=async()=>{if(section==='Contacts')await loadContacts();if(section==='Templates')await loadTemplates();if(section==='Campaigns'||section==='Reports'){await loadTemplates();await loadCampaigns();}};
+  const pages=(size,rows,fn)=>{const p=make('div','','wa-actions'),prev=button('Previous',()=>run(async()=>{offset=Math.max(0,offset-size);await fn();})),next=button('Next',()=>run(async()=>{offset+=size;await fn();}));prev.disabled=offset===0;next.disabled=rows.length<size||offset>=5000;p.append(make('span','Page '+(offset/size+1)),prev,next);return p;};
+  const showConsent=row=>{
+   const dialog=make('dialog','','wa-dialog'),form=make('form'),source=make('select');['phone_call','written_permission','in_person'].forEach(v=>source.append(new Option(v.replaceAll('_',' '),v)));
+   const date=input();date.type='datetime-local';const confirmed=make('input');confirmed.type='checkbox';confirmed.required=true;
+   form.append(make('h3','Record permission for '+row.mobile_masked),field('Permission received through',source),field('Date and time received',date),field('This person actually agreed to receive Aadhyant job messages.',confirmed));
+   form.append(button('Save Permission',()=>run(async()=>{if(!confirmed.checked||!date.value)throw new Error('Confirm the permission and its received date.');await call(client,'admin_console_record_consent',{p_contact_id:row.contact_id,p_source:source.value,p_received_at:new Date(date.value).toISOString()});dialog.close();dialog.remove();await loadContacts();}),true),button('Close',()=>{dialog.close();dialog.remove();}));
+   dialog.append(form);main.append(dialog);dialog.showModal();
+  };
+  const renderContacts=()=>{
+   const toolbar=make('div','','wa-grid'),list=input('For example: ITI Leads'),tag=input('For example: Sanand');list.value=filterList;tag.value=filterTag;
+   toolbar.append(field('Contact List',list),field('Tag',tag),button('Filter Contacts',()=>run(async()=>{filterList=list.value.trim();filterTag=tag.value.trim();offset=0;contactSelection.clear();await loadContacts();})));
+   content.append(make('h3','Contacts'),toolbar);if(!contacts.length)content.append(make('p','No contacts yet. Import an Excel or CSV file below.','wa-empty'));
+   else content.append(table(['Select','Name','WhatsApp','Permission','Lists','Tags','Action'],contacts.map(row=>{
+    const check=make('input');check.type='checkbox';check.checked=contactSelection.has(row.contact_id);check.setAttribute('aria-label','Select '+row.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(contactSelection.size>=500){check.checked=false;notice('Select up to 500 contacts.',true);return;}contactSelection.add(row.contact_id);}else contactSelection.delete(row.contact_id);});
+    const action=row.consent==='unknown'&&['resolved','unresolved'].includes(row.resolution_status)?button('Record Permission',()=>showConsent(row)):make('span',row.consent==='opted_out'?'Unsubscribed':row.consent==='opted_in'?'Subscribed':'Needs review');
+    return[check,row.name_masked,row.mobile_masked,row.consent,(row.lists||[]).join(', '),(row.tags||[]).join(', '),action];
+   })));
+   content.append(pages(100,contacts,loadContacts));const organize=make('details');organize.append(make('summary','Organize Selected Contacts'));const lists=input('Comma-separated list names'),tagsInput=input('Comma-separated tags');
+   organize.append(field('Lists',lists),field('Tags',tagsInput),button('Save Lists and Tags',()=>run(async()=>{if(!contactSelection.size)throw new Error('Select contacts first.');await call(client,'admin_console_label_contacts',{p_ids:[...contactSelection],p_lists:labels(lists.value),p_tags:labels(tagsInput.value)});contactSelection.clear();await loadContacts();})));content.append(organize);
+   const upload=make('details');upload.append(make('summary','Import Contacts from Excel / CSV'));const file=make('input');file.type='file';file.accept='.xlsx,.csv';file.setAttribute('aria-label','Contact file');let parsed=null;
+   const summary=make('p','Columns: Name, Email, Mobile, Gender, Age, State, District. Import does not grant message permission.'),save=button('Import Reviewed Contacts',()=>run(async()=>{if(!parsed||parsed.errors.length)throw new Error('Choose a valid file.');await call(client,'admin_console_import_contacts',{p_rows:parsed.rows});offset=0;await loadContacts();}),true);save.disabled=true;
+   file.addEventListener('change',async()=>{parsed=null;save.disabled=true;const current=file.files[0];try{if(!current)return;const data=await window.AadhyantSharingImport.read(current);if(file.files[0]!==current)return;parsed=data;summary.textContent=data.rows.length+' valid contacts · '+data.duplicates.length+' duplicates · '+data.errors.length+' invalid rows';save.disabled=!data.rows.length||data.errors.length>0;}catch(error){summary.textContent=error.message;}});
+   upload.append(file,summary,save);content.append(upload);
+   const numbers=make('details'),text=make('textarea');text.rows=5;text.placeholder='One Indian mobile number per line';numbers.append(make('summary','Import Numbers Only'),field('Mobile Numbers',text),make('p','Up to 500 numbers. Import does not grant message permission.','wa-help'),button('Import Numbers',()=>run(async()=>{const values=text.value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);if(!values.length||values.length>500)throw new Error('Enter 1 to 500 numbers.');const result=await call(client,'admin_console_import_numbers',{p_numbers:values});offset=0;await loadContacts();text.value='';notice(result.added+' added, '+result.reused+' already present.');}),true));content.append(numbers);
+  };
+  const messageCard=(t,job)=>{const card=make('article','','wa-message-preview');card.append(make('strong','WhatsApp Message Preview'),make('p',job?renderMessage(t,job):t.body));(t.buttons||[]).forEach(b=>card.append(make('div',b.text,'wa-preview-button')));return card;};
+  const renderTemplates=()=>{
+   content.append(make('h3','Message Templates'),make('p','Choose an approved template. Language and version are managed automatically.','wa-help'));
+   content.append(button('Sync Templates from Meta',()=>run(async()=>{const s=await client.auth.getSession(),token=s.data?.session?.access_token;if(!token)throw new Error('Sign in again to sync templates.');const config=window.AADHYANT_CONFIG,r=await fetch(config.supabaseUrl+'/functions/v1/whatsapp-template-sync',{method:'POST',headers:{authorization:'Bearer '+token,apikey:config.supabasePublishableKey,'content-type':'application/json'},body:'{}'}),data=await r.json();if(!r.ok)throw new Error(data.error||'Meta sync unavailable.');await loadTemplates();}),true));
+   content.append(make('p',senderReady?'Sender connection verified.':'Sender setup pending. Preparing a campaign does not send a message.','wa-help'));if(!templates.length)content.append(make('p','No templates synced yet. Connect Meta and sync your approved templates.','wa-empty'));
+   const grid=make('div','','wa-template-grid');templates.forEach(t=>{const card=make('article','','wa-template-card');card.append(make('h4',t.name),make('p',t.language+' · '+t.status),messageCard(t),make('small',t.compatible?'Compatible with job campaigns':'Not supported by the job sender.'));grid.append(card);});content.append(grid);
+  };
+  const newCampaign=()=>run(async()=>{
+   const [req,pub]=await Promise.all([call(client,'list_recruitment_requirements',{p_search:null,p_stage:'open',p_limit:100,p_offset:0}),call(client,'get_public_job_requirements',{p_limit:50,p_offset:0})]),codes=new Set(pub.map(r=>r.requirement_code));
+   jobs=req.filter(r=>r.id&&r.requirement_stage==='open'&&codes.has(r.requirement_code));
+   draft={name:'',job:null,template:null,source:'registered',view:'suggested',list:'',tag:'',mode:'now',when:'',selected:new Map(),operation:crypto.randomUUID(),offset:0,stage:'setup'};audience=[];
+  });
+  const getAudience=async()=>{audience=await call(client,'admin_console_audience',{p_requirement_id:draft.job.id,p_source:draft.source,p_view:draft.view,p_offset:draft.offset,p_list:draft.list||null,p_tag:draft.tag||null});};
+  const renderDraft=()=>{
+   const d=draft;content.append(make('h3','Create Job Campaign'));const grid=make('div','','wa-grid');
+   if(d.stage==='setup'){
+    const title=input('Campaign name');title.maxLength=160;title.value=d.name;title.addEventListener('input',()=>d.name=title.value);
+    const job=make('select');job.append(new Option('Select a published job',''));jobs.forEach(j=>job.append(new Option(j.requirement_code+' · '+j.job_role,j.id)));job.value=d.job?.id||'';
+    const template=make('select');template.append(new Option('Select an approved template',''));templates.filter(availableTemplate).forEach(t=>template.append(new Option(t.name+' · '+t.language,t.id)));template.value=d.template?.id||'';
+    const source=make('select');source.append(new Option('Registered Candidates','registered'),new Option('Imported Contacts','contacts'));source.value=d.source;
+    const view=make('select');view.append(new Option('Suggested Matches','suggested'),new Option('All Registered Candidates','all'));view.value=d.view;view.disabled=d.source==='contacts';
+    const list=input('Optional list'),tag=input('Optional tag');list.value=d.list;tag.value=d.tag;list.addEventListener('input',()=>d.list=list.value.trim());tag.addEventListener('input',()=>d.tag=tag.value.trim());
+    grid.append(field('Contact List',list),field('Contact Tag',tag),field('Campaign Name',title),field('Job',job),field('Message Template',template),field('Audience',source),field('Matching Suggestions',view));content.append(grid);
+    source.addEventListener('change',()=>{d.source=source.value;d.view=d.source==='contacts'?'all':'suggested';d.selected.clear();render();});view.addEventListener('change',()=>d.view=view.value);
+    job.addEventListener('change',()=>{d.job=jobs.find(j=>j.id===job.value);d.selected.clear();});template.addEventListener('change',()=>d.template=templates.find(t=>t.id===template.value));
+    content.append(button('Choose Recipients',()=>run(async()=>{if(!d.job||!d.template||!d.name.trim())throw new Error('Choose a job, approved template and campaign name.');await getAudience();d.stage='audience';}),true));
+   }
+   if(d.stage==='audience'){
+    content.append(make('p','Matching is a suggestion. Only contacts with message permission can be selected.','wa-help'));const count=make('strong',d.selected.size+' selected');content.append(count,button('Select Eligible on This Page',()=>{audience.filter(r=>r.eligible).forEach(r=>{if(d.selected.size<500)d.selected.set(r.contact_id,r);});render();}));
+    content.append(table(['Select','Name','WhatsApp','Matching','Status'],audience.map(r=>{const check=make('input');check.type='checkbox';check.disabled=!r.eligible;check.checked=d.selected.has(r.contact_id);check.setAttribute('aria-label','Select '+r.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(d.selected.size>=500){check.checked=false;return;}d.selected.set(r.contact_id,r);}else d.selected.delete(r.contact_id);count.textContent=d.selected.size+' selected';});return[check,r.name_masked,r.mobile_masked,r.suggested?'Suggested':(r.match_reasons||[]).join(', ')||'Manual audience',r.status];})));
+    const controls=make('div','','wa-actions'),prev=button('Previous',()=>run(async()=>{d.offset=Math.max(0,d.offset-100);await getAudience();})),next=button('Next',()=>run(async()=>{d.offset+=100;await getAudience();}));prev.disabled=d.offset===0;next.disabled=audience.length<100||d.offset>=5000;controls.append(prev,next);content.append(controls,button('Preview Message',()=>{if(!d.selected.size){notice('Select an eligible recipient.',true);return;}d.stage='preview';render();},true));
+   }
+   if(d.stage==='preview'){
+    content.append(messageCard(d.template,d.job),make('strong',d.selected.size+' selected recipients'));const review=make('details');review.append(make('summary','Review Recipients'));d.selected.forEach(r=>review.append(make('p',r.name_masked+' · '+r.mobile_masked)));content.append(review);
+    const mode=make('select');mode.append(new Option('Send Now','now'),new Option('Schedule','schedule'));mode.value=d.mode;const when=input();when.type='datetime-local';when.value=d.when;const whenField=field('Scheduled Date and Time',when);whenField.hidden=d.mode==='now';mode.addEventListener('change',()=>{d.mode=mode.value;render();});when.addEventListener('input',()=>d.when=when.value);
+    content.append(field('Delivery',mode),whenField,make('p','Scheduled times use the timezone of this device.','wa-help'),button('Save Campaign for Approval',()=>run(async()=>{await call(client,'admin_console_prepare',{p_job_id:d.job.id,p_template_id:d.template.id,p_contact_ids:selectedIds(d.selected),p_name:d.name.trim(),p_operation:d.operation,p_scheduled_for:dueTime(d.mode,d.when)});draft=null;await loadCampaigns();}),true));
+   }
+   content.append(button('Back',()=>{if(d.stage==='audience')d.stage='setup';else if(d.stage==='preview')d.stage='audience';else draft=null;render();}));
+  };
+  const showReport=c=>run(async()=>{const rows=await call(client,'admin_console_report',{p_campaign_id:c.id,p_offset:0});draft=null;section='Reports';report={campaign:c,rows,offset:0};});
+  const renderCampaigns=()=>{
+   if(draft){renderDraft();return;}content.append(make('h3','Campaigns'),button('Create Campaign',newCampaign,true));if(!campaigns.length)content.append(make('p','No campaigns yet. Create your first job campaign.','wa-empty'));
+   content.append(table(['Campaign','Job','Status','Delivery','Audience','Actions'],campaigns.map(c=>{
+    const actions=make('div','','wa-actions');actions.append(button('View Report',()=>showReport(c)));
+    if(c.campaign_status==='audience_ready')actions.append(button('Approve',()=>run(async()=>{await call(client,'admin_console_approve',{p_campaign_id:c.id});await loadCampaigns();}),true));
+    if(c.campaign_status==='approved'){const send=button(c.scheduled_for?'Schedule Campaign':'Send Now',()=>run(async()=>{await call(client,'admin_console_queue',{p_campaign_id:c.id});await loadCampaigns();}),true);send.disabled=!senderReady;actions.append(send);if(!senderReady)actions.append(make('small','Sender setup pending'));}
+    if(['audience_ready','approved','queued','sending'].includes(c.campaign_status))actions.append(button('Cancel',()=>run(async()=>{await call(client,'admin_console_cancel',{p_campaign_id:c.id});await loadCampaigns();})));
+    return[c.campaign_name,c.requirement_code,c.campaign_status,c.scheduled_for?new Date(c.scheduled_for).toLocaleString():'Now',c.audience_count,actions];
+   })));content.append(pages(50,campaigns,loadCampaigns));
+  };
+  const renderReports=()=>{
+   content.append(make('h3','Delivery Reports'));if(!report){content.append(table(['Campaign','Audience','Sent','Delivered','Read','Failed','Action'],campaigns.map(c=>[c.campaign_name,c.audience_count,c.sent,c.delivered,c.read,c.failed,button('Open',()=>showReport(c))])));content.append(pages(50,campaigns,loadCampaigns));return;}
+   content.append(make('h4',report.campaign.campaign_name),button('Back to Reports',()=>{report=null;render();}),table(['WhatsApp','Status','Sent','Delivered','Read','Failure'],report.rows.map(r=>[r.mobile_masked,r.status,r.sent_at?new Date(r.sent_at).toLocaleString():'—',r.delivered_at?new Date(r.delivered_at).toLocaleString():'—',r.read_at?new Date(r.read_at).toLocaleString():'—',r.failure||'—'])));
+   const controls=make('div','','wa-actions'),prev=button('Previous',()=>run(async()=>{report.offset=Math.max(0,report.offset-100);report.rows=await call(client,'admin_console_report',{p_campaign_id:report.campaign.id,p_offset:report.offset});})),next=button('Next',()=>run(async()=>{report.offset+=100;report.rows=await call(client,'admin_console_report',{p_campaign_id:report.campaign.id,p_offset:report.offset});}));prev.disabled=report.offset===0;next.disabled=report.rows.length<100||report.offset>=5000;
+   controls.append(prev,next,button('Refresh Report',()=>run(async()=>{report.rows=await call(client,'admin_console_report',{p_campaign_id:report.campaign.id,p_offset:report.offset});})));content.append(controls);
+  };
+  const render=()=>{content.replaceChildren();tabs.replaceChildren();['Contacts','Templates','Campaigns','Reports'].forEach(name=>{const b=button(name,()=>run(async()=>{section=name;offset=0;report=null;draft=null;await load();}));b.setAttribute('role','tab');b.setAttribute('aria-selected',String(section===name));tabs.append(b);});({Contacts:renderContacts,Templates:renderTemplates,Campaigns:renderCampaigns,Reports:renderReports})[section]();};
+  tab.addEventListener('click',async()=>{document.querySelectorAll('[data-tab],[data-w3-tab],[data-product-tab]').forEach(n=>n.setAttribute('aria-selected',String(n===tab)));document.querySelectorAll('[data-panel]').forEach(n=>n.hidden=n!==panel);panel.scrollIntoView({block:'start',behavior:'auto'});if(busy)return;try{await load();notice('');render();}catch(_){content.replaceChildren(make('p','WhatsApp Manager setup is pending. The previous WhatsApp service remains off.','wa-empty'));}window.aadhyantAdminProduct?.afterNavigation?.('whatsappConsole');});return true;
+ }
+ window.AadhyantWhatsAppConsole=Object.freeze({initialize,labels,renderMessage,selectedIds,dueTime,availableTemplate});
+})();
