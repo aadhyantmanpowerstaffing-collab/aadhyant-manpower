@@ -178,7 +178,7 @@ test("INTERESTED reply persists first and then invokes the server-only W7C proce
     "accept_whatsapp_webhook_event",
     "upsert_whatsapp_inbound_contact",
     "record_whatsapp_inbound_message",
-    "process_whatsapp_interested_response",
+    "console_process_interested",
   ]);
   assert.equal(calls[2].body.p_action_id, "INTERESTED");
   assert.equal(calls[2].body.p_correlation_key, "wamid.campaign.original");
@@ -320,6 +320,6 @@ test("fake provider returns deterministic safe outcomes without external calls",
 test("webhook delegates W7C application processing without direct recruitment mutation or Graph send", async () => {
   const source = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./index.ts", import.meta.url), "utf8"));
   assert.doesNotMatch(source, /candidate_applications|create_candidate|graph\.facebook|send_template/i);
-  assert.match(source, /process_whatsapp_interested_response/);
+  assert.match(source, /console_process_interested/);
   assert.doesNotMatch(source, /console\.(?:log|error).*secret/i);
 });

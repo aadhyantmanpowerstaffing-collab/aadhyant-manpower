@@ -35,6 +35,7 @@ export async function handleWhatsAppWebhook(
   environment: WebhookEnvironment,
   acceptEvent: AcceptEvent,
   processEvent?: ProcessEvent,
+  resolveIdentity?: () => Promise<{businessAccountId:string;phoneNumberId:string}>,
 ): Promise<Response> {
   const url = new URL(request.url);
   if (request.method === "GET") {
@@ -60,6 +61,12 @@ export async function handleWhatsAppWebhook(
     payload = JSON.parse(new TextDecoder().decode(rawBody));
   } catch {
     return response("Invalid JSON", 400);
+  }
+  let identity={businessAccountId:environment.businessAccountId,phoneNumberId:environment.phoneNumberId};
+  try { if(resolveIdentity)identity=await resolveIdentity(); } catch { return response("Webhook sender setup pending",503); }
+  if(identity.businessAccountId||identity.phoneNumberId){
+    const root=payload as any;
+    if(!Array.isArray(root?.entry)||root.entry.some((entry:any)=>entry.id!==identity.businessAccountId||!Array.isArray(entry.changes)||entry.changes.some((change:any)=>change.value?.metadata?.phone_number_id!==identity.phoneNumberId)))return response("Webhook sender mismatch",403);
   }
   const payloadHash = await sha256Hex(rawBody);
   const events = parseWhatsAppWebhook(payload);
@@ -206,7 +213,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         return;
       }
       if (event.actionId?.trim().toUpperCase() === "INTERESTED") {
-        await callSupabaseRpc(environment, fetcher, "process_whatsapp_interested_response", {
+        await callSupabaseRpc(environment, fetcher, "console_process_interested", {
           p_inbound_message_id: inboundMessageId,
         });
       }
@@ -214,10 +221,17 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
   };
 }
 
-export default {
+const runtimeHandler={
   fetch(request: Request): Promise<Response> {
     const environment = runtimeEnvironment();
     const persistence = createSupabaseWebhookPersistence(environment);
-    return handleWhatsAppWebhook(request, environment, persistence.acceptEvent, persistence.processEvent);
+    return handleWhatsAppWebhook(request, environment, persistence.acceptEvent, persistence.processEvent,async()=>{
+      const config:any=await callSupabaseRpc(environment,fetch,"console_sender_configuration",{});
+      if(!config?.account_id||!config?.phone_id)throw new Error("Verified sender identity required");
+      return {businessAccountId:config.account_id,phoneNumberId:config.phone_id};
+    });
   },
 };
+
+export default runtimeHandler;
+const deno=(globalThis as any).Deno;if(deno?.serve)deno.serve(runtimeHandler.fetch);

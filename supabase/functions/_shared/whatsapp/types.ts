@@ -17,6 +17,8 @@ export type NormalizedWebhookEvent = {
 };
 
 export type WebhookEnvironment = {
+  businessAccountId?: string;
+  phoneNumberId?: string;
   appSecret: string;
   verifyToken: string;
   supabaseUrl: string;
