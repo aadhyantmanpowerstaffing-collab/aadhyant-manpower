@@ -685,3 +685,11 @@
   .public-site .public-footer-meta { grid-template-columns: 1fr 1fr; }
   .public-site .public-footer .footer-bottom { align-items: flex-start; flex-direction: column; padding-block: 1.2rem; }
 }
+/* Job-update subscription remains independent of Candidate registration. */
+[data-sharing-subscribe]{max-width:720px;display:grid;gap:18px;margin:28px 0;padding:24px;border:1px solid #dce3ec;border-radius:16px;background:#fff}
+[data-sharing-subscribe] label{display:grid;gap:8px;font-weight:600}
+[data-sharing-subscribe] input:not([type="checkbox"]),[data-sharing-subscribe] select{width:100%;min-height:44px;padding:10px;border:1px solid #bac6d6;border-radius:8px;font:inherit}
+[data-sharing-subscribe] [data-sharing-filters]{display:grid;gap:18px}
+[data-sharing-subscribe] [data-sharing-filters][hidden]{display:none}
+[data-sharing-subscribe] p{margin:0;line-height:1.65}
+[data-detail-share]{margin-top:12px}

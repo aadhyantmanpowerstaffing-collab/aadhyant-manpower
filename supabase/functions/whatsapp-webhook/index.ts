@@ -1,8 +1,25 @@
 import { parseWhatsAppWebhook, summarizeEvent } from "../_shared/whatsapp/parser.ts";
 import { constantTimeEqual, sha256Hex, verifyMetaSignature } from "../_shared/whatsapp/signature.ts";
+import { runtimeServerKey, serverDatabaseHeaders } from "../_shared/whatsapp/server-headers.ts";
 import type { AcceptedWebhookEvent, NormalizedWebhookEvent, WebhookEnvironment } from "../_shared/whatsapp/types.ts";
 
 const MAX_BODY_BYTES = 1_048_576;
+
+export function parseSharingSubscription(event: NormalizedWebhookEvent): Record<string, unknown> | null {
+  const prefix = "SUBSCRIBE JOB UPDATES ";
+  if (event.messageType !== "text" || !event.safeText?.startsWith(prefix)) return null;
+  try {
+    const p = JSON.parse(event.safeText.slice(prefix.length));
+    if (!p || typeof p !== "object" || Array.isArray(p) || !["all", "filtered"].includes(p.scope)
+      || Object.keys(p).some(k => !["scope", "locations", "trades"].includes(k))) return null;
+    for (const k of ["locations", "trades"]) {
+      if (!Array.isArray(p[k]) || p[k].length > 20 || p[k].some((v: unknown) => typeof v !== "string" || !v.trim() || v.length > 160)) return null;
+    }
+    const count = p.locations.length + p.trades.length;
+    if ((p.scope === "all" && count !== 0) || (p.scope === "filtered" && count === 0)) return null;
+    return p;
+  } catch { return null; }
+}
 
 type AcceptEvent = (event: AcceptedWebhookEvent) => Promise<string | void>;
 type ProcessEvent = (webhookEventId: string, event: NormalizedWebhookEvent, payloadHash: string) => Promise<void>;
@@ -75,7 +92,7 @@ function runtimeEnvironment(): WebhookEnvironment {
     appSecret: get("WHATSAPP_APP_SECRET"),
     verifyToken: get("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
     supabaseUrl: get("SUPABASE_URL"),
-    supabaseSecretKey: get("SUPABASE_SECRET_KEY") || get("SUPABASE_SERVICE_ROLE_KEY"),
+    supabaseSecretKey: runtimeServerKey(get),
   };
 }
 
@@ -88,9 +105,9 @@ async function callSupabaseRpc(
   if (!environment.supabaseUrl || !environment.supabaseSecretKey) throw new Error("Server database configuration is unavailable");
   const result = await fetcher(`${environment.supabaseUrl}/rest/v1/rpc/${rpcName}`, {
     method: "POST",
+    redirect: "error",
     headers: {
-      apikey: environment.supabaseSecretKey,
-      authorization: `Bearer ${environment.supabaseSecretKey}`,
+      ...serverDatabaseHeaders(environment.supabaseSecretKey),
       "content-type": "application/json",
     },
     body: JSON.stringify(body),
@@ -111,9 +128,9 @@ async function findOutboundMessageId(
   url.searchParams.set("limit", "2");
   const result = await fetcher(url, {
     method: "GET",
+    redirect: "error",
     headers: {
-      apikey: environment.supabaseSecretKey,
-      authorization: `Bearer ${environment.supabaseSecretKey}`,
+      ...serverDatabaseHeaders(environment.supabaseSecretKey),
       accept: "application/json",
     },
   });
@@ -158,6 +175,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
       if (!event.phone || !event.messageType) throw new Error("Inbound event is missing normalized identifiers");
       const contactId = await callSupabaseRpc(environment, fetcher, "upsert_whatsapp_inbound_contact", { p_phone: event.phone });
       if (typeof contactId !== "string" || !contactId) throw new Error("Contact persistence returned an invalid identifier");
+      const sharingPreferences = parseSharingSubscription(event);
       const inboundMessageId = await callSupabaseRpc(environment, fetcher, "record_whatsapp_inbound_message", {
         p_webhook_event_id: webhookEventId,
         p_contact_id: contactId,
@@ -165,11 +183,28 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         p_provider_timestamp: event.providerTimestamp ?? null,
         p_message_type: event.messageType,
         p_safe_text: null,
-        p_action_id: event.actionId ?? null,
+        p_action_id: sharingPreferences ? "SUBSCRIBE_JOB_UPDATES" : event.actionId ?? null,
         p_correlation_key: event.correlationKey ?? null,
         p_redacted_response: event.redactedResponse ?? null,
       });
       if (typeof inboundMessageId !== "string" || !inboundMessageId) throw new Error("Inbound persistence returned an invalid identifier");
+      // Exact STOP/UNSUBSCRIBE only. Registration, arbitrary text and INTERESTED
+      // never opt a contact into marketing. No acknowledgement message is sent.
+      const stop = ["STOP", "UNSUBSCRIBE"].includes(event.actionId?.trim().toUpperCase() ?? "")
+        || (event.messageType === "text" && ["STOP", "UNSUBSCRIBE"].includes(event.safeText?.trim().toUpperCase() ?? ""));
+      if (stop) {
+        const suppressed = await callSupabaseRpc(environment, fetcher, "set_whatsapp_contact_suppression", {
+          p_contact_id: contactId, p_suppressed: true, p_source: "whatsapp_inbound", p_reason_category: "user_stop",
+        });
+        if (suppressed !== true) throw new Error("Contact suppression was not confirmed");
+        return;
+      }
+      if (sharingPreferences) {
+        await callSupabaseRpc(environment, fetcher, "subscribe_whatsapp_sharing_updates", {
+          p_inbound_message_id: inboundMessageId, p_preferences: sharingPreferences,
+        });
+        return;
+      }
       if (event.actionId?.trim().toUpperCase() === "INTERESTED") {
         await callSupabaseRpc(environment, fetcher, "process_whatsapp_interested_response", {
           p_inbound_message_id: inboundMessageId,

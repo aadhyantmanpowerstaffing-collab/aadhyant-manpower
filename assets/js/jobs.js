@@ -204,6 +204,8 @@
       ].map(([term, value]) => detailItem(term, value)).filter(Boolean).forEach((item) => details.append(item));
       const code = encodeURIComponent(text(job.requirement_code));
       detail.querySelector('[data-detail-apply]').href = `../candidate/portal/login.html?requirement=${code}`;
+      const share=detail.querySelector('[data-detail-share]');
+      if(share)share.href=`https://wa.me/?text=${encodeURIComponent(`${text(job.job_role)} · ${text(job.job_location)}\n${window.location.origin}/jobs/?requirement=${code}`)}`;
       listing.hidden = true;
       detail.hidden = false;
       document.title = `${text(job.job_role) || 'Job Opportunity'} | Aadhyant Jobs`;

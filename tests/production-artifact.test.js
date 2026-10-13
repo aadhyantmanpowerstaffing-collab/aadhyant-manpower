@@ -190,7 +190,8 @@ test('loopback server serves every runtime route and returns 404 for internal pa
   t.after(() => close(server));
 
   const runtimeRoutes = [...new Set([...ALL_HTML_ROUTES, ...REQUIRED_ROUTES])].sort();
-  assert.equal(ALL_HTML_ROUTES.length, 43);
+  assert.equal(ALL_HTML_ROUTES.length, 44);
+  assert.ok(ALL_HTML_ROUTES.includes('/job-updates/'));
   for (const route of runtimeRoutes) {
     const response = await fetch(`${origin}${route}`);
     assert.equal(response.status, 200, route);

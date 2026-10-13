@@ -16,7 +16,9 @@ export function constantTimeEqual(left: string, right: string): boolean {
 }
 
 export async function sha256Hex(rawBody: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", rawBody);
+  // WebCrypto requires an ArrayBuffer-backed view in current Deno/TypeScript.
+  // Copy only this view's bytes, preserving subarray offsets and raw-body HMACs.
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(rawBody));
   return bytesToHex(new Uint8Array(digest));
 }
 
@@ -28,7 +30,7 @@ export async function calculateMetaSignature(rawBody: Uint8Array, appSecret: str
     false,
     ["sign"],
   );
-  const signature = await crypto.subtle.sign("HMAC", key, rawBody);
+  const signature = await crypto.subtle.sign("HMAC", key, new Uint8Array(rawBody));
   return `sha256=${bytesToHex(new Uint8Array(signature))}`;
 }
 
