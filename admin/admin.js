@@ -574,6 +574,7 @@
     await window.aadhyantRecruitmentOperations?.initialize({ client, authorization });
     await window.aadhyantWhatsAppCampaigns?.initialize({ client, authorization });
     await window.AadhyantSharingContacts?.initialize({ client, authorization });
+    await window.AadhyantJobAlerts?.initialize({ client, authorization });
     await window.aadhyantAdminProduct?.initialize({ client, authorization });
     await window.aadhyantVacancyReview?.initialize({ client, authorization });
 

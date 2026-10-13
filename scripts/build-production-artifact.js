@@ -42,6 +42,8 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'admin/vacancy-review.js',
   'admin/whatsapp-campaigns.js',
   'admin/sharing-contacts.js',
+  'admin/job-alerts.js',
+  'admin/job-alerts.css',
   'admin/sharing-contacts.css',
   'assets/css/password-recovery.css',
   'assets/css/public.css',

@@ -1,0 +1,25 @@
+.job-alert-panel{scroll-margin-top:110px}
+.job-alert-panel[hidden]{display:none!important}
+.job-alert-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;list-style:none;padding:0;margin:24px 0}
+.job-alert-steps li{padding:12px;border:1px solid #dce5f0;border-radius:10px;font-size:14px;color:#60718a;background:#f7f9fc}
+.job-alert-steps .is-active{background:#e5efff;border-color:#2672d9;color:#102447;font-weight:800}
+.job-alert-steps .is-complete{color:#167451}
+.job-alert-stage{display:grid;gap:20px}
+.job-alert-stage h3,.job-alert-stage p{margin:0}
+.job-alert-stage label{display:grid;gap:8px;font-size:14px;font-weight:700}
+.job-alert-stage select,.job-alert-stage input:not([type=checkbox]):not([type=file]){width:100%;min-height:44px;border:1px solid #bdc9d8;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+.job-alert-stage input[type=checkbox]{width:18px;height:18px;accent-color:#2672d9}
+.job-alert-stage .table-wrap{overflow:auto}
+.job-alert-stage table{min-width:900px;font-size:13px}
+.job-alert-actions,.job-alert-audience-summary{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.job-alert-actions{justify-content:flex-end;padding-top:18px;border-top:1px solid #dce5f0}
+.job-alert-audience-controls{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.job-alert-audience-controls [hidden]{display:none!important}
+.job-alert-help{font-size:14px;color:#60718a;line-height:1.7}
+.job-alert-message{background:#edf7ef;border:1px solid #c6dfcc;border-radius:16px;padding:24px;max-width:540px;display:grid;gap:12px}
+.job-alert-message h4{font-size:22px;margin:0}
+.job-alert-stage details{border:1px solid #dce5f0;border-radius:12px;padding:18px}
+.job-alert-stage summary{font-weight:700;cursor:pointer}
+.job-alert-stage details[open]>:not(summary){margin-top:16px}
+.job-alert-history-card{padding:16px;background:#f7f9fc;border-radius:10px;display:grid;gap:10px}
+@media(max-width:640px){.job-alert-steps{grid-template-columns:1fr 1fr}.job-alert-audience-controls{grid-template-columns:1fr}.job-alert-actions .admin-button{width:100%}.job-alert-panel .panel-heading{flex-direction:column;align-items:flex-start}}
