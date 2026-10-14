@@ -4,11 +4,11 @@ Prepared for explicit production and Meta publication review. Nothing in this ch
 
 ## User flow
 
-Interested on a delivered job campaign opens the reviewed Gujarati WhatsApp form instead of a website link once the Meta Flow is published and verified. The two screens collect name, age, gender, state, district, village/city, qualification, trade/course, experience status and interview availability. The current WhatsApp sender determines the mobile; the form cannot supply another mobile.
+Interested on a delivered job campaign opens the reviewed English WhatsApp form instead of a website link once the Meta Flow is published and verified. The two screens collect name, age, gender, state, district, village/city, qualification, trade/course, experience status and interview availability. The current WhatsApp sender determines the mobile; the form cannot supply another mobile.
 
-Required consent: **હું registration અને આ job માટે સંપર્કની સંમતિ આપું છું.**
+Required consent: **I agree to registration and contact about this job.**
 
-Optional, initially unchecked consent: **મને Aadhyantની બધી job alerts WhatsApp પર મોકલો.** The form explains that all Aadhyant job alerts may include jobs that do not match the person, and STOP turns them off. Unchecked means no new alert consent; it does not revoke a previous independent subscription.
+Optional, initially unchecked consent: **I want all Aadhyant job alerts on WhatsApp.** The form explains that all Aadhyant job alerts may include jobs that do not match the person, and STOP turns them off. Unchecked means no new alert consent; it does not revoke a previous independent subscription.
 
 Submit creates or safely reuses a canonical basic Candidate and an `interested` Candidate Application for the original job. This is basic recruitment registration, not an authenticated Candidate Portal account or a complete document profile. No Aadhaar, bank detail, password or portal identity is collected or invented. New profiles remain `incomplete`; portal linking and document intake retain existing controls.
 
@@ -45,3 +45,7 @@ Meta publication is irreversible: published assets cannot be edited. A future co
 - Meta's actual JSON validation/publication and a real WhatsApp form completion remain pending approval. Browser/WhatsApp visual QA is not claimed by local tests.
 
 Primary API references: Meta's official `WhatsApp/WhatsApp-Flows-Tools` repository (contact/survey form examples and its `postman/v1/whatsapp-flows-api.postman_collection.json` for create, upload, publish, immutable assets and native Flow send payload), and Meta Flows developer documentation. This endpointless Flow uses the signed completion webhook; it does not need a data-exchange endpoint or an RSA encryption-key setup.
+
+## Language review
+
+At 15:19:32 IST the user requested English. All form titles, labels, choices, instructions, consent copy, Flow invitation and website-link fallback are now English. Optional alert consent remains unchecked. The 40 focused UI/Flow/webhook/reply tests and the rebuilt artifact verification pass after this wording change. No production or Meta publication occurred.

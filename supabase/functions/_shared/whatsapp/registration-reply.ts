@@ -9,10 +9,10 @@ export function registrationPayload(row: any) {
   const url = 'https://aadhyantmanpower.in/candidate/portal/register.html?requirement=' + encodeURIComponent(code);
   if (row.flow_id || row.flow_token) {
     if (!/^\d{8,40}$/.test(row.flow_id) || !/^[a-f0-9]{64}$/.test(row.flow_token)) throw Error('Invalid Flow binding');
-    return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'interactive',interactive:{type:'flow',body:{text:`Aadhyant: ${code} માટે આ WhatsApp formમાં registration કરો. Job alertsની સંમતિ formમાં અલગથી પસંદ કરી શકો છો.`},action:{name:'flow',parameters:{flow_message_version:'3',flow_id:row.flow_id,flow_token:row.flow_token,flow_cta:'Registration કરો',flow_action:'navigate',flow_action_payload:{screen:'PERSONAL',data:{requirement_code:code}}}}}};
+    return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'interactive',interactive:{type:'flow',body:{text:`Aadhyant: Register for ${code} using this WhatsApp form. Consent for future job alerts is a separate choice in the form.`},action:{name:'flow',parameters:{flow_message_version:'3',flow_id:row.flow_id,flow_token:row.flow_token,flow_cta:'Register',flow_action:'navigate',flow_action_payload:{screen:'PERSONAL',data:{requirement_code:code}}}}}};
   }
   return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'text',text:{preview_url:false,
-    body:`Aadhyant Manpower & Staffing\nતમારો ${code} માટેનો રસ નોંધાયો છે.\nઆ job માટે અરજી કરવા registration પૂર્ણ કરો:\n${url}\nપહેલેથી account હોય તો આ પેજ પરથી Sign In કરો અને job પર Apply દબાવો.\nInterested દબાવવાથી ભવિષ્યના job alerts માટે subscription થતું નથી.`}};
+    body:`Aadhyant Manpower & Staffing\nYour interest in ${code} has been recorded.\nComplete registration to apply for this job:\n${url}\nIf you already have an account, use Sign In on this page and select Apply on the job.\nTapping Interested does not subscribe you to future job alerts.`}};
 }
 export async function sendRegistrationReply(inboundId: string, rpc: Rpc,
   config: {ready:boolean;phone_id:string;account_id:string}, token: string, fetcher: typeof fetch = fetch) {

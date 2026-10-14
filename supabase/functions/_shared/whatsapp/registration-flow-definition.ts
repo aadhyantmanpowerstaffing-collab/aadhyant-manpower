@@ -27,14 +27,14 @@ export const registrationFlow = {
               {
                 "type": "TextInput",
                 "name": "full_name",
-                "label": "પૂરું નામ",
+                "label": "Full name",
                 "required": true,
                 "max-chars": 160
               },
               {
                 "type": "TextInput",
                 "name": "age",
-                "label": "ઉંમર (16 થી 75)",
+                "label": "Age (16 to 75)",
                 "required": true,
                 "input-type": "number",
                 "max-chars": 2
@@ -47,22 +47,22 @@ export const registrationFlow = {
                 "data-source": [
                   {
                     "id": "Male",
-                    "title": "પુરુષ"
+                    "title": "Male"
                   },
                   {
                     "id": "Female",
-                    "title": "સ્ત્રી"
+                    "title": "Female"
                   },
                   {
                     "id": "Other / Prefer not to say",
-                    "title": "અન્ય / જણાવવું નથી"
+                    "title": "Other / Prefer not to say"
                   }
                 ]
               },
               {
                 "type": "Dropdown",
                 "name": "state",
-                "label": "રાજ્ય",
+                "label": "State",
                 "required": true,
                 "data-source": [
                   {
@@ -214,20 +214,20 @@ export const registrationFlow = {
               {
                 "type": "TextInput",
                 "name": "district",
-                "label": "જિલ્લો",
+                "label": "District",
                 "required": true,
                 "max-chars": 160
               },
               {
                 "type": "TextInput",
                 "name": "current_village_city",
-                "label": "ગામ / શહેર",
+                "label": "Village / City",
                 "required": true,
                 "max-chars": 200
               },
               {
                 "type": "Footer",
-                "label": "આગળ",
+                "label": "Continue",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -252,7 +252,7 @@ export const registrationFlow = {
     },
     {
       "id": "EDUCATION",
-      "title": "Job અને સંમતિ",
+      "title": "Job and Consent",
       "terminal": true,
       "success": true,
       "data": {
@@ -342,12 +342,12 @@ export const registrationFlow = {
                 "label": "Trade / Course",
                 "required": true,
                 "max-chars": 160,
-                "helper-text": "ન હોય તો NA લખો"
+                "helper-text": "Enter NA if not applicable."
               },
               {
                 "type": "Dropdown",
                 "name": "experience_status",
-                "label": "અનુભવ",
+                "label": "Experience",
                 "required": true,
                 "data-source": [
                   {
@@ -363,37 +363,37 @@ export const registrationFlow = {
               {
                 "type": "Dropdown",
                 "name": "interview_available",
-                "label": "Interview ઉપલબ્ધ?",
+                "label": "Interview available?",
                 "required": true,
                 "data-source": [
                   {
                     "id": "Yes",
-                    "title": "હા"
+                    "title": "Yes"
                   },
                   {
                     "id": "No",
-                    "title": "ના"
+                    "title": "No"
                   }
                 ]
               },
               {
                 "type": "TextBody",
-                "text": "Submit કરવાથી આ job માટે તમારો રસ અને basic candidate registration નોંધાશે. Aadhaar, bank details અને password અહીં આપવાના નથી."
+                "text": "Submit records your basic Candidate registration and interest in this job. Do not enter Aadhaar, bank details or passwords here."
               },
               {
                 "type": "OptIn",
                 "name": "registration_consent",
-                "label": "હું registration અને આ job માટે સંપર્કની સંમતિ આપું છું.",
+                "label": "I agree to registration and contact about this job.",
                 "required": true
               },
               {
                 "type": "TextBody",
-                "text": "Job alerts વૈકલ્પિક છે. પસંદ કરશો તો Aadhyantની બધી job alerts આ WhatsApp નંબર પર મળશે, job તમને લાગુ પડે કે ન પડે. બંધ કરવા STOP મોકલી શકો છો."
+                "text": "Job alerts are optional. Select the checkbox to receive all Aadhyant job alerts on this WhatsApp number, including jobs that may not match your profile. Reply STOP to turn alerts off."
               },
               {
                 "type": "OptIn",
                 "name": "job_alert_consent",
-                "label": "મને Aadhyantની બધી job alerts WhatsApp પર મોકલો.",
+                "label": "I want all Aadhyant job alerts on WhatsApp.",
                 "required": false,
                 "init-value": false
               },
