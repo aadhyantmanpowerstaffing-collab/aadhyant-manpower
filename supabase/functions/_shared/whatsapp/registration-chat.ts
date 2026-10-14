@@ -20,6 +20,12 @@ const choices: Record<number,string[]> = {
   4:['Below 10th','10th','12th','ITI','Diploma','Graduate','Post Graduate','Other'],
   9:['Fresher','Experienced'],10:['Yes','No'],11:['Yes','No'],
 };
+const compactQuestions = [
+  'May Aadhyant register you and contact you about this job? Future job alerts are a separate choice. Privacy: https://aadhyantmanpower.in/privacy/',
+  'Personal details — reply in ONE message:\nName | Age | Gender | State | District | City/Village\nExample: Ravi Patel | 25 | Male | Gujarat | Ahmedabad | Sanand\nAge: 16–75. Gender: Male / Female / Other. You may also send one value per line.',
+  'Education & availability — reply in ONE message:\nQualification | Trade/Course | Fresher/Experienced | Interview Yes/No\nExample: ITI | Fitter | Fresher | Yes\nQualification: Below 10th / 10th / 12th / ITI / Diploma / Graduate / Post Graduate / Other. Use General if no trade. You may also send one value per line.',
+  'Receive ALL Aadhyant job alerts on WhatsApp, even outside your qualification or location? You can share them. Optional: No still completes registration. Send STOP anytime to stop alerts.',
+];
 export function registrationChatPayload(row:any) {
   const v=row.template_variables;
   if(row.purpose!=='registration_chat'||row.consent_class!=='transactional'||row.message_type!=='session_text'
@@ -27,6 +33,7 @@ export function registrationChatPayload(row:any) {
     ||!Number.isInteger(v.step)||v.step<0||v.step>12||!['question','complete','cancelled','review'].includes(v.kind)
     ||typeof v.invalid!=='boolean'||!/^([A-Z0-9_-]){1,64}$/.test(v.requirement_code)) throw Error('Invalid registration chat');
   const base={messaging_product:'whatsapp',to:row.destination.slice(1)};
+  if(v.mode!==undefined&&!['legacy','compact'].includes(v.mode))throw Error('Invalid intake mode');
   if(v.kind!=='question') {
     if(v.kind==='complete'&&typeof v.job_alerts_selected!=='boolean')throw Error('Invalid registration receipt');
     const text=v.kind==='complete'
@@ -35,9 +42,10 @@ export function registrationChatPayload(row:any) {
       : 'Your registration needs an Aadhyant staff review. No new job-alert subscription was created. Please contact Aadhyant for help.';
     return {...base,type:'text',text:{preview_url:false,body:text}};
   }
-  if(v.step===12)throw Error('Question step invalid');
-  const body=`Aadhyant • ${v.requirement_code}\n${v.invalid?'Please answer the current question using the options or format shown.\n':''}${questions[v.step]}\n\nSend CANCEL to cancel registration. Send RESUME to repeat the current question.`;
-  const options=choices[v.step];
+  const compact=v.mode==='compact';
+  if(v.step===12||(compact&&v.step>3))throw Error('Question step invalid');
+  const body=`Aadhyant • ${v.requirement_code}${compact?' • '+(v.step+1)+'/4':''}\n${v.invalid?'Please use the options or send all values in the format below.\n':''}${compact?compactQuestions[v.step]:questions[v.step]}\n\nCANCEL = cancel • RESUME = repeat`;
+  const options=compact?(v.step===0||v.step===3?['Yes','No']:undefined):choices[v.step];
   if(!options)return {...base,type:'text',text:{preview_url:false,body}};
   const rows=options.map((title,i)=>({id:`REGCHAT|${v.session_id}|${v.step}|${i+1}`,title}));
   if(options.length<=3)return {...base,type:'interactive',interactive:{type:'button',body:{text:body},action:{buttons:rows.map(reply=>({type:'reply',reply}))}}};

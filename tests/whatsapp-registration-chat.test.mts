@@ -48,3 +48,14 @@ for(const scenario of ['interested','answer','STOP'])test('signed ingress persis
  else {assert.ok(calls.indexOf('record_whatsapp_inbound_message')<calls.indexOf('console_process_registration_chat'));assert.equal(calls.includes('console_claim_registration_reply'),false);assert.equal(calls.filter(x=>x==='messages').length,1);}
  const before=calls.length;assert.equal((await handleWhatsAppWebhook(new Request('https://fixture.invalid',{method:'POST',headers:{'content-type':'application/json'},body}),environment,persistence.acceptEvent,persistence.processEvent)).status,403);assert.equal(calls.length,before);
 });
+
+test('compact mode has four short prompts: two bound consent buttons and two grouped text replies',()=>{
+ for(let step=0;step<4;step++){
+  const payload:any=registrationChatPayload({...row,template_variables:{...row.template_variables,mode:'compact',step}});
+  const body=payload.interactive?.body.text||payload.text?.body;assert.match(body,new RegExp((step+1)+'/4'));assert.ok(body.length<600);
+  if(step===0||step===3){assert.equal(payload.interactive.type,'button');assert.deepEqual(payload.interactive.action.buttons.map((b:any)=>b.reply.title),['Yes','No']);}
+  else {assert.equal(payload.type,'text');assert.match(body,/ONE message/);assert.match(body,/\|/);assert.match(body,/one value per line/);}
+ }
+ assert.throws(()=>registrationChatPayload({...row,template_variables:{...row.template_variables,mode:'compact',step:4}}));
+ assert.throws(()=>registrationChatPayload({...row,template_variables:{...row.template_variables,mode:'unknown'}}));
+});
