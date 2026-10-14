@@ -2,6 +2,7 @@ import { parseWhatsAppWebhook, summarizeEvent } from "../_shared/whatsapp/parser
 import { constantTimeEqual, sha256Hex, verifyMetaSignature } from "../_shared/whatsapp/signature.ts";
 import { runtimeServerKey, serverDatabaseHeaders } from "../_shared/whatsapp/server-headers.ts";
 import { sendRegistrationReply } from "../_shared/whatsapp/registration-reply.ts";
+import { sendRegistrationChat } from "../_shared/whatsapp/registration-chat.ts";
 import type { AcceptedWebhookEvent, NormalizedWebhookEvent, WebhookEnvironment } from "../_shared/whatsapp/types.ts";
 
 const MAX_BODY_BYTES = 1_048_576;
@@ -208,6 +209,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
           p_contact_id: contactId, p_suppressed: true, p_source: "whatsapp_inbound", p_reason_category: "user_stop",
         });
         if (suppressed !== true) throw new Error("Contact suppression was not confirmed");
+        await callSupabaseRpc(environment,fetcher,'console_cancel_registration_chat',{p_contact_id:contactId});
         return;
       }
       if (event.messageType === 'flow' && event.actionId === 'REGISTRATION_SUBMIT') {
@@ -231,11 +233,24 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
           p_inbound_message_id: inboundMessageId,
         });
         if (interested?.status === 'registration_required') {
+          const chat:any=await callSupabaseRpc(environment,fetcher,'console_process_registration_chat',{p_inbound_message_id:inboundMessageId,p_text:null});
           const config: any = await callSupabaseRpc(environment, fetcher, 'console_sender_configuration', {});
           if (config?.account_id === environment.businessAccountId) {
-            await sendRegistrationReply(inboundMessageId,
+            if(chat?.handled===true){
+              if(chat.outbound_id)await sendRegistrationChat(chat.outbound_id,(name,body)=>callSupabaseRpc(environment,fetcher,name,body),config,environment.accessToken||'',fetcher);
+            }else await sendRegistrationReply(inboundMessageId,
               (name, body) => callSupabaseRpc(environment, fetcher, name, body), config, environment.accessToken || '', fetcher);
           }
+        }
+        return;
+      }
+      const sessionTimestamp=Date.parse(event.providerTimestamp??'');
+      if(['text','button','list'].includes(event.messageType)&&Number.isFinite(sessionTimestamp)
+        &&sessionTimestamp<=Date.now()&&sessionTimestamp>Date.now()-86400000) {
+        const chat:any=await callSupabaseRpc(environment,fetcher,'console_process_registration_chat',{p_inbound_message_id:inboundMessageId,p_text:event.messageType==='text'?event.safeText??null:null});
+        if(chat?.handled===true&&chat.outbound_id){
+          const config:any=await callSupabaseRpc(environment,fetcher,'console_sender_configuration',{});
+          if(config?.account_id===environment.businessAccountId)await sendRegistrationChat(chat.outbound_id,(name,body)=>callSupabaseRpc(environment,fetcher,name,body),config,environment.accessToken||'',fetcher);
         }
       }
     },

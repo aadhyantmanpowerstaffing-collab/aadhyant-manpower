@@ -16,16 +16,21 @@ export function registrationPayload(row: any) {
 }
 export async function sendRegistrationReply(inboundId: string, rpc: Rpc,
   config: {ready:boolean;phone_id:string;account_id:string}, token: string, fetcher: typeof fetch = fetch) {
+  return sendSessionOutbox(inboundId,rpc,config,token,fetcher,'console_claim_registration_reply','p_inbound_message_id','console_registration_boundary',registrationPayload);
+}
+export async function sendSessionOutbox(id: string, rpc: Rpc,
+  config: {ready:boolean;phone_id:string;account_id:string}, token: string, fetcher: typeof fetch,
+  claim: string, claimKey: string, boundary: string, payloadFor: (row:any)=>any) {
   if (!config?.ready || !/^\d{8,40}$/.test(config.phone_id) || !/^\d{8,40}$/.test(config.account_id) || !token) return;
   const worker = 'registration:' + crypto.randomUUID();
-  const rows = await rpc('console_claim_registration_reply', {p_inbound_message_id:inboundId,p_worker_id:worker});
+  const rows = await rpc(claim, {[claimKey]:id,p_worker_id:worker});
   if (!Array.isArray(rows) || rows.length > 1) throw Error('Invalid registration claim');
   for (const row of rows) {
     let payload;
-    try { payload = registrationPayload(row); }
+    try { payload = payloadFor(row); }
     catch { await rpc('mark_whatsapp_outbound_failure', {p_message_id:row.message_id,p_worker_id:worker,p_error_category:'unsupported_reply',p_error_code:'payload_rejected',p_failure_kind:'permanent',p_retry_at:null}); return; }
     try {
-      if (await rpc('console_registration_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:config.phone_id,p_account_id:config.account_id}) !== true) throw Error('Boundary rejected');
+      if (await rpc(boundary,{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:config.phone_id,p_account_id:config.account_id}) !== true) throw Error('Boundary rejected');
     } catch {
       await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'reply_ineligible',p_error_code:'boundary_rejected',p_failure_kind:'permanent',p_retry_at:null});return;
     }
