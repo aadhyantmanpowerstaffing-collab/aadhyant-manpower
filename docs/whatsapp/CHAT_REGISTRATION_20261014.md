@@ -57,4 +57,14 @@ Primary API references: https://developers.facebook.com/documentation/business-m
 - verify_jwt=false preserves the established raw-body HMAC and exact WABA/phone custom authentication. Unsigned live POST returns 403.
 - Chat enabled after verified runtime deployment; sender verified. Private chat storage RLS=true, browser table access=false; orchestration RPC has anon/authenticated execute=false and service_role execute=true.
 - Deployment verification found zero chat sessions/messages, and the existing Candidate/Application/outbound/marketing-opt-in counts were unchanged. No historical event replay or real test message was performed.
-- Reviewed Admin artifact digest: 61ffca7e78ac9c98ce1ca9fcf1e4da8998008a212179acdc20adbeed5883ad76. Site publication verification is pending.
+- Reviewed Admin artifact digest: 61ffca7e78ac9c98ce1ca9fcf1e4da8998008a212179acdc20adbeed5883ad76. Site publication is verified below.
+
+## Site publication closure
+
+- Production source commit: badac262284737cc86182192766e5ba4e603f2f7 (matches local reviewed tree f4827f43972ba56000f9f45a98ed73e05d9cf42b).
+- Pages run 38557403063 completed successfully: build job 115829847569 and publish job 115830183913. CI regression, artifact verification and deployment all succeeded.
+- Live Admin console HTTP 200; SHA-256 b24225ce92105dbd7b5f957a4a65728df0ed1ef6817918cd26faad90e559a5d2 exactly equals reviewed source.
+- Registration consent points to /privacy/, verified HTTP 200 and included in the reviewed allowlisted artifact.
+- Security advisor INFO rls_enabled_no_policy for the new private state table is intentional deny-all browser/direct-table access. No permissive policy is added; only reviewed SECURITY DEFINER RPCs handle that state.
+- Temporary publisher is removed after confirmed success; removal does not deploy another artifact.
+- Live user-device chat/registration has not been claimed as tested. The next check is a new user-initiated Interested on the existing Associate — Sanand job message, followed by the distinct consent choices and English questions. No separate campaign/send is authorized or executed by this release.
