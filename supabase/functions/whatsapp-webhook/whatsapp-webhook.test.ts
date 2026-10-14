@@ -323,3 +323,25 @@ test("webhook delegates W7C application processing without direct recruitment mu
   assert.match(source, /console_process_interested/);
   assert.doesNotMatch(source, /console\.(?:log|error).*secret/i);
 });
+
+test('signed unregistered Interested sends one canonical registration reply; replay claims nothing',async()=>{
+ const configured={...environment,accessToken:'fixture-meta',businessAccountId:'1234567890',phoneNumberId:'1234567891'};
+ const payload={object:'whatsapp_business_account',entry:[{id:configured.businessAccountId,changes:[{field:'messages',value:{metadata:{phone_number_id:'1234567891'},messages:[{id:'wamid.interested-registration',from:'919876543210',timestamp:String(Math.floor(Date.now()/1000)),context:{id:'wamid.original'},type:'button',button:{payload:'INTERESTED',text:'Interested'}}]}}]}]};
+ const calls:string[]=[];let claimed=false;
+ const fetcher:typeof fetch=async(input,init)=>{
+  const name=String(input).split('/').at(-1)!;calls.push(name);
+  const values:any={accept_whatsapp_webhook_event:'00000000-0000-0000-0000-000000000001',upsert_whatsapp_inbound_contact:'00000000-0000-0000-0000-000000000002',record_whatsapp_inbound_message:'00000000-0000-0000-0000-000000000003',console_process_interested:{status:'registration_required'},console_sender_configuration:{ready:true,phone_id:'1234567891',account_id:'1234567890'},console_registration_boundary:true,mark_whatsapp_outbound_sent:true};
+  if(name==='console_claim_registration_reply'){const rows=claimed?[]:[{message_id:'00000000-0000-0000-0000-000000000004',message_type:'session_text',purpose:'interested_registration',consent_class:'transactional',destination:'+919876543210',template_variables:{requirement_code:'AAD-2026-000003'}}];claimed=true;return Response.json(rows);}
+  if(name==='messages'){const body=JSON.parse(String(init?.body));assert.equal(body.type,'text');assert.match(body.text.body,/register.html\?requirement=AAD-2026-000003/);return Response.json({messages:[{id:'wamid.registration-response'}]});}
+  assert.ok(name in values,'Unexpected request: '+name);return Response.json(values[name]);
+ };
+ const persistence=createSupabaseWebhookPersistence(configured,fetcher);
+ for(let i=0;i<2;i++)assert.equal((await handleWhatsAppWebhook(await signedRequest(payload),configured,persistence.acceptEvent,persistence.processEvent)).status,200);
+ assert.equal(calls.filter(x=>x==='messages').length,1);
+ assert.ok(calls.indexOf('console_process_interested')<calls.indexOf('console_claim_registration_reply'));
+ assert.ok(calls.indexOf('console_registration_boundary')<calls.indexOf('messages'));
+ assert.equal(calls.includes('subscribe_whatsapp_sharing_updates'),false);
+ const before=calls.length;
+ assert.equal((await handleWhatsAppWebhook(await signedRequest(payload,{signature:null}),configured,persistence.acceptEvent,persistence.processEvent)).status,403);
+ assert.equal(calls.length,before);
+});

@@ -1,6 +1,7 @@
 import { parseWhatsAppWebhook, summarizeEvent } from "../_shared/whatsapp/parser.ts";
 import { constantTimeEqual, sha256Hex, verifyMetaSignature } from "../_shared/whatsapp/signature.ts";
 import { runtimeServerKey, serverDatabaseHeaders } from "../_shared/whatsapp/server-headers.ts";
+import { sendRegistrationReply } from "../_shared/whatsapp/registration-reply.ts";
 import type { AcceptedWebhookEvent, NormalizedWebhookEvent, WebhookEnvironment } from "../_shared/whatsapp/types.ts";
 
 const MAX_BODY_BYTES = 1_048_576;
@@ -96,6 +97,8 @@ function runtimeEnvironment(): WebhookEnvironment {
   const deno = (globalThis as unknown as { Deno?: { env: { get(name: string): string | undefined } } }).Deno;
   const get = (name: string): string => deno?.env.get(name) ?? "";
   return {
+    accessToken: get("WHATSAPP_ACCESS_TOKEN"),
+    businessAccountId: get("WHATSAPP_BUSINESS_ACCOUNT_ID"),
     appSecret: get("WHATSAPP_APP_SECRET"),
     verifyToken: get("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
     supabaseUrl: get("SUPABASE_URL"),
@@ -118,6 +121,7 @@ async function callSupabaseRpc(
       "content-type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10000),
   });
   if (!result.ok) throw new Error(`Webhook persistence failed (${result.status})`);
   return result.json();
@@ -213,9 +217,16 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         return;
       }
       if (event.actionId?.trim().toUpperCase() === "INTERESTED") {
-        await callSupabaseRpc(environment, fetcher, "console_process_interested", {
+        const interested: any = await callSupabaseRpc(environment, fetcher, "console_process_interested", {
           p_inbound_message_id: inboundMessageId,
         });
+        if (interested?.status === 'registration_required') {
+          const config: any = await callSupabaseRpc(environment, fetcher, 'console_sender_configuration', {});
+          if (config?.account_id === environment.businessAccountId) {
+            await sendRegistrationReply(inboundMessageId,
+              (name, body) => callSupabaseRpc(environment, fetcher, name, body), config, environment.accessToken || '', fetcher);
+          }
+        }
       }
     },
   };

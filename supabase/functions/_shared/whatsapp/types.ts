@@ -17,6 +17,7 @@ export type NormalizedWebhookEvent = {
 };
 
 export type WebhookEnvironment = {
+  accessToken?: string;
   businessAccountId?: string;
   phoneNumberId?: string;
   appSecret: string;

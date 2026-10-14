@@ -124,3 +124,58 @@ test('late STOP and cancelled job prevent provider boundary; anonymous/service g
 test('future schedule is not claimed; expired provider-call lease requires reconciliation and is never reclaimed',async t=>{const db=await senderSetup();t.after(()=>db.close());const {campaign}=await queuedSender(db);await db.exec("update public.whatsapp_outbound_messages set next_attempt_at=clock_timestamp()+interval '1 hour'");assert.equal((await db.query('select * from public.console_claim_campaign($1,$2)',[campaign,'test-worker'])).rows.length,0);await db.exec('update public.whatsapp_outbound_messages set next_attempt_at=clock_timestamp()');const msg=(await db.query('select * from public.console_claim_campaign($1,$2)',[campaign,'test-worker'])).rows[0];assert.equal((await value(db,"select public.console_provider_boundary($1,$2,'1234567891','1234567890') yes",[msg.message_id,'test-worker'])).yes,true);await db.exec("update public.whatsapp_outbound_messages set lease_expires_at=clock_timestamp()-interval '1 second'");assert.equal((await db.query('select * from public.console_claim_campaign($1,$2)',[campaign,'next-worker'])).rows.length,0);assert.equal((await value(db,'select send_phase from public.whatsapp_outbound_messages')).send_phase,'reconciliation_required');});
 test('imported Interested reply is correlated and idempotent, records registration-needed without inventing a candidate',async t=>{const db=await senderSetup();t.after(()=>db.close());const {campaign,id}=await queuedSender(db);await db.exec("update public.whatsapp_outbound_messages set state='sent',provider_message_id='wamid.fixture'");const m=(await value(db,"insert into public.whatsapp_inbound_messages(id,contact_id,message_type,action_id,provider_timestamp,correlation_key) values(gen_random_uuid(),$1,'button','INTERESTED',clock_timestamp(),'wamid.fixture') returning id",[id])).id;const result=(await value(db,'select public.console_process_interested($1) data',[m])).data;assert.equal(result.status,'registration_required');await db.query('select public.console_process_interested($1)',[m]);assert.equal((await value(db,"select count(*)::int n from public.audit_logs where action='whatsapp.interested_registration_required'")).n,1);assert.equal((await value(db,"select public.admin_console_replies($1,0) data",[campaign])).data[0].last_error_category,'registration_required');assert.equal((await value(db,'select count(*)::int n from public.candidates')).n,0);});
 test('future queueing cannot claim automatic scheduling before scheduler installation',async t=>{const db=await senderSetup();t.after(()=>db.close());const tid=await sync(db),id=await importOne(db);await subscribe(db,id);await db.query("select public.console_sender_connection('1234567891','1234567890')");const c=(await prep(db,id,tid,undefined,new Date(Date.now()+3600000).toISOString())).id;await db.query('select public.admin_console_approve($1)',[c]);await assert.rejects(db.query('select public.admin_console_queue($1)',[c]),/Automatic scheduler/);assert.equal((await value(db,'select count(*)::int n from public.whatsapp_outbound_messages')).n,0);});
+
+async function replySetup(){
+ const db=await senderSetup();
+ await db.exec(`alter table public.whatsapp_inbound_messages add column webhook_event_id uuid;
+ alter table public.whatsapp_webhook_events add column signature_verified boolean;
+ alter table public.whatsapp_outbound_messages add column message_type text default 'template';
+ alter table public.whatsapp_outbound_messages add constraint whatsapp_outbound_messages_message_type_check check(message_type='template');`);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261014084313_whatsapp_interested_registration_reply.sql'),'utf8'));
+ const fixture=await queuedSender(db);
+ await db.exec(`update public.whatsapp_outbound_messages set state='read',provider_message_id='wamid.registration-fixture';
+ update public.whatsapp_contacts set marketing_consent_status='unknown',consent_source=null,consent_scope=null,consent_recorded_at=null,consent_policy_version=null;
+ insert into public.whatsapp_webhook_events values(gen_random_uuid(),true);`);
+ const inbound=(await value(db,`insert into public.whatsapp_inbound_messages(id,contact_id,webhook_event_id,message_type,action_id,provider_timestamp,correlation_key)
+ select gen_random_uuid(),$1,e.id,'button','INTERESTED',clock_timestamp(),'wamid.registration-fixture' from public.whatsapp_webhook_events e returning id`,[fixture.id])).id;
+ await db.query('select public.console_process_interested($1)',[inbound]);
+ return {db,inbound,...fixture};
+}
+test('registration reply reuses canonical outbox, preserves unknown consent, and is once per original job message',async t=>{
+ const {db,inbound,campaign}=await replySetup();t.after(()=>db.close());
+ const claimed=(await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'reply-worker'])).rows;
+ assert.equal(claimed.length,1);assert.equal(claimed[0].message_type,'session_text');assert.equal(claimed[0].template_variables.requirement_code,'TEST_JOB');
+ assert.equal((await value(db,"select public.console_registration_boundary($1,$2,'1234567891','1234567890') ok",[claimed[0].message_id,'reply-worker'])).ok,true);
+ await db.query("select public.mark_whatsapp_outbound_sent($1,$2,'wamid.registration-reply',null)",[claimed[0].message_id,'reply-worker']);
+ assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'replay'])).rows.length,0);
+ await db.exec(`insert into public.whatsapp_inbound_messages select gen_random_uuid(),contact_id,message_type,action_id,provider_timestamp,processing_status,processed_at,last_error_category,last_error_code,redacted_response,correlation_key,application_id,created_at,webhook_event_id from public.whatsapp_inbound_messages where id='${inbound}'`);
+ const other=(await value(db,'select id from public.whatsapp_inbound_messages where id<>$1 order by created_at desc limit 1',[inbound])).id;
+ assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[other,'second-button'])).rows.length,0);
+ assert.equal((await value(db,"select count(*)::int n from public.whatsapp_outbound_messages where purpose='interested_registration'")).n,1);
+ assert.equal((await value(db,'select marketing_consent_status from public.whatsapp_contacts')).marketing_consent_status,'unknown');
+ assert.equal((await value(db,'select count(*)::int n from public.candidates')).n,0);
+ assert.equal((await value(db,'select public.admin_console_replies($1,0) data',[campaign])).data[0].registration_reply_status,'sent');
+ for(const role of ['anon','authenticated'])assert.equal((await value(db,"select has_function_privilege($1,'public.console_claim_registration_reply(uuid,text)','execute') ok",[role])).ok,false);
+});
+for(const scenario of ['expired','future','unsigned','wrong-correlation','closed-job','blocked','stop'])test('registration reply fails closed: '+scenario,async t=>{
+ const {db,inbound}=await replySetup();t.after(()=>db.close());
+ const changes={expired:"update public.whatsapp_inbound_messages set provider_timestamp=clock_timestamp()-interval '25 hours'",future:"update public.whatsapp_inbound_messages set provider_timestamp=clock_timestamp()+interval '1 hour'",unsigned:'update public.whatsapp_webhook_events set signature_verified=false','wrong-correlation':"update public.whatsapp_inbound_messages set correlation_key='wamid.other'",'closed-job':"update public.employer_requirements set requirement_stage='closed'",blocked:"update public.whatsapp_contacts set resolution_status='blocked'",stop:"update public.whatsapp_contacts set marketing_consent_status='opted_out',opted_out_at=clock_timestamp(),opt_out_source='fixture'"};
+ await db.exec(changes[scenario]);assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'worker'])).rows.length,0);
+});
+test('STOP and session expiry after reply claim prevent provider boundary; expired lease never reclaims',async t=>{
+ const {db,inbound}=await replySetup();t.after(()=>db.close());const msg=(await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'worker'])).rows[0];
+ await db.exec("update public.whatsapp_contacts set transactional_contact_status='suppressed'");
+ await assert.rejects(db.query("select public.console_registration_boundary($1,$2,'1234567891','1234567890')",[msg.message_id,'worker']),/eligibility changed/);
+ await db.exec("update public.whatsapp_contacts set transactional_contact_status='unknown';update public.whatsapp_inbound_messages set provider_timestamp=clock_timestamp()-interval '25 hours'");
+ await assert.rejects(db.query("select public.console_registration_boundary($1,$2,'1234567891','1234567890')",[msg.message_id,'worker']),/eligibility changed/);
+ await db.exec("update public.whatsapp_inbound_messages set provider_timestamp=clock_timestamp();update public.whatsapp_outbound_messages set lease_expires_at=clock_timestamp()-interval '1 second' where purpose='interested_registration'");
+ assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'replay'])).rows.length,0);
+ assert.equal((await value(db,"select send_phase from public.whatsapp_outbound_messages where purpose='interested_registration'")).send_phase,'terminal');
+});
+test('expired provider-call lease reconciles even after the service window closes',async t=>{
+ const {db,inbound}=await replySetup();t.after(()=>db.close());const msg=(await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'worker'])).rows[0];
+ await db.query("select public.console_registration_boundary($1,$2,'1234567891','1234567890')",[msg.message_id,'worker']);
+ await db.exec("update public.whatsapp_inbound_messages set provider_timestamp=clock_timestamp()-interval '25 hours';update public.whatsapp_outbound_messages set lease_expires_at=clock_timestamp()-interval '1 second' where purpose='interested_registration'");
+ assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'replay'])).rows.length,0);
+ assert.equal((await value(db,"select send_phase from public.whatsapp_outbound_messages where purpose='interested_registration'")).send_phase,'reconciliation_required');
+});
