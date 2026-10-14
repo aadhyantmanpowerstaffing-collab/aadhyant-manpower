@@ -210,6 +210,16 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         if (suppressed !== true) throw new Error("Contact suppression was not confirmed");
         return;
       }
+      if (event.messageType === 'flow' && event.actionId === 'REGISTRATION_SUBMIT') {
+        try {
+          await callSupabaseRpc(environment,fetcher,'console_process_registration_flow',{p_inbound_message_id:inboundMessageId});
+        } catch {
+          // Durable attention, no infinite retries of invalid registration data.
+          // An already-committed success is never overwritten after an HTTP timeout.
+          await callSupabaseRpc(environment,fetcher,'console_registration_flow_failure',{p_inbound_message_id:inboundMessageId});
+        }
+        return;
+      }
       if (sharingPreferences) {
         await callSupabaseRpc(environment, fetcher, "subscribe_whatsapp_sharing_updates", {
           p_inbound_message_id: inboundMessageId, p_preferences: sharingPreferences,

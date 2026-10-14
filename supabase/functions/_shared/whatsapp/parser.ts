@@ -70,7 +70,16 @@ function parseMessage(message: Record<string, unknown>): NormalizedWebhookEvent 
         const value = bounded(response[key], 200);
         if (value) redactedResponse[key] = value;
       }
-      return { ...base, category: "flow", messageType: "flow", actionId: bounded(reply?.name, MAX_ACTION_ID), correlationKey, redactedResponse };
+      const registration = response.form_kind === 'aadhyant_registration_v1';
+      if (registration) {
+        redactedResponse.form_kind = response.form_kind;
+        redactedResponse.consent_policy_version = bounded(response.consent_policy_version,80) || '';
+        // Preserve booleans exactly. Strings such as "true" never count as consent.
+        for (const key of ['registration_consent','job_alert_consent']) {
+          if (typeof response[key] === 'boolean') redactedResponse[key] = response[key];
+        }
+      }
+      return { ...base, category: "flow", messageType: "flow", actionId: registration ? 'REGISTRATION_SUBMIT' : bounded(reply?.name, MAX_ACTION_ID), correlationKey, redactedResponse };
     }
     return { ...base, category: "message", messageType: "unsupported", safeText: subtype ? `Unsupported interactive type: ${subtype}` : "Unsupported interactive message" };
   }

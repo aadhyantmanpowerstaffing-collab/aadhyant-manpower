@@ -7,6 +7,10 @@ export function registrationPayload(row: any) {
     || row.message_type !== 'session_text' || !/^\+91[6-9]\d{9}$/.test(row.destination)
     || typeof code !== 'string' || !/^[A-Z0-9_-]{1,64}$/.test(code)) throw Error('Unsupported registration reply');
   const url = 'https://aadhyantmanpower.in/candidate/portal/register.html?requirement=' + encodeURIComponent(code);
+  if (row.flow_id || row.flow_token) {
+    if (!/^\d{8,40}$/.test(row.flow_id) || !/^[a-f0-9]{64}$/.test(row.flow_token)) throw Error('Invalid Flow binding');
+    return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'interactive',interactive:{type:'flow',body:{text:`Aadhyant: ${code} માટે આ WhatsApp formમાં registration કરો. Job alertsની સંમતિ formમાં અલગથી પસંદ કરી શકો છો.`},action:{name:'flow',parameters:{flow_message_version:'3',flow_id:row.flow_id,flow_token:row.flow_token,flow_cta:'Registration કરો',flow_action:'navigate',flow_action_payload:{screen:'PERSONAL',data:{requirement_code:code}}}}}};
+  }
   return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'text',text:{preview_url:false,
     body:`Aadhyant Manpower & Staffing\nતમારો ${code} માટેનો રસ નોંધાયો છે.\nઆ job માટે અરજી કરવા registration પૂર્ણ કરો:\n${url}\nપહેલેથી account હોય તો આ પેજ પરથી Sign In કરો અને job પર Apply દબાવો.\nInterested દબાવવાથી ભવિષ્યના job alerts માટે subscription થતું નથી.`}};
 }

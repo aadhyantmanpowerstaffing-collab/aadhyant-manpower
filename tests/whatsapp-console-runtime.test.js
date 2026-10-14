@@ -179,3 +179,64 @@ test('expired provider-call lease reconciles even after the service window close
  assert.equal((await db.query('select * from public.console_claim_registration_reply($1,$2)',[inbound,'replay'])).rows.length,0);
  assert.equal((await value(db,"select send_phase from public.whatsapp_outbound_messages where purpose='interested_registration'")).send_phase,'reconciliation_required');
 });
+
+async function flowSetup(){
+ const f=await replySetup(),db=f.db;
+ await db.exec(`alter table public.candidates add column age integer,add column gender text,add column interview_available text,add column consent boolean,add column profile_completion_status text default 'incomplete',add column acquisition_source_type text,add column acquisition_source_reference text;
+ alter table public.candidate_applications add column id uuid default gen_random_uuid() primary key,add column source_type text,add column application_status text,add column source_reference text,add column correlation_id uuid,add unique(candidate_id,requirement_id);
+ alter table public.whatsapp_inbound_messages add column campaign_recipient_id uuid;
+ alter table public.whatsapp_inbound_messages add constraint whatsapp_inbound_interested_link_check check ((campaign_recipient_id is null and application_id is null) or (campaign_recipient_id is not null and application_id is not null and processing_status='processed'));`);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261014092316_whatsapp_registration_flow.sql'),'utf8'));
+ await db.query("select public.console_verify_registration_flow('1234567899',$1,'1234567890')",['a'.repeat(64)]);
+ const reply=(await db.query('select * from public.console_claim_registration_reply($1,$2)',[f.inbound,'flow-worker'])).rows[0];
+ await db.query("select public.console_registration_boundary($1,$2,'1234567891','1234567890')",[reply.message_id,'flow-worker']);
+ await db.query("select public.mark_whatsapp_outbound_sent($1,$2,'wamid.flow',null)",[reply.message_id,'flow-worker']);
+ return {...f,reply};
+}
+const flowProfile={form_kind:'aadhyant_registration_v1',consent_policy_version:'wa-registration-alerts-v1',full_name:'Synthetic Candidate',age:'25',gender:'Male',state:'Gujarat',district:'Ahmedabad',current_village_city:'Sanand',highest_qualification:'ITI',course_trade_specialization:'Fitter',experience_status:'Fresher',interview_available:'Yes',registration_consent:true,job_alert_consent:true};
+async function submitFlow(f,profile=flowProfile,overrides={}){
+ const m=(await value(f.db,`insert into public.whatsapp_inbound_messages(id,contact_id,webhook_event_id,message_type,action_id,provider_timestamp,correlation_key,redacted_response)
+ select gen_random_uuid(),$1,e.id,'flow','REGISTRATION_SUBMIT',clock_timestamp(),$2,$3::jsonb from public.whatsapp_webhook_events e limit 1 returning id`,[overrides.contact||f.id,overrides.token||f.reply.flow_token,JSON.stringify(profile)])).id;
+ return {m,result:()=>value(f.db,'select public.console_process_registration_flow($1) data',[m])};
+}
+test('Flow submission creates canonical basic registration/application and explicit all-job consent once',async t=>{
+ const f=await flowSetup();t.after(()=>f.db.close());assert.match(f.reply.flow_token,/^[a-f0-9]{64}$/);assert.equal(f.reply.flow_id,'1234567899');
+ const s=await submitFlow(f);assert.equal((await s.result()).data.status,'registered');
+ const candidate=await value(f.db,'select * from public.candidates');assert.equal(candidate.mobile,'9876543210');assert.equal(candidate.profile_completion_status,'incomplete');assert.equal(candidate.profile_status,'active');
+ const contact=await value(f.db,'select * from public.whatsapp_contacts');assert.equal(contact.marketing_consent_status,'opted_in');assert.equal(contact.consent_source,'whatsapp_flow');assert.equal(contact.sharing_subscription.scope,'all');assert.equal(contact.consent_policy_version,'wa-registration-alerts-v1');
+ assert.equal((await s.result()).data.status,'already_processed');const again=await submitFlow(f);assert.equal((await again.result()).data.status,'already_completed');
+ assert.equal((await value(f.db,'select count(*)::int n from public.candidates')).n,1);assert.equal((await value(f.db,'select count(*)::int n from public.candidate_applications')).n,1);
+ assert.equal((await value(f.db,"select count(*)::int n from public.audit_logs where action='whatsapp.flow_registration_completed'")).n,1);
+ const report=(await value(f.db,'select public.admin_console_replies($1,0) data',[f.campaign])).data;assert.ok(report.some(r=>r.action_id==='REGISTRATION_SUBMIT'&&r.application_id&&r.job_alert_consent===true));await f.db.query('select public.console_registration_flow_failure($1)',[s.m]);assert.equal((await value(f.db,'select processing_status from public.whatsapp_inbound_messages where id=$1',[s.m])).processing_status,'processed');
+ const redacted=await value(f.db,'select redacted_response from public.whatsapp_inbound_messages where id=$1',[s.m]);assert.equal('full_name' in redacted.redacted_response,false);
+ for(const role of ['anon','authenticated'])assert.equal((await value(f.db,"select has_function_privilege($1,'public.console_process_registration_flow(uuid)','EXECUTE') ok",[role])).ok,false);
+});
+test('unchecked alert consent registers the Candidate without subscribing',async t=>{const f=await flowSetup();t.after(()=>f.db.close());const s=await submitFlow(f,{...flowProfile,job_alert_consent:false});await s.result();const c=await value(f.db,'select marketing_consent_status,consent_source from public.whatsapp_contacts');assert.equal(c.marketing_consent_status,'unknown');assert.equal(c.consent_source,null);});
+for(const scenario of ['no-registration-consent','string-alert-consent','wrong-policy','wrong-token','wrong-contact','unsigned','stop','closed-job','expired','identity-conflict'])test('Flow registration rejects '+scenario+' without partial Candidate/application/consent changes',async t=>{
+ const f=await flowSetup();t.after(()=>f.db.close());let profile={...flowProfile},overrides={};
+ if(scenario==='no-registration-consent')profile.registration_consent=false;
+ if(scenario==='string-alert-consent')profile.job_alert_consent='true';
+ if(scenario==='wrong-policy')profile.consent_policy_version='forged';
+ if(scenario==='wrong-token')overrides.token='b'.repeat(64);
+ if(scenario==='wrong-contact'){overrides.contact=(await value(f.db,"insert into public.whatsapp_contacts(provider_address,indian_mobile_key) values('+919876543211','9876543211') returning id")).id;}
+ if(scenario==='unsigned')await f.db.exec('update public.whatsapp_webhook_events set signature_verified=false');
+ if(scenario==='stop')await f.db.exec("update public.whatsapp_contacts set marketing_consent_status='opted_out',opted_out_at=clock_timestamp(),opt_out_source='fixture'");
+ if(scenario==='closed-job')await f.db.exec("update public.employer_requirements set requirement_stage='closed'");
+ if(scenario==='expired')await f.db.exec("update public.whatsapp_outbound_messages set created_at=clock_timestamp()-interval '25 hours' where purpose='interested_registration'");
+ if(scenario==='identity-conflict')await f.db.exec("insert into public.candidates(full_name,age,mobile,profile_status,status) values('Different person',25,'9876543210','active','new')");
+ const before=await value(f.db,'select count(*)::int n from public.candidates');const s=await submitFlow(f,profile,overrides);await assert.rejects(s.result());
+ assert.equal((await value(f.db,'select count(*)::int n from public.candidates')).n,before.n);assert.equal((await value(f.db,'select count(*)::int n from public.candidate_applications')).n,0);
+ assert.equal((await value(f.db,'select marketing_consent_status from public.whatsapp_contacts where id=$1',[f.id])).marketing_consent_status,scenario==='stop'?'opted_out':'unknown');
+});
+test('unverified Flow uses the existing site link',async t=>{
+ const f=await replySetup();t.after(()=>f.db.close());await f.db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261014092316_whatsapp_registration_flow.sql'),'utf8'));
+ const row=(await f.db.query('select * from public.console_claim_registration_reply($1,$2)',[f.inbound,'worker'])).rows[0];assert.equal(row.flow_id,null);assert.equal(row.flow_token,null);
+});
+test('changed verified Flow rolls back the provider boundary without authorizing a send',async t=>{
+ const f=await replySetup();t.after(()=>f.db.close());await f.db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261014092316_whatsapp_registration_flow.sql'),'utf8'));
+ await f.db.query("select public.console_verify_registration_flow('1234567899',$1,'1234567890')",['a'.repeat(64)]);
+ const row=(await f.db.query('select * from public.console_claim_registration_reply($1,$2)',[f.inbound,'worker'])).rows[0];
+ await f.db.query("select public.console_verify_registration_flow('1234567898',$1,'1234567890')",['b'.repeat(64)]);
+ await assert.rejects(f.db.query("select public.console_registration_boundary($1,'worker','1234567891','1234567890')",[row.message_id]),/Flow changed/);
+ assert.equal((await value(f.db,'select send_phase from public.whatsapp_outbound_messages where id=$1',[row.message_id])).send_phase,'claimed');
+});

@@ -345,3 +345,22 @@ test('signed unregistered Interested sends one canonical registration reply; rep
  assert.equal((await handleWhatsAppWebhook(await signedRequest(payload,{signature:null}),configured,persistence.acceptEvent,persistence.processEvent)).status,403);
  assert.equal(calls.length,before);
 });
+
+test('signed native Flow submission persists exact consent and calls canonical registration without a provider call',async()=>{
+ const profile={form_kind:'aadhyant_registration_v1',consent_policy_version:'wa-registration-alerts-v1',flow_token:'a'.repeat(64),full_name:'Synthetic person',age:'25',registration_consent:true,job_alert_consent:false,mobile:'9999999999',aadhaar:'private'};
+ const payload=envelope({messages:[{id:'wamid.flow-submit',from:'919876543210',timestamp:String(Math.floor(Date.now()/1000)),type:'interactive',interactive:{type:'nfm_reply',nfm_reply:{name:'flow',response_json:JSON.stringify(profile)}}}]});
+ const calls:string[]=[];const fetcher:typeof fetch=async(input,init)=>{const name=String(input).split('/').at(-1)!;calls.push(name);
+ if(name==='accept_whatsapp_webhook_event'||name==='upsert_whatsapp_inbound_contact')return Response.json('00000000-0000-0000-0000-000000000001');
+ if(name==='record_whatsapp_inbound_message'){const b=JSON.parse(String(init?.body));assert.equal(b.p_action_id,'REGISTRATION_SUBMIT');assert.equal(b.p_redacted_response.registration_consent,true);assert.equal(b.p_redacted_response.job_alert_consent,false);assert.equal('aadhaar' in b.p_redacted_response,false);assert.equal('mobile' in b.p_redacted_response,false);return Response.json('00000000-0000-0000-0000-000000000002');}
+ assert.equal(name,'console_process_registration_flow');return Response.json({status:'registered'});};
+ const p=createSupabaseWebhookPersistence(environment,fetcher);assert.equal((await handleWhatsAppWebhook(await signedRequest(payload),environment,p.acceptEvent,p.processEvent)).status,200);
+ assert.deepEqual(calls,['accept_whatsapp_webhook_event','upsert_whatsapp_inbound_contact','record_whatsapp_inbound_message','console_process_registration_flow']);
+});
+test('invalid Flow submission becomes durable review attention instead of infinite provider retries',async()=>{
+ const payload=envelope({messages:[{id:'wamid.flow-invalid',from:'919876543210',type:'interactive',interactive:{type:'nfm_reply',nfm_reply:{name:'flow',response_json:JSON.stringify({form_kind:'aadhyant_registration_v1',flow_token:'a'.repeat(64),registration_consent:'true'})}}}]});
+ const calls:string[]=[];const fetcher:typeof fetch=async(input)=>{const name=String(input).split('/').at(-1)!;calls.push(name);
+ if(name==='console_process_registration_flow')return new Response('{}',{status:400});
+ if(name==='console_registration_flow_failure')return Response.json(true);
+ return Response.json('00000000-0000-0000-0000-000000000001');};
+ const p=createSupabaseWebhookPersistence(environment,fetcher);assert.equal((await handleWhatsAppWebhook(await signedRequest(payload),environment,p.acceptEvent,p.processEvent)).status,200);assert.equal(calls.at(-1),'console_registration_flow_failure');assert.equal(calls.includes('messages'),false);
+});
