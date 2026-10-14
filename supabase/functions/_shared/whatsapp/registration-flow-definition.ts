@@ -2,7 +2,7 @@
 export const registrationFlowName = "aadhyant_registration_alerts_v1";
 export const registrationFlowPolicy = "wa-registration-alerts-v1";
 export const registrationFlow = {
-  "version": "3.1",
+  "version": "7.2",
   "screens": [
     {
       "id": "PERSONAL",
@@ -261,8 +261,8 @@ export const registrationFlow = {
           "__example__": "Example"
         },
         "age": {
-          "type": "string",
-          "__example__": "Example"
+          "type": "number",
+          "__example__": 25
         },
         "gender": {
           "type": "string",
@@ -394,8 +394,7 @@ export const registrationFlow = {
                 "type": "OptIn",
                 "name": "job_alert_consent",
                 "label": "I want all Aadhyant job alerts on WhatsApp.",
-                "required": false,
-                "init-value": false
+                "required": false
               },
               {
                 "type": "Footer",
@@ -420,10 +419,20 @@ export const registrationFlow = {
                   }
                 }
               }
-            ]
+            ],
+            "init-values": {
+              "registration_consent": false,
+              "job_alert_consent": false
+            }
           }
         ]
       }
     }
-  ]
+  ],
+  "routing_model": {
+    "PERSONAL": [
+      "EDUCATION"
+    ],
+    "EDUCATION": []
+  }
 };

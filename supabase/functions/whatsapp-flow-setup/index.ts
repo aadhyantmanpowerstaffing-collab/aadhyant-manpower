@@ -18,7 +18,11 @@ export async function handleFlowSetup(req:Request,get:(key:string)=>string,fetch
   const rpc=async(name:string,data:any)=>{const r=await fetcher(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify(data),redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok)throw new FlowSetupError('Database operation not confirmed');return r.json();};
   const sender=await rpc('console_sender_configuration',{});
   if(!sender?.ready||sender.account_id!==account||!/^\d{8,40}$/.test(account)||!token)return reply(503,{error:'Verify sender connection first'});
-  const graph=async(path:string,init:any={})=>{const r=await fetcher('https://graph.facebook.com/v25.0/'+path,{...init,headers:{authorization:'Bearer '+token,...init.headers},redirect:'error',signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok)throw new FlowSetupError('Meta Flow operation was not confirmed. Verify before retrying.');return data;};
+  const graph=async(path:string,init:any={})=>{const r=await fetcher('https://graph.facebook.com/v25.0/'+path,{...init,headers:{authorization:'Bearer '+token,...init.headers},redirect:'error',signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok){
+    const operation=path.endsWith('/publish')?'publication':path.endsWith('/assets')?'form asset':path.endsWith('/flows')?'creation':'lookup';
+    const codes=[data?.error?.code,data?.error?.error_subcode].filter(x=>Number.isSafeInteger(x)).join('/');
+    throw new FlowSetupError('Meta Flow '+operation+' not confirmed'+(codes?' (code '+codes+')':'')+'. Verify before retrying.');
+  }return data;};
   // Look up by the deterministic name before creating. Never repeat an uncertain creation.
   const found=await graph(account+'/flows?fields=id,name,status&limit=100');
   if(!Array.isArray(found.data)||found.paging?.next)throw new FlowSetupError('Flow list needs account review');
@@ -34,10 +38,25 @@ export async function handleFlowSetup(req:Request,get:(key:string)=>string,fetch
   }
   const json=JSON.stringify(registrationFlow),hash=await sha256Hex(new TextEncoder().encode(json));
   if(flow.status==='DRAFT'){
-   if(!body.publish)return reply(200,{ready:false,status:'draft'});
+   if(!body.publish){
+    const validation=await graph(flow.id+'?fields=validation_errors,health_status');
+    if(Array.isArray(validation.validation_errors)&&validation.validation_errors.length){
+     const details=validation.validation_errors.slice(0,3).map((e:any)=>[e.error,e.message,typeof e.line_start==='number'?'line '+e.line_start:null].filter(x=>typeof x==='string').join(': ').slice(0,400)).join(' | ');
+     throw new FlowSetupError('Meta draft validation: '+details);
+    }
+    const health=validation.health_status;
+    const codes=(health?.entities||[]).flatMap((e:any)=>(e.errors||[]).map((x:any)=>x.error_code)).filter((x:any)=>Number.isSafeInteger(x));
+    if(codes.length)throw new FlowSetupError('Meta draft requires account review (codes '+codes.join(',')+'). Form validation passed; publication is pending.');
+    return reply(200,{ready:false,status:'draft'});
+   }
    const form=new FormData();form.set('name','flow.json');form.set('asset_type','FLOW_JSON');form.set('file',new Blob([json],{type:'application/json'}),'flow.json');
    const upload=await graph(flow.id+'/assets',{method:'POST',body:form});
-   if(upload.success!==true||!Array.isArray(upload.validation_errors)||upload.validation_errors.length)throw new FlowSetupError('Meta rejected the registration form. Publication stopped.');
+   if(upload.success!==true||!Array.isArray(upload.validation_errors)||upload.validation_errors.length){
+    const details=Array.isArray(upload.validation_errors)?upload.validation_errors.slice(0,3).map((e:any)=>
+      [e.error,e.message,typeof e.line_start==='number'?'line '+e.line_start:null].filter(x=>typeof x==='string').join(': ').slice(0,400)||'Invalid form JSON').join(' | '):'Invalid validation response';
+    // These errors describe our static review form only, never credentials or candidate submissions.
+    throw new FlowSetupError('Meta rejected the registration form: '+details+'. Publication stopped.');
+   }
    const published=await graph(flow.id+'/publish',{method:'POST'});if(published.success!==true)throw new FlowSetupError('Flow publication not confirmed');
   }
   const verified=await graph(flow.id+'?fields=id,name,status');

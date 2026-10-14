@@ -72,6 +72,9 @@ function parseMessage(message: Record<string, unknown>): NormalizedWebhookEvent 
       }
       const registration = response.form_kind === 'aadhyant_registration_v1';
       if (registration) {
+        if (typeof response.age === 'number' && Number.isInteger(response.age) && response.age >= 16 && response.age <= 75) {
+          redactedResponse.age = String(response.age);
+        }
         redactedResponse.form_kind = response.form_kind;
         redactedResponse.consent_policy_version = bounded(response.consent_policy_version,80) || '';
         // Preserve booleans exactly. Strings such as "true" never count as consent.
