@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#102447">
+<title>Register &amp; Apply | Aadhyant</title><link rel="stylesheet" href="form.css">
+</head><body><header><a class="brand" href="../../">A<span>AADHYANT<small>MANPOWER &amp; STAFFING</small></span></a><span class="private-label">Candidate registration</span></header>
+<main><div class="intro"><p class="eyebrow">YOUR NEXT OPPORTUNITY</p><h1>Register &amp; Apply</h1><p>Fill one form. Submit your profile and application together.</p></div>
+<section class="job" aria-label="Selected job"><span data-job-code>Checking your private link…</span><h2 data-job-role></h2><p data-job-location></p></section>
+<p class="status" data-status role="status" aria-live="polite">Loading registration…</p>
+<form data-application-form hidden><p class="required-note"><b>*</b> Required. Fields marked Optional can be left blank.</p><fieldset><legend>Personal details</legend><div class="form-grid">
+<label>Full name <b>*</b><input name="full_name" autocomplete="name" maxlength="160" required></label>
+<label>Age <b>*</b><input name="age" type="number" min="16" max="75" step="1" inputmode="numeric" required></label>
+<label>Gender <b>*</b><select name="gender" data-option-set="genders" required></select></label>
+<label>WhatsApp number<input data-bound-phone disabled><small>This application uses the number that received your private WhatsApp link.</small></label>
+</div></fieldset>
+<fieldset><legend>Current location</legend><div class="form-grid">
+<label>State <b>*</b><select name="state" data-option-set="states" required></select></label>
+<label>District <b>*</b><select name="district" required disabled><option value="">Select State first</option></select></label>
+<label>Village / City <b>*</b><input name="current_village_city" autocomplete="address-level3" maxlength="160" required></label>
+<label>Pincode <em>Optional</em><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6"></label>
+</div></fieldset>
+<fieldset><legend>Education &amp; availability</legend><div class="form-grid">
+<label>Highest qualification <b>*</b><select name="highest_qualification" data-option-set="qualifications" required></select></label>
+<label>Trade / Specialization <em>Optional</em><select name="specialization"></select></label>
+<label data-specialization-other hidden>Specify trade <b>*</b><input name="specialization_other" maxlength="160"></label>
+<label>Experience <b>*</b><select name="candidate_type" data-option-set="candidateTypes" required></select></label>
+<label>Can attend an interview? <b>*</b><select name="interview_available" data-option-set="interviewAvailability" required></select></label>
+</div><div class="form-grid" data-experience-fields hidden>
+<label>Total experience <b>*</b><select name="total_experience" data-option-set="experienceDurations"></select></label>
+<label data-experience-other hidden>Specify duration <b>*</b><input name="total_experience_other" maxlength="80"></label>
+<label>Most recent role <b>*</b><input name="previous_job_role" maxlength="160"></label>
+</div></fieldset>
+<fieldset><legend>Work preference</legend><label>Preferred work locations <em>Optional</em><input name="preferred_job_location" maxlength="160" placeholder="For example: Sanand, Ahmedabad, Kadi"></label></fieldset>
+<fieldset class="permissions"><legend>Review &amp; submit</legend>
+<label class="check"><input name="registration_consent" type="checkbox" required><span>I agree to register my Candidate profile and be contacted about this application under the <a href="../../privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. <b>*</b></span></label>
+<label class="check alert-choice"><input name="job_alert_consent" type="checkbox"><span><strong>Send me all future job alerts on WhatsApp.</strong><small>Optional. Includes jobs outside my qualification, trade, age or preferred location. I can share them with others and reply STOP anytime. Leaving this unchecked does not change an existing alert preference.</small></span></label>
+</fieldset>
+<button type="submit">Submit &amp; Apply <span aria-hidden="true">→</span></button>
+<p class="footnote">Your profile and application will be saved with Aadhyant. Candidate Portal sign-in is a separate account step; this form does not create a password or login.</p></form>
+<section class="receipt" data-receipt hidden tabindex="-1"><span class="success-icon" aria-hidden="true">✓</span><h2>Registration submitted</h2><p>Your Candidate profile and application are saved with Aadhyant.</p><p data-alert-receipt></p><a href="../../jobs/">Explore current jobs →</a></section>
+<p class="help">Already have a Candidate account? <a href="../portal/login.html">Sign in</a>. Keep your registration link private.</p>
+</main><footer>Aadhyant Manpower &amp; Staffing · <a href="../../privacy/">Privacy Policy</a></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script>
+<script src="../../config.js"></script><script src="../../supabase-client.js"></script><script src="../../assets/js/registration-options.js"></script><script src="form.js"></script></body></html>

@@ -7,6 +7,12 @@ export function registrationPayload(row: any) {
     || row.message_type !== 'session_text' || !/^\+91[6-9]\d{9}$/.test(row.destination)
     || typeof code !== 'string' || !/^[A-Z0-9_-]{1,64}$/.test(code)) throw Error('Unsupported registration reply');
   const url = 'https://aadhyantmanpower.in/candidate/portal/register.html?requirement=' + encodeURIComponent(code);
+  if (row.web_token) {
+    if (!/^[a-f0-9]{64}$/.test(row.web_token) || row.flow_id || row.flow_token) throw Error('Invalid web registration binding');
+    return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'text',text:{preview_url:false,
+      body:`Aadhyant • ${code}\nRegister & Apply using one form:\nhttps://aadhyantmanpower.in/candidate/apply/#token=${row.web_token}\nKeep this link private. Valid for 24 hours from your Interested reply. Future job alerts are an optional choice in the form.`}};
+  }
+
   if (row.flow_id || row.flow_token) {
     if (!/^\d{8,40}$/.test(row.flow_id) || !/^[a-f0-9]{64}$/.test(row.flow_token)) throw Error('Invalid Flow binding');
     return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'interactive',interactive:{type:'flow',body:{text:`Aadhyant: Register for ${code} using this WhatsApp form. Consent for future job alerts is a separate choice in the form.`},action:{name:'flow',parameters:{flow_message_version:'3',flow_id:row.flow_id,flow_token:row.flow_token,flow_cta:'Register',flow_action:'navigate',flow_action_payload:{screen:'PERSONAL',data:{requirement_code:code}}}}}};

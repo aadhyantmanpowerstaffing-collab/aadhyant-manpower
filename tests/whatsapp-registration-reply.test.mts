@@ -17,3 +17,11 @@ test('durable claim and final boundary precede exactly one send and receipt',asy
 test('no claim, missing sender configuration or boundary rejection sends nothing',async()=>{let n=network({empty:true});await sendRegistrationReply('inbound',n.rpc,config,'fixture',n.fetcher);assert.deepEqual(n.calls,['console_claim_registration_reply']);n=network();await sendRegistrationReply('inbound',n.rpc,{...config,ready:false},'fixture',n.fetcher);assert.equal(n.calls.length,0);n=network({boundary:false});await sendRegistrationReply('inbound',n.rpc,config,'fixture',n.fetcher);assert.equal(n.calls.includes('provider'),false);assert.equal(n.bodies.at(-1).p_failure_kind,'permanent');});
 for(const failure of ['timeout','badReceipt'])test(failure+' requires reconciliation with no retry',async()=>{const n=network({[failure]:true});await sendRegistrationReply('inbound',n.rpc,config,'fixture',n.fetcher);assert.equal(n.calls.filter(x=>x==='provider').length,1);assert.equal(n.bodies.at(-1).p_failure_kind,'ambiguous');});
 test('provider rejection is terminal and never exposes the raw provider error',async()=>{const n=network({rejected:true});await sendRegistrationReply('inbound',n.rpc,config,'fixture',n.fetcher);assert.equal(n.bodies.at(-1).p_error_code,'131047');assert.equal(n.bodies.at(-1).p_failure_kind,'permanent');assert.equal(JSON.stringify(n.bodies).includes('private'),false);});
+
+test('single-page link uses only an issued private fragment capability and never a supplied phone or job URL',()=>{
+ const p=registrationPayload({...row,web_token:'c'.repeat(64)});
+ assert.equal(p.type,'text');assert.match(p.text.body,/candidate\/apply\/#token=c{64}/);assert.equal(p.text.preview_url,false);
+ assert.doesNotMatch(p.text.body,/9876543210/);
+ assert.throws(()=>registrationPayload({...row,web_token:'../../bad'}));
+ assert.throws(()=>registrationPayload({...row,web_token:'c'.repeat(64),flow_id:'1234567899',flow_token:'a'.repeat(64)}));
+});
