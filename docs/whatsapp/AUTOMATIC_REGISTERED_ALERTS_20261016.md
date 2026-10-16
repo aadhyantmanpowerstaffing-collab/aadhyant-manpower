@@ -1,6 +1,6 @@
 # Automatic registered-candidate job alerts
 
-Implementation prepared on 16 October 2026. Not deployed or enabled. No real messages were sent during development.
+Implementation deployed on 16 October 2026 under the explicit live-and-template-submission approval received at 16:40:56 IST. Automatic sending remains disabled. Meta template submission is confirmed PENDING. No candidate message was sent during this release.
 
 ## Intended behavior
 
@@ -46,3 +46,21 @@ Pause with the Admin control and/or disable the external worker gate/workflow. P
 Disposable PGlite SQL runtime tests exercise the migration plus the corrected canonical enqueue, claim and provider-boundary contracts. Synthetic fixtures cover approval/publication, no matching filters, consent sources, duplicate publications, template outage recovery, manual-claim isolation, late permission withdrawal, changed job/template, ambiguous identity, pause, role grants, ten-row batches, quota deferral and idempotent queue counts. Edge tests mock Meta/DB only and verify URL/STOP payload, scheduler authentication, feature gate, exact sender ownership, incomplete metadata failure, provider-boundary rejection and immutable scheduler input checks. Full regression and production artifact checks are recorded with the implementation commit.
 
 Validation result: full regression **511/511 passed**; retained scheduler safety tests **35/35 passed**; production artifact build and `git diff --check` passed. No production write or Graph send was made.
+
+## Production release evidence — 16 October 2026
+
+- Approved target: Aadhyant Supabase project `wsuctjhbqiedttfnwjvf` (Aadhyant connector, not Hospital).
+- Migration ledger: `20261016111148 / automatic_registered_job_alerts`; reviewed local SQL SHA-256 `a63b791b446fbb0997326a9224dfa0e9e891aad4cac04215ea45f1d74631cfdc`.
+- Worker deployed version 18 ACTIVE, existing custom authentication retained (`verify_jwt=false`); archive SHA-256 `1942edf6cf764f1a04c2319578f85d706326f49d1814a3a55b032cc1511d9a5a`. All three deployed source files exactly match the reviewed local sources.
+- Added `whatsapp-registered-template-setup` version 1 ACTIVE, `verify_jwt=true` plus actual Admin RPC authorization, exact bound account check and fixed reviewed template only. Archive SHA-256 `3312dce920533f8dabc2a9e3e3ada7f86eddddbff33110ab338ba5ee382eee26`; deployed source files match. Anonymous POST to both endpoints returns 401.
+- Setup tests prove no caller-controlled template, recipient, account or content; an exact existing template is reused; a conflicting template is not overwritten; ambiguous create is not blindly retried. This endpoint never invokes `/messages`.
+- Website deployment run `38892736354` passed at source `8d45f8eae3d604d3aee86e23bcd68a4f862946f4`. A returning-browser cache issue was corrected by versioning the console script in Admin HTML.
+- Final website run `38893166733`, source `6f47274465aee15ffa4aa2d7493da526450816d7`, build job `116947309205`, deployment job `116947664384`: both successful, including all **514/514** regression tests and artifact checks.
+- Final live Admin HTML HTTP 200 SHA-256 `549604190bf6c9554cdfa0368ab569d7b0a85b8522f084cd9e8cfa8dae9e17ce`; console script HTTP 200 SHA-256 `d7003be1ca448a12e3644d13503546f75f80be4a0d761cffe9cd2b3c6a83116c`. Both match the local reviewed production artifact.
+- Authenticated live UI verified Automatic Alerts, Admin control, disabled enable button and PENDING submission result. Actual Admin clicked Submit once under the user's authorization; automatic template sync completed.
+- Actual Meta template ID `4418635008447263`, name `aadhyant_registered_job_alert_v1`, language `en`, status **PENDING**, compatible **true**, synced `2026-10-16T11:22:55.046471Z` (16:52:55 IST). This is not APPROVED and no approval duration is promised.
+- Production config remains `automatic_alerts_enabled=false`, daily cap 100; workflow installation lock remains in place; external worker gate was not enabled and no standing bulk-send activation was performed. Scheduled worker setup remains pending.
+- Before/after canonical counts: 5 contacts, 10 campaigns, 39 outbox rows, 6 Candidate Applications. Four existing eligible vacancies were marked disabled without broadcasts. No new campaign/outbox/application/contact was created by this release or template submission.
+- New private marker has RLS and no browser/service direct grants. New service-only publication/claim/heartbeat helpers have no anonymous execute. Security advisors were reviewed: private RLS-without-policy and authenticated Admin SECURITY DEFINER notices match the intentional RPC-only model; pre-existing public RPC and password-protection notices were not broadened or changed.
+
+Next: wait for actual Meta approval, refresh template status, complete the separately reviewed scheduler/credential setup, and obtain/confirm live-sending activation authorization before enabling future publications. The UI currently reports zero eligible registered all-job subscribers; registration alone is not alert permission and ambiguous/legacy profiles are not auto-repaired.
