@@ -1,0 +1,12 @@
+[
+  "requirement_code",
+  "company",
+  "job_role",
+  "job_location",
+  "qualification",
+  "salary",
+  "take_home",
+  "overtime",
+  "duty",
+  "benefits"
+]
