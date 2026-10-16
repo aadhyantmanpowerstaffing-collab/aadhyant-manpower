@@ -1,0 +1,40 @@
+{
+  "name": "aadhyant_registered_job_alert_v1",
+  "language": "en",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hello,\n\nAadhyant Manpower & Staffing has a new job opening.\n\nVacancy: {{1}}\nRole: {{2}}\nLocation: {{3}}\n\nQualification: {{4}}\n\nSalary Details\n{{5}}\n\nBenefits & Duty\n{{6}}\n\nView the job and apply, or share it with someone looking for work.\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP.",
+      "example": {
+        "body_text": [
+          [
+            "AAD-2026-000003",
+            "Associate",
+            "Sanand",
+            "10th Pass, 12th Pass, ITI",
+            "CTC: INR 17000 monthly; Approx. take home: INR 15000 monthly",
+            "Free transport; Duty: 8 hours"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "URL",
+          "text": "View Job & Apply",
+          "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}",
+          "example": [
+            "https://aadhyantmanpower.in/jobs/?requirement=AAD-2026-000003"
+          ]
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}

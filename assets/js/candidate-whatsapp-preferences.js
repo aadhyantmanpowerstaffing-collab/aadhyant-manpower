@@ -44,7 +44,7 @@
       choice.name = 'whatsapp_job_alerts';
       choice.checked = state.effective_opt_in;
       choice.disabled = !state.enrollment_available && !state.effective_opt_in;
-      label.append(choice, document.createTextNode(' I use this mobile number on WhatsApp and want to receive job alerts.'));
+      label.append(choice, document.createTextNode(' I use this mobile number on WhatsApp and want to receive all new job alerts from Aadhyant, including jobs I can share with others.'));
       const help = element('p', 'You can turn job alerts off here or reply STOP on WhatsApp. Saving this preference does not send a message.');
       const button = element('button', 'Save WhatsApp preference');
       button.className = 'button';
