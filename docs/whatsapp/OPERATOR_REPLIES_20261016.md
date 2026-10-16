@@ -1,5 +1,15 @@
 # Admin WhatsApp manual replies — prepared release
 
+## Production release completed — 16 October 2026
+
+Explicit production approval received at 20:55:00 IST. Reviewed native source `467900fdfa4206ec72c790f6ebbe3c341b441b9e`, tree `e04958afacfeca40d7b697d5f19a113028391c16`, promoted without force after confirming shared HEAD and live generic-worker baseline. Migration installed as `20261016152547 / whatsapp_operator_replies`; source SHA256 remains `06fcb07872bbaded037d8733cd65f6362acc221927a560ee4ba875d9219330a1`.
+
+New Edge `whatsapp-operator-reply` v1 ACTIVE, verify_jwt=true; all three downloaded source files exactly match reviewed source. Runtime archive SHA256 `cf9f12bf098acd05d9a2139297315bfe2a413e14e1f25f3752dd651e6d7aaa6d`. Private-helper denials, service-only claim and authenticated guarded entry-point ACLs and empty search paths verified. Post-migration advisors retain existing categories and identify the five additional intentionally guarded authenticated Admin endpoints; no anonymous access was introduced. Reference: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable .
+
+Pages run `38924054598` succeeded (build `117050962662`, deploy `117051846021`). CI passed 577/577 tests with zero failures/skips, plus artifact boundary and manifest checks. Live JS matches SHA256 `4a41f4d19c211584c02819a80681ccc567269260418532c41a3beae4b05f4f4c`; CSS matches `10397c01c3b3d3336e560d7e0ffd5508b64ddec205b6f9eb748a65164f1d93c5`.
+
+Authenticated live UI verified Inbox, selected retained contact ending 5800, real reply-window expiry `17 October 2026 16:10:38 IST`, labelled textarea, 0/2000 counter and enabled Send Reply. Screenshot captured without entering text or pressing Send. Operator reply rows=0, contacts=5, outbound=39, applications=6. Employer replies remain enabled and automatic candidate alerts remain disabled. No real message/test was sent. Verified URL: `https://aadhyantmanpower.in/admin/?release=20261016-operator-replies#whatsappConsole`. Earlier prepared/unreleased statements below are historical and superseded by this completion entry.
+
 User authorized adding Type a reply and Send on 16 October 2026 at 20:39:51 IST. This implementation is prepared and tested, not deployed. There have been no production mutations or real message sends for this task.
 
 ## Operator experience
