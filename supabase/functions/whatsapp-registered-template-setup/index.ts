@@ -31,7 +31,15 @@ export async function handleTemplateSetup(req:Request,get:(k:string)=>string,fet
   }
   // One create attempt only. An ambiguous response must be checked by name on the next invocation.
   const created=await fetcher('https://graph.facebook.com/v25.0/'+account+'/message_templates',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(reviewedTemplate),redirect:'error',signal:AbortSignal.timeout(15000)});
-  const result=await created.json();if(!created.ok)return reply(502,{error:'Meta template submission rejected',code:String(result?.error?.code||'unknown').replace(/[^0-9a-z_]/gi,'').slice(0,40)});
+  const result=await created.json();
+  if(!created.ok){
+   const number=(v:any)=>/^\d{1,12}$/.test(String(v))?String(v):'unknown';
+   const code=number(result?.error?.code),subcode=number(result?.error?.error_subcode);
+   // Only user-facing provider diagnostics; never return raw Graph bodies, traces or credentials.
+   const detail=[result?.error?.error_user_title,result?.error?.error_user_msg].filter(v=>typeof v==='string').join(' — ')
+    .replaceAll(token,'[redacted]').replace(/https?:\/\/\S+/gi,'[link removed]').replace(/[<>\x00-\x1f\x7f]/g,' ').replace(/\s+/g,' ').trim().slice(0,400);
+   return reply(502,{error:'Meta template submission rejected (code '+code+', subcode '+subcode+').'+(detail?' '+detail:''),code,subcode});
+  }
   if(!/^\d{1,40}$/.test(String(result.id||'')))throw Error('Unconfirmed receipt');
   return reply(200,{template_id:String(result.id),name:reviewedTemplate.name,status:result.status||'PENDING',created:true});
  }catch{return reply(502,{error:'Template submission could not be confirmed. Check Meta by template name before retrying.'});}
