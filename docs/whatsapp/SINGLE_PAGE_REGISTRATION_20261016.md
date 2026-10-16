@@ -23,7 +23,7 @@ Important product distinction: this saves the same canonical basic Candidate reg
 
 ## Review and validation
 
-`single-page-form-preview.html` is a standalone design preview with the actual CSS and shared dropdown behavior. Its submit handler sends nothing. It is documentation only and excluded from the production allowlist.
+`tests/fixtures/single-page-form-preview.html` is a standalone design preview with the actual CSS and shared dropdown behavior. Its submit handler sends nothing. It is documentation only and excluded from the production allowlist.
 
 Automated tests cover canonical registration, consent independence, replay, expiry, invalid/missing token, delivery binding, STOP, closed job, identity ambiguity, permissions, canonical capability issuance and sender mode changes. Frontend handler tests cover dropdown selections, immutable phone/job binding, double-submit latch, safe ambiguous-failure recovery and missing-link gating. The allowlisted artifact adds exactly one HTML route and its two assets. Existing production safeguards remain.
 
