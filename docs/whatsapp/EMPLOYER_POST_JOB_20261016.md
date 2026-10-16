@@ -2,6 +2,10 @@
 
 ## Production release progress — 16 October 2026
 
+**Release completed:** after user restored login, production Pages run `38918092672` on source `9c59d45a1b653c5f9127174d8f355d1a0995eec1` succeeded (build `117030665799`, deploy `117031392829`). CI full regression passed 547/547, artifact boundary 6/6 and final manifest passed. Live `/post-job/` rendered both exact canonical portal form links and onboarding/review explanations. Live Admin JS matched source SHA256 `78661fba1f643a5cc29b8be089e3869730fb068deb623b4d0b32b575cac83bc6`.
+
+Signed-in Bootstrap Admin enabled only Post Job Replies at `2026-10-16T14:46:59.223135Z` (20:16:59 IST). Both UI `Post Job replies: Enabled` / `Disable Post Job Replies` and database enabled=true verified. Candidate automatic alerts remain false. Contacts=5, outbound=39, applications=6 unchanged; no real send performed. Post-deployment advisors reviewed: existing RLS/no-policy, guarded definer-entrypoint and leaked-password-protection categories; new execution grants remain least-privilege. Screenshot evidence captured. Earlier incomplete status below is historical and superseded by this completion entry.
+
 Explicit production approval received at 20:05:05 IST. Reviewed source tree `e339b429d33aadf35049a081e286471be542f3d4` promoted without force to web-platform-development, commit `bfd262ea5efe3d15022c971cda2179f40b1609f5`. All six live webhook baseline files matched before deployment.
 
 Applied migration `20261016143638 / whatsapp_employer_post_job` (source file remains `20261016140500_whatsapp_employer_post_job.sql`). Webhook v25 ACTIVE, custom HMAC and verify_jwt=false retained; all seven downloaded sources exactly match reviewed files. Runtime archive SHA256 `a5579bf249d0528b59d29a3903fe7a64793706dd0176e18f3936272aebd6b5ed`. New RPC execution ACLs and empty search paths verified.
