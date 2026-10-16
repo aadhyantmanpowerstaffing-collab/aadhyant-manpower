@@ -14,9 +14,9 @@ concurrency:
 
 jobs:
   bounded-worker:
-    # Installation lock: a separately approved code change is required to activate.
+    # Repository enable gate controls scheduling; environment enable gate controls the runner.
+    # Keep database alerts OFF during the initial credential/heartbeat verification.
     if: >-
-      false &&
       github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
       github.ref == 'refs/heads/main' && github.event_name == 'schedule' &&
       vars.WHATSAPP_REGISTERED_ALERTS_ENABLED == 'true'
