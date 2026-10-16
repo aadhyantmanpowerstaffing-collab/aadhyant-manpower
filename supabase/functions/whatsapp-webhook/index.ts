@@ -1,3 +1,4 @@
+import {isEmployerPostJob,sendEmployerPostJob} from '../_shared/whatsapp/employer-post-job.ts';
 import { parseWhatsAppWebhook, summarizeEvent } from "../_shared/whatsapp/parser.ts";
 import { constantTimeEqual, sha256Hex, verifyMetaSignature } from "../_shared/whatsapp/signature.ts";
 import { runtimeServerKey, serverDatabaseHeaders } from "../_shared/whatsapp/server-headers.ts";
@@ -188,6 +189,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
       const contactId = await callSupabaseRpc(environment, fetcher, "upsert_whatsapp_inbound_contact", { p_phone: event.phone });
       if (typeof contactId !== "string" || !contactId) throw new Error("Contact persistence returned an invalid identifier");
       const sharingPreferences = parseSharingSubscription(event);
+      const postJob=(event.messageType==='text'&&isEmployerPostJob(event.safeText))||(event.messageType==='button'&&event.actionId==='POST_JOB');
       const inboundMessageId = await callSupabaseRpc(environment, fetcher, "record_whatsapp_inbound_message", {
         p_webhook_event_id: webhookEventId,
         p_contact_id: contactId,
@@ -195,7 +197,7 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         p_provider_timestamp: event.providerTimestamp ?? null,
         p_message_type: event.messageType,
         p_safe_text: null,
-        p_action_id: sharingPreferences ? "SUBSCRIBE_JOB_UPDATES" : event.actionId ?? null,
+        p_action_id: postJob ? "POST_JOB" : sharingPreferences ? "SUBSCRIBE_JOB_UPDATES" : event.actionId ?? null,
         p_correlation_key: event.correlationKey ?? null,
         p_redacted_response: event.redactedResponse ?? null,
       });
@@ -210,6 +212,14 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         });
         if (suppressed !== true) throw new Error("Contact suppression was not confirmed");
         await callSupabaseRpc(environment,fetcher,'console_cancel_registration_chat',{p_contact_id:contactId});
+        return;
+      }
+      if(postJob){
+        const reply:any=await callSupabaseRpc(environment,fetcher,'console_process_employer_post_job',{p_inbound_message_id:inboundMessageId});
+        if(reply?.outbound_id){
+          const config:any=await callSupabaseRpc(environment,fetcher,'console_sender_configuration',{});
+          if(config?.account_id===environment.businessAccountId)await sendEmployerPostJob(reply.outbound_id,(name,body)=>callSupabaseRpc(environment,fetcher,name,body),config,environment.accessToken||'',fetcher);
+        }
         return;
       }
       if (event.messageType === 'flow' && event.actionId === 'REGISTRATION_SUBMIT') {

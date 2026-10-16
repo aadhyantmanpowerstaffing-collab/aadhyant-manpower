@@ -21,7 +21,7 @@ async function loginPage({session={user:{id:'test-account'}},contextError=null,t
     if(transportError)throw new Error('Test transport unavailable');
     return{data:contextError?null:[{company_id:'synthetic-company'}],error:contextError};
   }};
-  const sandbox={window:{aadhyantSupabase:{isConfigured:true,client},
+  const sandbox={URLSearchParams,window:{aadhyantSupabase:{isConfigured:true,client},
     aadhyantPasswordRecovery:{isRecoveryCallback:()=>recovery},
     location:{replace:(url)=>redirects.push(url)},
     addEventListener:(name,handler)=>{events[name]=handler;}},

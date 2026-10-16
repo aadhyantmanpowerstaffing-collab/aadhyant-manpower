@@ -26,6 +26,8 @@ const PRODUCTION_BINDING = Object.freeze({
 const SOURCE_RUNTIME_FILES = Object.freeze([
   'CNAME',
   'index.html',
+  'post-job/index.html',
+  'post-job/post-job.css',
   'style.css',
   'script.js',
   'supabase-client.js',

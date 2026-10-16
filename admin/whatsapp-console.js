@@ -19,7 +19,7 @@
   const header=make('header','','panel-heading'),copy=make('div');copy.append(make('p','AADHYANT WHATSAPP','admin-eyebrow'),make('h2','WhatsApp Manager'),make('p','Contacts, approved templates, campaigns and delivery reports.'));header.append(copy);
   const status=make('p','','admin-message');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const tabs=make('div','','wa-console-tabs'),content=make('div','','wa-console-content');tabs.setAttribute('role','tablist');panel.append(header,status,tabs,content);
-  let section='Contacts',busy=false,automatic=null,lastTemplateResult=null,fullJobPreview=null,previewJobs=[],templates=[],senderReady=false,schedulerReady=false,flowReady=false,chatEnabled=false,contacts=[],campaigns=[],jobs=[],offset=0,filterList='',filterTag='',draft=null,audience=[],report=null;const contactSelection=new Set();
+  let section='Contacts',busy=false,automatic=null,employerPosting=null,lastTemplateResult=null,fullJobPreview=null,previewJobs=[],templates=[],senderReady=false,schedulerReady=false,flowReady=false,chatEnabled=false,contacts=[],campaigns=[],jobs=[],offset=0,filterList='',filterTag='',draft=null,audience=[],report=null;const contactSelection=new Set();
   const notice=(text,error=false)=>{status.textContent=text;status.classList.toggle('is-error',error);};
   const button=(text,fn,primary=false)=>{const n=make('button',text,'admin-button '+(primary?'admin-button-primary':'admin-button-secondary'));n.type='button';n.addEventListener('click',()=>fn(n));return n;};
   const run=async(fn)=>{if(busy)return;busy=true;content.querySelectorAll('button,input,select').forEach(n=>n.disabled=true);try{await fn();notice('');}catch(error){notice(error.message||'Action not confirmed. Refresh before retrying.',true);}finally{busy=false;render();}};
@@ -31,7 +31,7 @@
   const loadContacts=async()=>{contacts=await call(client,'admin_console_contacts',{p_list:filterList||null,p_tag:filterTag||null,p_offset:offset});};
   const loadTemplates=async()=>{const d=await call(client,'admin_console_templates');templates=d.templates;senderReady=d.sender_ready;schedulerReady=d.scheduler_ready===true;const f=await call(client,'admin_console_registration_flow');flowReady=f.ready===true;chatEnabled=f.chat_enabled===true;};
   const loadCampaigns=async()=>{campaigns=await call(client,'admin_console_campaigns',{p_offset:offset});};
-  const load=async()=>{if(section==='Automatic Alerts'){await loadTemplates();automatic=await call(client,'admin_console_automatic_alerts');previewJobs=await call(client,'list_recruitment_requirements',{p_search:null,p_stage:'open',p_limit:100,p_offset:0});}if(section==='Contacts')await loadContacts();if(section==='Templates')await loadTemplates();if(section==='Campaigns'||section==='Reports'){await loadTemplates();await loadCampaigns();}};
+  const load=async()=>{if(section==='Automatic Alerts'){employerPosting=await call(client,'admin_console_employer_post_job');await loadTemplates();automatic=await call(client,'admin_console_automatic_alerts');previewJobs=await call(client,'list_recruitment_requirements',{p_search:null,p_stage:'open',p_limit:100,p_offset:0});}if(section==='Contacts')await loadContacts();if(section==='Templates')await loadTemplates();if(section==='Campaigns'||section==='Reports'){await loadTemplates();await loadCampaigns();}};
   const pages=(size,rows,fn)=>{const p=make('div','','wa-actions'),prev=button('Previous',()=>run(async()=>{offset=Math.max(0,offset-size);await fn();})),next=button('Next',()=>run(async()=>{offset+=size;await fn();}));prev.disabled=offset===0;next.disabled=rows.length<size||offset>=5000;p.append(make('span','Page '+(offset/size+1)),prev,next);return p;};
   const showConsent=row=>{
    const dialog=make('dialog','','wa-dialog'),form=make('form'),source=make('select');['phone_call','written_permission','in_person'].forEach(v=>source.append(new Option(v.replaceAll('_',' '),v)));
@@ -126,6 +126,11 @@
    if(automatic.enabled)content.append(button('Pause Automatic Alerts',()=>run(async()=>{await call(client,'admin_console_set_automatic_alerts',{p_enabled:false,p_daily_limit:Number(limit.value)});await load();})));
    else {const enable=button('Enable for Future Vacancies',()=>run(async()=>{await call(client,'admin_console_set_automatic_alerts',{p_enabled:true,p_daily_limit:Number(limit.value)});await load();}),true);enable.disabled=!automatic.template_ready||!automatic.worker_ready||!senderReady;content.append(enable);}
    content.append(make('p','Enabling starts future publications only. Existing jobs are not broadcast. STOP and consent are checked again before each send. Messages wait when the template or sender cannot be verified. A changed job pauses its pending messages.','wa-help'));
+   if(employerPosting){
+    content.append(make('h3','WhatsApp Vacancy Posting'),make('p','Company or Contractor sends POST JOB on WhatsApp, opens the job form, signs in if needed and submits for Admin review. Publication and candidate alerts keep their existing approval gates.'),make('p','Post Job replies: '+(employerPosting.enabled?'Enabled':'Off')));
+    const link=make('a','Open Company / Contractor posting page');link.href='https://aadhyantmanpower.in/post-job/';link.target='_blank';link.rel='noopener noreferrer';content.append(link);
+    content.append(button(employerPosting.enabled?'Disable Post Job Replies':'Enable Post Job Replies',()=>run(async()=>{await call(client,'admin_console_set_employer_post_job',{p_enabled:!employerPosting.enabled});await load();})));
+   }
    content.append(table(['Vacancy','Published','Alert status','Attention'],(automatic.recent_publications||[]).map(p=>[p.requirement_code,new Date(p.published_at).toLocaleString(),p.outcome,p.attention||'—'])));
   };
   const renderReports=()=>{

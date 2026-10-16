@@ -2,6 +2,8 @@
   'use strict';
   if (document.body?.dataset.companyPage !== 'requirements-batch2') return;
 
+  const employerPostJobRequested = new URLSearchParams(window.location.search).get('postJob') === '1';
+  const employerPostJobLogin = employerPostJobRequested ? 'login.html?postJob=1' : 'login.html';
   const client = window.aadhyantSupabase?.client;
   const optionApi = window.AadhyantRegistrationOptions;
   const fields = ['department','jobRole','jobLocation','requiredHeadcount','qualification','itiTrade','experienceRequirement','genderPreference','ageMin','ageMax','salaryMin','salaryMax','shiftDetails','workingHours','overtimeDetails','canteen','transport','interviewLocation','interviewDate','expectedJoiningDate','additionalNotes'];
@@ -28,9 +30,9 @@
   async function start() {
     if (!client) return;
     const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session) { location.replace('login.html'); return; }
+    if (!sessionData.session) { location.replace(employerPostJobLogin); return; }
     let context;
-    try { context = first(await call('get_company_portal_context')); } catch (_) { location.replace('login.html'); return; }
+    try { context = first(await call('get_company_portal_context')); } catch (_) { location.replace(employerPostJobLogin); return; }
     if (!context || context.platform_status !== 'active' || context.company_status !== 'active' || context.membership_status !== 'active') { location.replace('index.html'); return; }
     document.querySelector('[data-portal-loading]')?.setAttribute('hidden','');document.querySelector('[data-portal]')?.removeAttribute('hidden');
     document.querySelectorAll('[data-user-email]').forEach((node) => { node.textContent = sessionData.session.user.email || ''; });
@@ -43,6 +45,8 @@
     const dialog = document.querySelector('[data-requirement-dialog]');
     const pageMessage = document.querySelector('[data-page-message]');
     let current = null;
+    let writeInFlight = false;
+    const onceWrite = async (fn) => { if (writeInFlight) return; writeInFlight = true; try { await fn(); } finally { writeInFlight = false; } };
     const message = (text, type = '') => { pageMessage.textContent = text; pageMessage.className = `company-message${type ? ` is-${type}` : ''}`; };
     const detailMessage = (text = '') => { const node = document.querySelector('[data-review-feedback]'); node.textContent = text; node.hidden = !text; };
     const params = () => {
@@ -113,13 +117,14 @@
     };
     document.querySelector('[data-new-requirement]').onclick = () => open();
     document.querySelector('[data-requirement-filters]').onsubmit = (event) => { event.preventDefault();load().catch(() => message('Vacancies could not be loaded.','error')); };
-    form.onsubmit = async (event) => { event.preventDefault();try { await save(); } catch (_) { message('The vacancy could not be saved. No changes were made.','error'); } };
-    form.querySelector('[data-submit-requirement]').onclick = async () => { try { await submit(); } catch (_) { message('The vacancy could not be submitted. No changes were made.','error'); } };
+    form.onsubmit = async (event) => { event.preventDefault();try { await onceWrite(save); } catch (_) { message('The vacancy could not be saved. No changes were made.','error'); } };
+    form.querySelector('[data-submit-requirement]').onclick = async () => { try { await onceWrite(submit); } catch (_) { message('The vacancy could not be submitted. No changes were made.','error'); } };
     form.querySelector('[data-delete-requirement]').onclick = () => lifecycle('delete_company_portal_draft_vacancy','Delete this draft vacancy? This action cannot be undone.','Draft vacancy deleted.');
     form.querySelector('[data-withdraw-requirement]').onclick = () => lifecycle('withdraw_company_portal_vacancy','Withdraw this vacancy from review?','Vacancy withdrawn from review.');
     form.querySelector('[data-close-requirement]').onclick = () => lifecycle('close_company_portal_open_vacancy','Close this vacancy? Existing recruitment history will remain available.','Vacancy closed. Recruitment history remains available.');
     dialog.querySelectorAll('[data-close-dialog]').forEach((button) => { button.onclick = () => dialog.close(); });
     await load();
+    if (employerPostJobRequested && context.can_manage_requirements) await open();
   }
   window.aadhyantBatch2Company = Object.freeze({ statusFor });
   start().catch(() => { const node = document.querySelector('[data-page-message]');if (node) node.textContent = 'The vacancy workspace is temporarily unavailable.'; });

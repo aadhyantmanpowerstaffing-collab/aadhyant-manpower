@@ -2,6 +2,8 @@
   'use strict';
   if (document.body?.dataset.contractorPage !== 'vacancies-batch2') return;
 
+  const employerPostJobRequested = new URLSearchParams(window.location.search).get('postJob') === '1';
+  const employerPostJobLogin = employerPostJobRequested ? 'login.html?postJob=1' : 'login.html';
   const client = window.aadhyantSupabase?.client;
   const options = window.AadhyantRegistrationOptions;
   const compensation = window.AadhyantVacancyCompensation;
@@ -32,9 +34,9 @@
   async function start() {
     if (!client) return;
     const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session) { location.replace('login.html'); return; }
+    if (!sessionData.session) { location.replace(employerPostJobLogin); return; }
     let context;
-    try { context = first(await call('get_contractor_portal_context')); } catch (_) { location.replace('login.html'); return; }
+    try { context = first(await call('get_contractor_portal_context')); } catch (_) { location.replace(employerPostJobLogin); return; }
     if (!context?.can_manage_vacancies && context?.platform_status !== 'active') { location.replace('index.html'); return; }
 
     document.querySelector('[data-loading]')?.setAttribute('hidden', '');
@@ -193,6 +195,7 @@
     form.querySelector('[data-cancel-vacancy]').onclick = () => lifecycle('close_contractor_portal_open_vacancy', 'Close this vacancy? Existing recruitment history will remain available.', 'Vacancy closed. Recruitment history remains available.');
     dialog.querySelectorAll('[data-close-dialog]').forEach((button) => { button.onclick = () => dialog.close(); });
     await load();
+    if (employerPostJobRequested && context.can_manage_vacancies) await open();
   }
 
   window.aadhyantBatch2Contractor = Object.freeze({ statusFor });
