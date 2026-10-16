@@ -1,5 +1,13 @@
 # WhatsApp employer Post Job — prepared release
 
+## Production release progress — 16 October 2026
+
+Explicit production approval received at 20:05:05 IST. Reviewed source tree `e339b429d33aadf35049a081e286471be542f3d4` promoted without force to web-platform-development, commit `bfd262ea5efe3d15022c971cda2179f40b1609f5`. All six live webhook baseline files matched before deployment.
+
+Applied migration `20261016143638 / whatsapp_employer_post_job` (source file remains `20261016140500_whatsapp_employer_post_job.sql`). Webhook v25 ACTIVE, custom HMAC and verify_jwt=false retained; all seven downloaded sources exactly match reviewed files. Runtime archive SHA256 `a5579bf249d0528b59d29a3903fe7a64793706dd0176e18f3936272aebd6b5ed`. New RPC execution ACLs and empty search paths verified.
+
+**Incomplete:** Pages workflow dispatch/publication and signed-in Admin activation. Credential-protected retained browser observations remained blocked after explicit canonical navigation. No browser security workaround attempted. Post Job replies remain OFF until site publication is verified. No candidate alert activation, consent change or real send occurred. Resume existing pages-production workflow on web-platform-development with deploy_production=true, verify source/page, then enable only Post Job Replies through the authenticated Admin control. User approval already covers these remaining release actions; do not ask for production approval again.
+
 The user authorized this new feature on 16 October 2026 at 19:30:56 IST: Company/Contractor sends Post Job, opens a complete vacancy form, submits to its own account, Admin reviews and publishes, and the existing candidate-alert pipeline handles approved publications. This release is prepared and tested, **not deployed or activated**.
 
 ## User journey
