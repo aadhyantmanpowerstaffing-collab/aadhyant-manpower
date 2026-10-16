@@ -1,4 +1,4 @@
-name: Process an approved WhatsApp queue
+name: Automatic registered-candidate job alerts
 
 on:
   schedule:
@@ -19,27 +19,26 @@ jobs:
       false &&
       github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
       github.ref == 'refs/heads/main' && github.event_name == 'schedule' &&
-      vars.WHATSAPP_QUEUE_AUTOMATION_ENABLED == 'true'
+      vars.WHATSAPP_REGISTERED_ALERTS_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     environment: whatsapp-production
     steps:
       - name: Require reviewed immutable source
         env:
-          APPROVED_SHA: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
+          APPROVED_SHA: ${{ vars.WHATSAPP_REGISTERED_ALERTS_APPROVED_SHA }}
         run: |
           [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
       - name: Check out reviewed scheduler source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
+          ref: ${{ vars.WHATSAPP_REGISTERED_ALERTS_APPROVED_SHA }}
           persist-credentials: false
-      - name: Invoke at most one canonical worker attempt
+      - name: Record checked-out source
+        run: echo "CHECKED_OUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Process at most ten canonical automatic alerts
         env:
-          GITHUB_TOKEN: ${{ github.token }}
           WHATSAPP_WORKER_SECRET: ${{ secrets.WHATSAPP_WORKER_SECRET }}
-          WHATSAPP_QUEUE_AUTOMATION_ENABLED: ${{ vars.WHATSAPP_QUEUE_AUTOMATION_ENABLED }}
-          WHATSAPP_QUEUE_APPROVED_SOURCE_SHA: ${{ vars.WHATSAPP_QUEUE_APPROVED_SOURCE_SHA }}
-          WHATSAPP_QUEUE_APPROVED_FROM: ${{ vars.WHATSAPP_QUEUE_APPROVED_FROM }}
-          WHATSAPP_QUEUE_APPROVED_UNTIL: ${{ vars.WHATSAPP_QUEUE_APPROVED_UNTIL }}
-        run: node scripts/whatsapp/run-approved-queue.cjs
+          WHATSAPP_REGISTERED_ALERTS_ENABLED: ${{ vars.WHATSAPP_REGISTERED_ALERTS_ENABLED }}
+          WHATSAPP_REGISTERED_ALERTS_APPROVED_SHA: ${{ vars.WHATSAPP_REGISTERED_ALERTS_APPROVED_SHA }}
+        run: node scripts/whatsapp/run-registered-alerts.cjs
