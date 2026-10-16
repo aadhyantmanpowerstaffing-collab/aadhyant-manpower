@@ -1,4 +1,4 @@
-# Readable mobile WhatsApp job layout — deployed; Meta submission blocked
+# Readable mobile WhatsApp job layout — deployed; Meta submission rejected (2388293)
 
 The user requested readable spacing and formatting after viewing the v2 live Admin preview screenshots. The v2 section variables combine many labelled values into a long semicolon-separated paragraph. Changing browser CSS alone cannot change the recipient's actual WhatsApp message.
 
@@ -38,3 +38,20 @@ Validation: all 521 regression tests passed (zero failures/skips), JavaScript sy
 - Post-release SQL: template fixed body 1018 characters; all four currently application-eligible job payloads pass the local envelope validator; anonymous preview execution denied; automatic alerts still OFF. Counts unchanged: contacts 5, campaigns 10, outbox 39, applications 6.
 - Meta submission was NOT attempted: native browser credential protection blocked Admin document observations after explicit fresh navigation. Stopped protected inspection and credential automation; no token extraction, impersonation, direct provider send, or alternate browser session workaround. Live visual QA/screenshot and actual v3 Meta submission/status remain unverified. V1/v2 metadata retained; no v3 catalog entry at final SQL read.
 - Required operator continuation: in the signed-in Admin WhatsApp Manager, open Automatic Alerts and click **Submit Job Alert Template to Meta** once, then check the actual returned Meta result. Do not retry an ambiguous submission without looking up v3 by name. Automatic sending remains OFF while review/scheduler setup is incomplete.
+
+
+## Post-login submission and definitive rejection
+
+After the user's 18:31:48 IST login confirmation, explicit navigation to the canonical Admin page recovered signed-in Bootstrap Admin access. One authorized v3 submission returned generic `Meta template submission rejected`. No template approval, message delivery or rejection cause was inferred from that generic text.
+
+Fixed the setup endpoint's hidden diagnostic problem: return only bounded user-facing Meta title/message and numeric code/subcode to the already-authorized Admin, redacting the configured access token and URLs and omitting raw Graph bodies/traces. Static template, account binding, Admin checks, request limits, single-attempt behavior and no-send boundary are unchanged. All four endpoint tests passed, including malicious/secret-bearing diagnostic sanitization. Saved source commit `53a99fdc7e3ef7c558ca626c8437b2d056dcd466`.
+
+Deployed setup endpoint v4 ACTIVE, verify_jwt=true, archive `46dba507a434e90b50c154daeb44aebd4fc9a0e544f935f2e775be916767d4d0`; both downloaded runtime files exactly match source. One controlled diagnostic invocation followed the known definitive rejection and retained the exact-name lookup before any create; no ambiguous create was retried. Actual returned provider result:
+
+- code `100`, subcode `2388293`.
+- Title: `Parameters words ratio exceeds limit`.
+- Message: `This template has too many variables for its length. Reduce the number of variables or increase the message length.`
+
+Thus the complete 72-parameter fixed-line layout was not accepted; do not describe it as pending/approved or keep resubmitting it. No new v3 entry was synced. Prior v1/v2 entries remain. The browser's existing cached console still labels its helper paragraph v2, but the verified deployed setup source submits only static v3; the actual response above is from that source.
+
+Stopped submission after the diagnostic result. A short formatted WhatsApp summary plus full job details on View Job & Apply is a proposed business-format change, not yet implemented or authorized in place of the user's all-fields-in-message requirement. Keep automatic alerts OFF. Final counts unchanged: contacts 5, campaigns 10, outbox 39, applications 6. No candidate test/bulk send or consent/scheduler change occurred. The prior operator continuation instruction is superseded by this rejection: do not press Submit again until the format is revised.
