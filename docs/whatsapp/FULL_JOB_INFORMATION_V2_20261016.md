@@ -1,6 +1,6 @@
 # Complete vacancy information in registered WhatsApp alerts
 
-Prepared for the user's clarified requirement on 16 October 2026. This v2 revision is not deployed, submitted to Meta, or activated. The earlier live v1 remains unchanged by this development work.
+Live on 16 October 2026 under the user’s explicit 17:32:11 IST approval to deploy and submit v2. Meta review is PENDING. Automatic sending remains disabled; v1 was retained.
 
 ## Behavior
 
@@ -14,7 +14,7 @@ The candidate-facing field allowlist follows the existing M050 Candidate opportu
 
 ## Long information and limits
 
-The v2 template has 15 ordered body parameters and the same View Job & Apply / Stop alerts buttons. Fixed template text is 730 characters. Each dynamic section is bounded to 1000 characters and has whitespace normalized because template parameters must be single-line values. The portal's full 2000-character description is retained across two ordered 1000-character sections; no substring is discarded. This local envelope is not a guarantee that Meta will approve or deliver every possible expanded message. Actual Meta review and an authorized owner-controlled send remain to be completed.
+The v2 template has 15 ordered body parameters and the same View Job & Apply / Stop alerts buttons. Fixed template text is 730 characters. Each dynamic section is bounded to 1000 characters and has whitespace normalized because template parameters must be single-line values. The portal's full 2000-character description is retained across two ordered 1000-character sections; no substring is discarded. This local envelope is not a guarantee that Meta will approve or deliver every possible expanded message. Meta review is PENDING; an authorized owner-controlled v2 send remains to be completed.
 
 Oversized legacy input or a message exceeding the existing 16 KiB canonical outbox-variable budget fails closed. Admin preview reports that the record requires review; it is not silently shortened. The scoped `registered_full_v2` validator allows these public-job sections only and continues using the existing legacy validator for all other payloads. Existing protected-key restrictions and legacy 500-character rules remain intact outside this exact new envelope.
 
@@ -36,4 +36,20 @@ After explicit approval to make the expanded revision live and submit v2, apply 
 
 Tests cover every populated scalar label/value, all salary components, optional fields/zeroes, actual IST conversion, structured cash/provided benefits, a 2000-character description, unsafe/oversized rejection, unchanged legacy limits, Admin-only preview, exact-v2 approval, canonical enqueue of the long description, changed-information send suppression, and ordered URL/STOP payloads. The full test runner is bounded to two concurrent files so embedded Postgres runtimes do not compete unboundedly for memory; no assertions or tests are skipped.
 
-Validation result: **518/518 full regression tests passed** with two concurrent files, the previously interrupted console SQL suite also passed independently, and the production artifact build plus `git diff --check` passed. No production mutation, Meta submission or candidate send occurred for this v2 revision.
+Validation result: **518/518 full regression tests passed** with two concurrent files, the previously interrupted console SQL suite also passed independently, and the production artifact build plus `git diff --check` passed. The development validation itself performed no production mutation, Meta submission or candidate send. The subsequent authorized release is recorded below.
+
+
+## Authorized production release evidence
+
+- Source commit: `d8993f7b1a16abe49ab3a8a1d704311a063569fe` on `web-platform-development`; source tree `142da0c1ecd7f6f24b6404c3808ab98d6dbd865f`.
+- Production project: `wsuctjhbqiedttfnwjvf`; migration ledger `20261016120258 / complete_whatsapp_job_information`. Migration SHA256: `bad5c415a8d82a71c5d93fecbb70a3050984bcf519ff8c0041e4cd40c9cef1a3`.
+- Downloaded runtime sources exactly match the reviewed files: `whatsapp-outbox-worker` v19 ACTIVE and `whatsapp-registered-template-setup` v2 ACTIVE. Existing authentication modes retained.
+- Existing Pages production workflow run `38898054484` succeeded, including 518 regression tests, build, artifact verification and deployment. No deployment workflow or scheduler was added or enabled.
+- Submitted v2 once through the signed-in Admin UI. Actual Meta ID `1645258107194490`, language `en`, status **PENDING**, compatible `true`; synced `2026-10-16T12:06:30.099043Z`. Retained v1 ID `4418635008447263`, PENDING and incompatible with the new v2 gate. No repeat submission or v1 edit/delete.
+- Live Admin preview verified using stored vacancy `AAD-2026-000003 / Associate`, showing all populated sections, IST interview time and action buttons without size warnings. Existing stored values were not changed.
+- Live Admin HTML SHA256: `baad0f731ad954f40521f8aeb908a2cf71e16e037d6a359fc108f7ea9bbb275f`; versioned console JS SHA256: `93453e53d29c92386ac20fe2b50b9482ffbd1ca73ffbc385d170c0b611e877e0`.
+- Post-release checks: automatic alerts OFF, scheduler setup/heartbeat pending, eligible all-job subscribers 0, daily limit 100; anonymous preview execution denied. All four currently eligible vacancy payloads fit local size limits.
+- Counts unchanged: contacts 5, campaigns 10, outbox 39, applications 6. No candidate send, consent change, new campaign, publication or scheduler activation occurred.
+- Live review URL: https://aadhyantmanpower.in/admin/?release=20261016-full-job-v2-live#whatsappConsole . Select a vacancy under Automatic Alerts, then **Preview Filled Vacancy Message**.
+
+Meta approval and scheduler setup remain outstanding. Deployment and template submission do not establish delivery or activate bulk sending.
