@@ -1,6 +1,6 @@
 # Single-page WhatsApp registration — 16 October 2026
 
-The user requested a complete English form on one page with dropdowns, optional fields and a separate all-job-alert checkbox. This change is prepared locally; production is unchanged pending explicit publication approval under AGENTS.md.
+The user requested a complete English form on one page with dropdowns, optional fields and a separate all-job-alert checkbox. The user explicitly approved production deployment at 15:15:41 IST. The verified release is live; closure details are below.
 
 ## User experience
 
@@ -19,7 +19,7 @@ Important product distinction: this saves the same canonical basic Candidate reg
 - Token row serialized for idempotent repeats; durable minimal receipt. No raw form data in that row, browser storage, logs or Admin reply projections.
 - Required consent and exact enums validated server-side; bounded optional fields validated independently. Optional profile extras only update a Candidate created by this exact registration; existing profile details are not overwritten from a bearer link. Duplicate phone identities stay for staff review without new consent/application.
 - Existing active legacy/compact chat sessions continue; only new Interested sessions use the form after explicit activation. Native Meta Flow publication and integrity block remain unchanged.
-- New migration disabled by default; no real send, consent change, profile creation or production mutation performed for this implementation.
+- New migration installs disabled by default. Form mode was enabled only after reviewed runtime and website publication were verified. No real send, consent change or profile creation was used as a deployment test.
 
 ## Review and validation
 
@@ -38,3 +38,15 @@ Managed browser QA was unavailable because no control-browser skill is available
 5. Verify safe readiness/grants without a real send. Any new live test message needs a specific user request; do not replay historical Interested events.
 
 Operational rollback is registration_web_enabled=false; no Candidate, Application, outbox or historical session deletion is needed. Already-issued links become unavailable while disabled.
+
+## Verified production closure
+
+- Aadhyant production project: wsuctjhbqiedttfnwjvf. Installed migration ledger: 20261016094631 / whatsapp_single_page_registration.
+- Webhook v24 ACTIVE, verify_jwt=false retains existing exact raw-body HMAC/WABA/phone authentication. Archive hash dcbaba8a1701aed7b1fd71ffacf34074b499dc725881bf468fc42154a9842ca0. All six emitted runtime modules match reviewed source exactly (types-only dependency erased). Unsigned live POST returns 403.
+- Existing manual pages-production.yml dispatched on source eb2e54ff8ff30eb2538b6c0ea18b06d2a3750f09. Run 38883515806 succeeded; build job 116915649003 and deployment job 116916033232 succeeded. CI: 501 passed, zero failures. Artifact digest 6ce561d254f28399654b3e9cbcab48317806f5761fca5222e6020979e53abb17.
+- /candidate/apply/ HTTP 200 and exact reviewed artifact HTML, SHA-256 f6593a2f498ac813ac4c92774c33a60b568526f341cd5ce9020a7f6e223116e7. CSS and JS HTTP 200, byte-equal source, hashes 7b98c2a297e64038a2c3ebed89b7d4655e199c7c34bd9adca5bc416ecb95a3e7 and 0efdc7722d6bc9ef5d454909f89b5321dc3f4f723f6710422845c0fdc47a29c8.
+- Public API negative validation: invalid token context returns HTTP 200/null; invalid-token submit returns HTTP 400 without a write. Private table RLS=true, anon table read=false, anon canonical helper execution=false; only capability context/submit RPCs have intentional browser execution. Advisor notices for these SECURITY DEFINER endpoints are expected capability APIs; remediation reference: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable . No permissive direct-table policy added.
+- registration_web_enabled=true; existing chat_enabled=true; scheduler_ready=false. Deployment before/after counts unchanged: Candidates 4, Applications 6, outbound 25, opted-in contacts 0. New private web sessions 0. No historical event replay or real test send.
+- The first manual build rejected a documentation preview outside the runtime allowlist. Preview was moved into the existing tests/fixtures exclusion; runtime inventory checks remained strict. The corrected artifact and CI passed.
+- Automatic approval review rejected adding a persistent auto-deploy workflow. No such workflow was created; the existing manual workflow completed publication without additional triggers or access changes.
+- Real user-device form submission has not been claimed as tested. Existing duplicate Candidate identities and active chat sessions remain unchanged and may still require review/continuation.
