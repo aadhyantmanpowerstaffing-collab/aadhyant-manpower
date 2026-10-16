@@ -1,0 +1,315 @@
+{
+  "parameter_keys": [
+    "requirement_code",
+    "job_identity",
+    "job_location",
+    "eligibility",
+    "earnings",
+    "deductions",
+    "employer_cost",
+    "duty",
+    "facilities",
+    "leave_terms",
+    "employment_terms",
+    "interview_joining",
+    "candidate_benefits",
+    "description_1",
+    "description_2"
+  ],
+  "sections": {
+    "job_identity": [
+      [
+        "company_name",
+        "Company / worksite"
+      ],
+      [
+        "department",
+        "Department"
+      ],
+      [
+        "job_role",
+        "Role"
+      ]
+    ],
+    "job_location": [
+      [
+        "job_location",
+        "Location"
+      ],
+      [
+        "open_positions",
+        "Open positions"
+      ],
+      [
+        "required_headcount",
+        "Total openings"
+      ]
+    ],
+    "eligibility": [
+      [
+        "qualification",
+        "Qualification"
+      ],
+      [
+        "iti_trade",
+        "Trade / specialization"
+      ],
+      [
+        "experience_requirement",
+        "Experience"
+      ],
+      [
+        "gender_preference",
+        "Gender"
+      ],
+      [
+        "age_min",
+        "Minimum age"
+      ],
+      [
+        "age_max",
+        "Maximum age"
+      ]
+    ],
+    "earnings": [
+      [
+        "compensation_cadence",
+        "Salary period"
+      ],
+      [
+        "salary_min",
+        "Minimum CTC (INR)"
+      ],
+      [
+        "salary_max",
+        "Maximum CTC (INR)"
+      ],
+      [
+        "salary_wage",
+        "Salary information"
+      ],
+      [
+        "payable_days",
+        "Payable days"
+      ],
+      [
+        "basic_da",
+        "Basic + DA (INR)"
+      ],
+      [
+        "attendance_bonus",
+        "Attendance bonus (INR)"
+      ],
+      [
+        "monthly_bonus",
+        "Monthly bonus (INR)"
+      ],
+      [
+        "leave_amount",
+        "Leave amount (INR)"
+      ],
+      [
+        "other_fixed_earning",
+        "Other fixed earnings (INR)"
+      ],
+      [
+        "gross_wages",
+        "Gross wages (INR)"
+      ],
+      [
+        "approx_in_hand",
+        "Approx. take home (INR)"
+      ],
+      [
+        "ctc",
+        "CTC (INR)"
+      ]
+    ],
+    "deductions": [
+      [
+        "employee_pf",
+        "Employee PF (INR)"
+      ],
+      [
+        "employee_esic",
+        "Employee ESIC (INR)"
+      ],
+      [
+        "canteen_deduction",
+        "Canteen deduction (INR)"
+      ],
+      [
+        "other_deduction",
+        "Other deduction (INR)"
+      ]
+    ],
+    "employer_cost": [
+      [
+        "employer_pf",
+        "Employer PF (INR)"
+      ],
+      [
+        "employer_esic",
+        "Employer ESIC (INR)"
+      ],
+      [
+        "gratuity_provision",
+        "Gratuity provision (INR)"
+      ],
+      [
+        "bonus_provision",
+        "Bonus provision (INR)"
+      ],
+      [
+        "leave_provision",
+        "Leave provision (INR)"
+      ],
+      [
+        "other_ctc_component",
+        "Other CTC component (INR)"
+      ]
+    ],
+    "duty": [
+      [
+        "working_hours",
+        "Duty hours"
+      ],
+      [
+        "shift_details",
+        "Shift"
+      ],
+      [
+        "working_days_per_week",
+        "Working days / week"
+      ],
+      [
+        "weekly_off_count",
+        "Weekly offs"
+      ],
+      [
+        "overtime_rate",
+        "OT rate"
+      ],
+      [
+        "overtime_rate_basis",
+        "OT rate basis"
+      ],
+      [
+        "overtime_details",
+        "OT information"
+      ]
+    ],
+    "facilities": [
+      [
+        "canteen_status",
+        "Canteen"
+      ],
+      [
+        "canteen_charge_amount",
+        "Canteen charge (INR)"
+      ],
+      [
+        "canteen_charge_basis",
+        "Canteen charge basis"
+      ],
+      [
+        "canteen",
+        "Canteen information"
+      ],
+      [
+        "transport_status",
+        "Transport"
+      ],
+      [
+        "transport_charge_amount",
+        "Transport charge (INR)"
+      ],
+      [
+        "transport_charge_basis",
+        "Transport charge basis"
+      ],
+      [
+        "transport",
+        "Transport information"
+      ],
+      [
+        "accommodation_status",
+        "Accommodation"
+      ],
+      [
+        "accommodation_charge_amount",
+        "Accommodation charge (INR)"
+      ],
+      [
+        "accommodation_charge_basis",
+        "Accommodation charge basis"
+      ],
+      [
+        "accommodation",
+        "Accommodation information"
+      ]
+    ],
+    "leave_terms": [
+      [
+        "paid_leave_days_per_year",
+        "Paid leave days / year"
+      ],
+      [
+        "casual_leave_days_per_year",
+        "Casual leave days / year"
+      ],
+      [
+        "sick_leave_days_per_year",
+        "Sick leave days / year"
+      ],
+      [
+        "national_holiday_days_per_year",
+        "National holiday days / year"
+      ],
+      [
+        "festival_holiday_days_per_year",
+        "Festival holiday days / year"
+      ]
+    ],
+    "employment_terms": [
+      [
+        "employment_type",
+        "Employment"
+      ],
+      [
+        "payroll_type",
+        "Payroll"
+      ],
+      [
+        "contract_duration_months",
+        "Contract months"
+      ],
+      [
+        "probation_period_months",
+        "Probation months"
+      ],
+      [
+        "training_period_days",
+        "Training days"
+      ],
+      [
+        "notice_period_days",
+        "Notice days"
+      ]
+    ],
+    "interview_joining": [
+      [
+        "interview_location",
+        "Interview location"
+      ],
+      [
+        "interview_date_display",
+        "Interview date / time"
+      ],
+      [
+        "expected_joining_date",
+        "Expected joining date"
+      ]
+    ]
+  }
+}

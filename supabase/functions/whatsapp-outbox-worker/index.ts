@@ -6,6 +6,11 @@ const origin='https://aadhyantmanpower.in';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function templatePayload(row:any){
  const v=row.template_variables;
+ if(row.template_name==='aadhyant_registered_job_alert_v2'){
+  const names=["requirement_code", "job_identity", "job_location", "eligibility", "earnings", "deductions", "employer_cost", "duty", "facilities", "leave_terms", "employment_terms", "interview_joining", "candidate_benefits", "description_1", "description_2"];
+  if(row.template_language!=='en'||row.template_version!=='1'||row.purpose!=='vacancy_campaign'||row.consent_class!=='marketing'||!/^\+?91[6-9]\d{9}$/.test(row.destination)||!uuid.test(row.correlation_id)||v?.template_contract!=='registered_full_v2'||names.some(k=>typeof v[k]!=='string'||!v[k].trim()||Array.from(v[k]).length>1000||/[\n\r\t]/.test(v[k]))||!/^[A-Za-z0-9_-]{1,160}$/.test(v.requirement_code))throw Error('Unsupported canonical full-job payload');
+  return {messaging_product:'whatsapp',to:row.destination.replace(/^\+/,''),type:'template',template:{name:row.template_name,language:{code:'en'},components:[{type:'body',parameters:names.map(k=>({type:'text',text:v[k]}))},{type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:v.requirement_code}]},{type:'button',sub_type:'quick_reply',index:'1',parameters:[{type:'payload',payload:'STOP'}]}]}};
+ }
  if(row.template_name==='aadhyant_registered_job_alert_v1'){
   const names=['requirement_code','job_role','job_location','qualification','salary_details','benefits_details'];
   if(row.template_language!=='en'||row.template_version!=='1'||row.purpose!=='vacancy_campaign'||row.consent_class!=='marketing'||!/^\+?91[6-9]\d{9}$/.test(row.destination)||!uuid.test(row.correlation_id)||!v||names.some(k=>typeof v[k]!=='string'||!v[k].trim()||v[k].length>500)||!/^[A-Za-z0-9_-]{1,160}$/.test(v.requirement_code))throw Error('Unsupported canonical payload');

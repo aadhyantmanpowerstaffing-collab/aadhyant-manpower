@@ -1,0 +1,56 @@
+SYNTHETIC REVIEW EXAMPLE — NOT A LIVE VACANCY OR SEND
+Generated from the actual SQL message renderer. All amounts are examples.
+
+Hello,
+
+Aadhyant Manpower & Staffing has a new job opening. The employer has provided the following job information.
+
+*Vacancy reference*
+TEST_JOB
+
+*Company and role*
+Company / worksite: Example Company; Department: Assembly; Role: Associate
+
+*Location and openings*
+Location: Sanand; Open positions: 10; Total openings: 10
+
+*Candidate requirements*
+Qualification: ITI; Trade / specialization: Fitter; Experience: Both; Gender: Any; Minimum age: 18; Maximum age: 35
+
+*Salary and earnings*
+Salary period: monthly; Minimum CTC (INR): 15000; Maximum CTC (INR): 18000; Salary information: As per grade; Payable days: 26; Basic + DA (INR): 13000; Attendance bonus (INR): 300; Monthly bonus (INR): 400; Leave amount (INR): 500; Other fixed earnings (INR): 600; Gross wages (INR): 14800; Approx. take home (INR): 13259; CTC (INR): 19544
+
+*Employee deductions*
+Employee PF (INR): 1200; Employee ESIC (INR): 111; Canteen deduction (INR): 200; Other deduction (INR): 30
+
+*Employer contributions and CTC provisions*
+Employer PF (INR): 1300; Employer ESIC (INR): 444; Gratuity provision (INR): 600; Bonus provision (INR): 700; Leave provision (INR): 800; Other CTC component (INR): 900
+
+*Duty, shifts and overtime*
+Duty hours: 8 hours; Shift: Rotational; Working days / week: 6; Weekly offs: 1; OT rate: 125; OT rate basis: per hour; OT information: Optional overtime
+
+*Facilities and charges*
+Canteen: chargeable; Canteen charge (INR): 30; Canteen charge basis: per meal; Canteen information: Lunch service; Transport: chargeable; Transport charge (INR): 25; Transport charge basis: per day; Transport information: Sanand bus; Accommodation: chargeable; Accommodation charge (INR): 1500; Accommodation charge basis: per month; Accommodation information: Shared room
+
+*Leave and holidays*
+Paid leave days / year: 12; Casual leave days / year: 7; Sick leave days / year: 6; National holiday days / year: 3; Festival holiday days / year: 5
+
+*Employment terms*
+Employment: contract; Payroll: contractor; Contract months: 12; Probation months: 3; Training days: 7; Notice days: 30
+
+*Interview and joining*
+Interview location: Plant gate; Interview date / time: 01 Nov 2026 10:00 IST; Expected joining date: 2026-11-05
+
+*Additional benefits*
+Joining Bonus: INR 1000 one time; Uniform: provided
+
+*Job description*
+Assembly work. Quality checks. Safety rules apply.
+
+*Job description continued*
+No further description supplied.
+
+View the job and apply, or share this opportunity with someone looking for work. To stop WhatsApp job alerts, tap Stop alerts or reply STOP.
+
+[View Job & Apply]
+[Stop alerts]
