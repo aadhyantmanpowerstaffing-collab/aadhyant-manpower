@@ -1,0 +1,33 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+const {setup}=require('./fixtures/full-job-runtime-setup');
+const {value,requirement}=require('./fixtures/whatsapp-console-runtime-helpers');
+const upgrade=fs.readFileSync('supabase/migrations/20261016124516_readable_whatsapp_job_layout.sql','utf8');
+const template=JSON.parse(fs.readFileSync('docs/whatsapp/registered-job-alert-template-v3.json','utf8'));
+const keys=JSON.parse(fs.readFileSync('docs/whatsapp/readable-job-parameter-keys.json','utf8'));
+test('readable message puts every public field on a fixed bullet line, preserves punctuation, zeroes and the full description',async()=>{const {db}=await setup();try{
+ await db.exec(upgrade);
+ const raw=JSON.parse(fs.readFileSync('tests/fixtures/full-job-example.json','utf8'));raw.company_name='Example; Works <script>no HTML</script>';raw.additional_notes='x'.repeat(2000);raw.employee_pf='0';
+ for(const [k,v] of Object.entries(raw))await db.query('update public.employer_requirements set '+k+'=$1 where id=$2',[v,requirement]);
+ const v=(await value(db,'select private.registered_alert_variables($1) v',[requirement])).v;
+ assert.equal(v.template_contract,'registered_lines_v3');assert.equal(v.description_1+v.description_2,'x'.repeat(2000));assert.equal(v.line_2,'Company / worksite: '+raw.company_name);assert.ok(Object.values(v).includes('Employee PF (INR): 0'));
+ const preview=(await value(db,'select public.admin_console_preview_full_job_alert($1) p',[requirement])).p;
+ assert.equal(preview.within_limits,true);assert.equal(preview.template_name,template.name);assert.doesNotMatch(preview.message,/\{\{/);assert.match(preview.message,/\n• Basic \+ DA \(INR\): 13000\n• Attendance bonus/);assert.match(preview.message,/01 Nov 2026 10:00 IST/);
+ assert.equal((await value(db,'select private.registered_alert_body() body')).body,template.components[0].text);
+ assert.ok(template.components[0].text.length<=1024);assert.equal(keys.length,72);
+ for(const bad of [{...v,bank_account:'secret'},{...v,line_2:'one\ntwo'},{...v,line_2:'x'.repeat(1001)},{...v,line_2:'one     two'}])assert.equal((await value(db,'select private.whatsapp_safe_flat_json($1::jsonb) ok',[JSON.stringify(bad)])).ok,false);
+ delete v.line_2;assert.equal((await value(db,'select private.whatsapp_safe_flat_json($1::jsonb) ok',[JSON.stringify(v)])).ok,false);
+ assert.equal((await value(db,"select has_function_privilege('anon','public.admin_console_preview_full_job_alert(uuid)','execute') ok")).ok,false);
+ }finally{await db.close();}});
+test('readable contract requires exact approved v3, retains canonical enqueue, and pauses changed jobs',async()=>{const {db}=await setup();try{
+ await db.exec(upgrade);
+ const prior=JSON.parse(fs.readFileSync('docs/whatsapp/registered-job-alert-template-v2.json','utf8'));prior.id='1234567899';prior.status='APPROVED';await db.query('select public.console_sync_templates($1::jsonb)',[JSON.stringify([prior])]);
+ await assert.rejects(db.query('select public.admin_console_set_automatic_alerts(true,10)'),/Approved template/);
+ const current={...template,id:'1234567800',status:'APPROVED'};await db.query('select public.console_sync_templates($1::jsonb)',[JSON.stringify([current])]);await db.query('select public.admin_console_set_automatic_alerts(true,10)');
+ const c=(await value(db,"insert into public.candidates(mobile,profile_status,status) values('9876543210','active','new') returning id")).id;
+ await db.query("insert into public.whatsapp_contacts(provider_address,indian_mobile_key,candidate_id,resolution_status,marketing_consent_status,consent_source,consent_scope,consent_recorded_at,consent_policy_version) values('+919876543210','9876543210',$1,'resolved','opted_in','whatsapp_web','all_job_alerts',clock_timestamp(),'test')",[c]);
+ await db.query("update public.employer_requirements set review_status='approved',additional_notes=repeat('x',1200) where id=$1",[requirement]);
+ const row=(await db.query("select * from public.console_claim_registered_alerts('readable-worker')")).rows[0];assert.ok(row);assert.equal(row.template_name,template.name);assert.equal(row.template_variables.template_contract,'registered_lines_v3');assert.equal(row.template_variables.description_2.length,200);
+ assert.equal((await value(db,'select private.whatsapp_vacancy_send_eligible($1) ok',[row.message_id])).ok,true);
+ await db.query("update public.employer_requirements set accommodation_status='free' where id=$1",[requirement]);assert.equal((await value(db,'select private.whatsapp_vacancy_send_eligible($1) ok',[row.message_id])).ok,false);
+ }finally{await db.close();}});
