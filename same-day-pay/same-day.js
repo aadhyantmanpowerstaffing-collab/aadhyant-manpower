@@ -12,7 +12,7 @@
   const indiaDate = () => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const time = (v) => String(v || '').slice(0,5);
   const message = (v, error = false) => { $('#message').textContent = v; $('#message').classList.toggle('error',error); };
-  let signedIn = false, allowed = false, candidate = false, offset = 0, busy = false, submissionKey = null;
+  let signedIn = false, allowed = false, candidate = false, offset = 0, busy = false, submissionKey = null, availability = null, poolOffset = 0, refreshing = false;
   const form = $('#job-form');
   const write = async (fn) => { if(busy) return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);} };
   const button = (label, action, secondary = false) => { const b=make('button',label,secondary?'secondary':'');b.type='button';b.onclick=()=>write(action).catch(e=>message(e?.message || 'Action could not be completed. Refresh and retry.',true));return b; };
@@ -22,13 +22,15 @@
     const t=job.terms, n=make('article',null,'job');n.id=`job-${job.requirement_code}`;
     n.append(make('span',nice(job.review_status),'badge'),make('h3',job.job_role),make('p',job.company_name,'company'),make('p',job.job_location),make('p',money(t.pay_amount),'pay'));
     n.querySelector('.pay').append(make('small','per person · complete shift'));
-    n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Payment',`Same day, ${time(t.payment_time)} IST`],['Paid by',nice(t.payment_by)],['Method',nice(t.payment_method)],['Report at',t.reporting_point],['Supervisor',`${t.contact_name} · ${t.contact_phone}`]]));
+    n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Confirmed',job.confirmed_count ?? '—'],['Places remaining',job.remaining_places ?? '—'],['Payment',`Same day, ${time(t.payment_time)} IST`],['Paid by',nice(t.payment_by)],['Method',nice(t.payment_method)],['Report at',t.reporting_point],['Supervisor',`${t.contact_name} · ${t.contact_phone}`]]));
     if(t.facilities)n.append(make('p',t.facilities));
     if(job.review_feedback)n.append(make('p',`Review feedback: ${job.review_feedback}`,'error'));
     if(job.expired)n.append(make('p','This shift has already started. No new availability is accepted.','error'));
     const actions=make('div',null,'actions');
     if(role==='candidate') {
       if(job.my_application) actions.append(make('span','Availability submitted · see My Shifts','badge'));
+      else if(Number(job.remaining_places)===0) actions.append(make('span','Fully booked','badge'));
+      else if(job.expired) actions.append(make('span','Applications closed','badge'));
       else if(candidate && !job.expired)actions.append(button('I’m Available',async()=>{await rpc('apply_same_day_job',{p_requirement_id:job.id});message('Availability submitted. Wait for the employer to confirm your place.');await load();}));
       else {const a=make('a','Sign in to Apply');a.href=login();actions.append(a);}
     } else if(allowed && role!=='admin') {
@@ -71,6 +73,27 @@
     $('#previous').hidden=offset===0;$('#next').hidden=rows?.length!==20;
     await loadApplications();
   }
+  function renderAvailability(data){
+    availability=data;const f=$('#availability-form');
+    f.elements.today.checked=data.available_dates.includes(data.today);f.elements.tomorrow.checked=data.available_dates.includes(data.tomorrow);
+    f.elements.local_area.value=data.local_area || '';
+    $('#available-today').textContent=`Available today · ${date(data.today)}`;
+    $('#available-tomorrow').textContent=`Available tomorrow · ${date(data.tomorrow)}`;
+    $('#availability-panel').hidden=false;
+  }
+  async function loadPool(){
+    if(!allowed)return;
+    const rows=await rpc('list_same_day_available_candidates',{p_date:$('#pool-date').value,p_limit:25,p_offset:poolOffset});
+    const target=$('#pool-results');target.replaceChildren();
+    if(!rows?.length)target.append(make('p','No candidates have marked availability for this date.'));
+    for(const r of rows || []){const n=make('article',null,'application');n.append(make('h3',r.candidate_name),make('p',`${r.local_area} · ${date(r.available_date)}`));target.append(n);}
+    $('#pool-previous').hidden=poolOffset===0;$('#pool-next').hidden=rows?.length!==25;
+  }
+  async function refreshPlaces(){
+    if(refreshing||busy)return;refreshing=true;
+    try{await load();}catch(_){message('Place counts could not refresh. Use Refresh Places to retry.',true);}finally{refreshing=false;}
+  }
+
   function updateDuration(){const v=form.elements.starts_at.value;const hours=$('#duration').value;if(!v||hours==='custom')return;const [h,m]=v.split(':').map(Number);const end=h*60+m+Number(hours)*60;if(end>=1440){$('#duration').value='custom';return;}form.elements.ends_at.value=`${String(Math.floor(end/60)).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`;}
   function openForm(job=null){
     form.reset();submissionKey=crypto.randomUUID();$('#form-message').textContent='';form.elements.requirement_id.value=job?.id || '';
@@ -100,6 +123,26 @@
     $('#new-job').hidden=!allowed||role==='admin';
     if(allowed){$('#list-eyebrow').textContent=role==='admin'?'REVIEW & OPERATIONS':'MY SHIFT POSTS';$('#list-title').textContent=role==='admin'?'Same-Day Pay Review':'My Same-Day Pay Jobs';}
     $('#preference-form').onsubmit=e=>{e.preventDefault();write(async()=>{const f=e.currentTarget;if(!['yes','no'].includes(f.elements.general.value)||!['yes','no'].includes(f.elements.same_day.value))throw new Error('Choose Yes or No for both alerts.');await rpc('save_candidate_alert_choices',{p_general:f.elements.general.value==='yes',p_same_day:f.elements.same_day.value==='yes',p_current_job_location:f.elements.current_job_location.value.trim()});message('Both WhatsApp alert choices saved. Sanand location rules apply to Same-Day Pay alerts.');}).catch(()=>message('Preference could not be saved.',true));};
+    if(candidate){
+      try{renderAvailability(await rpc('get_same_day_availability'));}catch(_){$('#availability-panel').hidden=false;$('#availability-status').textContent='Availability could not be loaded. Refresh this page before saving.';}
+      $('#availability-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;write(async()=>{
+        if(!availability)throw new Error('Refresh this page before saving availability.');
+        const dates=[];if(f.elements.today.checked)dates.push(availability.today);if(f.elements.tomorrow.checked)dates.push(availability.tomorrow);
+        renderAvailability(await rpc('save_same_day_availability',{p_dates:dates,p_local_area:f.elements.local_area.value.trim()}));
+        $('#availability-status').textContent=dates.length?'Availability saved for the selected dates. Apply separately to a shift.':'Availability removed.';
+      }).catch(e=>{$('#availability-status').textContent=e?.message || 'Availability could not be saved.';});};
+    }
+    if(allowed){
+      const today=indiaDate();const tomorrow=new Date(`${today}T12:00:00Z`);tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+      for(const [d,label] of [[today,'Today'],[tomorrow.toISOString().slice(0,10),'Tomorrow']]){const o=make('option',`${label} · ${date(d)}`);o.value=d;$('#pool-date').append(o);}
+      $('#worker-pool').hidden=false;
+      const pool=()=>loadPool().catch(()=>{$('#pool-results').replaceChildren(make('p','Available workers could not be loaded. Refresh the date and retry.','error'));});
+      $('#pool-date').onchange=()=>{poolOffset=0;pool();};$('#pool-refresh').onclick=pool;
+      $('#pool-previous').onclick=()=>{poolOffset=Math.max(0,poolOffset-25);pool();};$('#pool-next').onclick=()=>{poolOffset+=25;pool();};await pool();
+    }
+    $('#refresh-jobs').onclick=refreshPlaces;
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPlaces();});
+    setInterval(()=>{if(!document.hidden)refreshPlaces();},30000);
     message('');await load();
   }
   start().catch(()=>message('This workspace is not available yet. Refresh after the portal update is deployed.',true));
