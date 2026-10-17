@@ -1,5 +1,11 @@
 # Automatic job alerts — activation progress, 16 October 2026
 
+## Verified continuation — 17 October 2026
+
+User completed a manual worker-credential replacement in GitHub and Supabase. Never retrieve or record its value. Earlier canonical scheduled run 38991034960 attempts 2 and 3 failed; safe diagnostic source feea4f9e85423b92393ecc396cac6b43e0400933 exposed only HTTP 401. Its 9 focused checks passed. Environment approved-source SHA now pins that commit. Main scheduler installation lock was removed at e9aea7665b83dfa2e73e9ee1ac77bc72f4728d00; repository and whatsapp-production enable variables are now true, with main-only environment restriction preserved.
+
+The same scheduled run attempt 4, job 117304980802, succeeded at 2026-10-17T04:08:26Z: processed=0, sent=0, failed=0, reconciliation_required=0. Database heartbeat verified at 04:08:25.772957Z (09:38:25 IST). Actual template sync at 04:08:25.15736Z still shows compatible v4 PENDING. Database automatic_alerts_enabled=false, scheduler_ready=false, outbound count=0. A passing worker connection does not imply complete activation: retain the Admin activation/readiness boundary until approval and remaining scheduler readiness are verified. No real vacancy or recipient supplied and no real send performed. Historical entries below describe the earlier checkpoint, not the current credential/runner state.
+
 User authorized proceeding with automatic alerts before a real-vacancy walkthrough at 21:24:20 IST. No real vacancy or recipient test has been supplied. All earlier dummy business data remains cleared.
 
 Read-only readiness: sender_ready=true, scheduler_ready=false, automatic_alerts_enabled=false, automatic_alerts_worker_verified_at=null. The last catalog sync at 20:28:54 IST showed registered v4 PENDING. This is cached metadata, not a fresh provider status. Browser credential protection blocked the authenticated Templates/Sync action after canonical-navigation recovery; do not claim a new Meta result or infer approval. An explicit Admin handoff is required to complete that UI step.
