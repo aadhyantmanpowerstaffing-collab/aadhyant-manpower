@@ -82,7 +82,7 @@ begin
  perform set_config('aadhyant.same_day_edit','yes',true);
  old_review:=private.normalized_vacancy_review_status(p_requirement_id);
  if p_role='company' then
-  select x.id into v_id from public.manage_company_portal_vacancy(
+  select x.id into v_id from public.manage_company_portal_requirement(
    p_action=>case when p_requirement_id is null then 'create' else 'update' end,p_requirement_id=>p_requirement_id,
    p_department=>'Same-Day Pay',p_job_role=>btrim(p_payload->>'job_role'),p_job_location=>btrim(p_payload->>'job_location'),p_required_headcount=>count_needed,
    p_shift_details=>d::text||' '||s::text||' to '||e::text||' IST',p_working_hours=>(extract(epoch from(e-s))/3600)::text||' hours',p_additional_notes=>notes) x;
@@ -97,7 +97,7 @@ begin
  values(v_id,d,s,e,amount,payment,p_payload->>'payment_method',p_payload->>'payment_by',btrim(p_payload->>'reporting_point'),btrim(p_payload->>'contact_name'),p_payload->>'contact_phone',coalesce(p_payload->>'facilities',''))
  on conflict(requirement_id) do update set work_date=excluded.work_date,starts_at=excluded.starts_at,ends_at=excluded.ends_at,pay_amount=excluded.pay_amount,payment_time=excluded.payment_time,payment_method=excluded.payment_method,payment_by=excluded.payment_by,reporting_point=excluded.reporting_point,contact_name=excluded.contact_name,contact_phone=excluded.contact_phone,facilities=excluded.facilities;
  update public.employer_requirements set work_engagement='same_day_pay',salary_wage='INR '||amount||' for the complete shift; paid the same evening' where id=v_id;
- if p_role='company' then perform public.manage_company_portal_vacancy(p_action=>case when old_review='correction_required' then 'resubmit' else 'submit' end,p_requirement_id=>v_id);
+ if p_role='company' then perform public.manage_company_portal_requirement(p_action=>case when old_review='correction_required' then 'resubmit' else 'submit' end,p_requirement_id=>v_id);
  else perform public.manage_contractor_portal_vacancy(p_action=>case when old_review='correction_required' then 'resubmit' else 'submit' end,p_requirement_id=>v_id,p_client_name=>btrim(p_payload->>'company_name'),p_department=>'Same-Day Pay',p_job_role=>btrim(p_payload->>'job_role'),p_job_location=>btrim(p_payload->>'job_location'),p_required_headcount=>count_needed);end if;
  update private.same_day_submit_requests set requirement_id=v_id where actor_id=actor and request_key=p_request_key;
  return v_id;
