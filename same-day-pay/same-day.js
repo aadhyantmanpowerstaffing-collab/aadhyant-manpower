@@ -88,7 +88,7 @@
     if(!client){message('The portal connection is unavailable.',true);return;}
     const {data:{session}}=await client.auth.getSession();signedIn=!!session;
     if(signedIn){
-      if(role==='candidate'){try{const pref=await rpc('get_same_day_preferences');candidate=true;$('#preferences').hidden=false;$('#preference-form').elements.enabled.checked=pref.enabled;}catch(_){/* Other account types can browse public shifts. */}}
+      if(role==='candidate'){try{const pref=await rpc('get_candidate_alert_choices');candidate=true;$('#preferences').hidden=false;const fields=$('#preference-form').elements;fields.general.value=typeof pref.general_alerts==='boolean'?(pref.general_alerts?'yes':'no'):'';fields.same_day.value=typeof pref.same_day_alerts==='boolean'?(pref.same_day_alerts?'yes':'no'):'';fields.current_job_location.value=pref.current_job_location||'';}catch(_){/* Other account types can browse public shifts. */}}
       else if(role==='admin'){try{await rpc('list_same_day_jobs',{p_scope:'admin',p_limit:1,p_offset:0,p_code:null});allowed=true;}catch(_){}}
       else {try{const data=await rpc(role==='company'?'get_company_portal_context':'get_contractor_portal_context');const c=Array.isArray(data)?data[0]:data;allowed=role==='company'?c?.can_manage_requirements===true:c?.can_manage_vacancies===true;}catch(_){}}
     }
@@ -99,7 +99,7 @@
     }
     $('#new-job').hidden=!allowed||role==='admin';
     if(allowed){$('#list-eyebrow').textContent=role==='admin'?'REVIEW & OPERATIONS':'MY SHIFT POSTS';$('#list-title').textContent=role==='admin'?'Same-Day Pay Review':'My Same-Day Pay Jobs';}
-    $('#preference-form').onsubmit=e=>{e.preventDefault();write(async()=>{await rpc('set_same_day_preferences',{p_enabled:e.currentTarget.elements.enabled.checked});message('Same-Day Pay preference saved. WhatsApp delivery also requires your job-alert consent.');}).catch(()=>message('Preference could not be saved.',true));};
+    $('#preference-form').onsubmit=e=>{e.preventDefault();write(async()=>{const f=e.currentTarget;if(!['yes','no'].includes(f.elements.general.value)||!['yes','no'].includes(f.elements.same_day.value))throw new Error('Choose Yes or No for both alerts.');await rpc('save_candidate_alert_choices',{p_general:f.elements.general.value==='yes',p_same_day:f.elements.same_day.value==='yes',p_current_job_location:f.elements.current_job_location.value.trim()});message('Both WhatsApp alert choices saved. Sanand location rules apply to Same-Day Pay alerts.');}).catch(()=>message('Preference could not be saved.',true));};
     message('');await load();
   }
   start().catch(()=>message('This workspace is not available yet. Refresh after the portal update is deployed.',true));

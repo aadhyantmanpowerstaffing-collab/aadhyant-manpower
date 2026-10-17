@@ -14,11 +14,12 @@
     if (error) throw new Error('Registration unavailable');
     return data;
   };
-  function submitted(alerts) {
+  function submitted(alerts, sameDay = false) {
     form.reset(); form.hidden = true; message(''); receipt.hidden = false;
     document.querySelector('[data-alert-receipt]').textContent = alerts
       ? 'You selected all future WhatsApp job alerts. Reply STOP anytime to stop alerts.'
-      : 'You did not add a new job-alert subscription through this form.';
+      : 'General WhatsApp job alerts: No.';
+    document.querySelector('[data-alert-receipt]').textContent += sameDay ? ' Same-Day Pay alerts: Yes (Sanand location rules apply).' : ' Same-Day Pay alerts: No.';
     receipt.focus();
   }
   async function start() {
@@ -45,6 +46,7 @@
     event.preventDefault();
     if (busy || !form.reportValidity()) return;
     const d = new FormData(form), get = name => String(d.get(name) || '').trim();
+    if (!['yes','no'].includes(get('job_alert_consent')) || !['yes','no'].includes(get('same_day_alert_consent'))) { message('Choose Yes or No for both WhatsApp alert types.', true); return; }
     const state = get('state'), district = get('district');
     if (!options.sets.states.includes(state) || !options.districtsByState[state]?.includes(district)) {
       message('Select your State and District from the dropdowns.', true); return;
@@ -56,16 +58,16 @@
       course_trade_specialization:options.candidateSpecialization(form) || 'General',
       experience_status:get('candidate_type'),interview_available:get('interview_available'),
       registration_consent:form.elements.registration_consent.checked,
-      job_alert_consent:form.elements.job_alert_consent.checked
+      job_alert_consent:get('job_alert_consent') === 'yes'
     };
-    const p_optional = {pincode:get('pincode'),total_experience:options.candidateExperience(form) || '',
+    const p_optional = {same_day_alert_consent:get('same_day_alert_consent') === 'yes',current_job_location:get('current_job_location'),pincode:get('pincode'),total_experience:options.candidateExperience(form) || '',
       previous_job_role:get('previous_job_role'),preferred_job_location:get('preferred_job_location')};
     busy = true; const button = form.querySelector('button[type="submit"]'); button.disabled = true;
     message('Submitting your registration…');
     try {
       const result = await call('submit_whatsapp_registration_form',{p_token:token,p_profile,p_optional});
       if (result?.status !== 'registered' || typeof result.job_alerts_selected !== 'boolean') throw new Error('receipt');
-      submitted(result.job_alerts_selected);
+      submitted(result.job_alerts_selected, result.same_day_alerts_selected);
     } catch (_) {
       // Keep entered details only in this form; never store them in browser storage or logs.
       message('Submission could not be confirmed. Your details remain in this form. Try Submit again; the same private link cannot create a duplicate application. If it continues, contact Aadhyant for review.', true);
