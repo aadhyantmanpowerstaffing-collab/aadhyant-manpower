@@ -190,7 +190,7 @@ test('loopback server serves every runtime route and returns 404 for internal pa
   t.after(() => close(server));
 
   const runtimeRoutes = [...new Set([...ALL_HTML_ROUTES, ...REQUIRED_ROUTES])].sort();
-  assert.equal(ALL_HTML_ROUTES.length, 46);
+  assert.equal(ALL_HTML_ROUTES.length, 47);
   assert.ok(ALL_HTML_ROUTES.includes('/post-job/'));
   assert.ok(ALL_HTML_ROUTES.includes('/job-updates/'));
   assert.ok(ALL_HTML_ROUTES.includes('/candidate/apply/'));

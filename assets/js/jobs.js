@@ -130,6 +130,7 @@
     const detail = document.querySelector('[data-job-detail]');
     const listingTitle = document.title;
     const requestedCode = text(new URLSearchParams(window.location.search).get('requirement')).toUpperCase();
+
     const jobs = [];
     let offset = 0;
     let hasMore = true;
@@ -187,6 +188,7 @@
         const node = detail.querySelector(selector);
         if (node) node.textContent = text(value);
       };
+      if (job.department === 'Same-Day Pay') { window.location.replace(`/same-day-pay/?role=candidate&job=${encodeURIComponent(text(job.requirement_code))}`); return; }
       set('[data-detail-code]', job.requirement_code);
       set('[data-detail-title]', job.job_role || 'Workforce Opportunity');
       set('[data-detail-department]', job.department);

@@ -1,0 +1,34 @@
+# Same-Day Pay Jobs — 17 October 2026
+
+## Approved product scope
+
+The user approved adding Same-Day Pay Jobs for Sanand GIDC. This means a Company or Contractor posts a dated 4-hour, 8-hour or custom shift with fixed per-person total shift pay, payable the same evening. It is not a monthly salary or an hourly quote. English UI; existing Company, Contractor, Candidate and Admin identities.
+
+## Implementation
+
+- `/same-day-pay/` has role workspaces and navigation links from the existing portals. Company/Contractor submit or correct a shift; Admin uses the canonical vacancy review/publish/correction/rejection functions. Candidate sees only approved, public, open, future, not-fully-confirmed shifts.
+- Required terms include date, same-date start/end (maximum 16 hours), fixed shift pay, evening payment time no earlier than shift end, payment party/method, exact reporting point and supervisor contact. One post is one shift on one date; overnight/multi-day work is outside this version.
+- `employer_requirements` remains the vacancy record; `candidate_applications` remains the application record. Four RLS-enabled private extension tables hold shift terms, Candidate preferences, work/payment state, and submission idempotency. No second vacancy/application/outbox system; no direct browser table grants.
+- Submit delegates to retained canonical Company/Contractor management functions. A stable actor-bound request UUID and exact payload prevent duplicate retries/conflicting replay. Only draft/correction-required owner posts can be changed; correction resubmission preserves the canonical review process. Published shift terms cannot be changed through the ordinary vacancy form.
+- Candidate availability delegates to the existing `apply_candidate_job`: the existing active Candidate identity/profile/document requirements continue to apply. Repeated availability reuses an existing canonical application. No duplicate registration form is created.
+- Available → Confirmed → Attended → Completed / Payment Pending → Payment Recorded; the candidate separately confirms Payment Received. Cancellation is allowed only before attendance. Employer recording payment does not assert candidate receipt. Fixed agreed pay is retained; no funds move through the portal.
+- Vacancy row locks serialize capacity confirmations; a Candidate row lock serializes overlapping shift checks. Expired/full shift guards apply to canonical eligibility and application inserts, including other existing application entry points. Attendance and work completion cannot be recorded before their scheduled times. Work/payment actions write the existing audit log.
+- Latest 100 work/payment rows are projected to the appropriate Candidate, responsible employer or authorized Admin. Other employers cannot inspect applicants or change attendance/payments. This bounded version does not yet provide a paginated historical payment export.
+
+## WhatsApp behavior
+
+Reuses the registered v4 ten-field template, existing publication/campaign/recipient/outbox/worker path, limits and STOP/consent checks. The shift summary explicitly identifies Same-Day Pay, total shift pay, date/time and same-evening payment. The approved-template job URL resolves to the dedicated shift view. No new template is submitted by this change.
+
+Regular job audiences retain their current all-job behavior. Same-Day Pay additionally requires the Candidate's explicit Sanand GIDC shift preference, selected before publication; it does not infer consent or a person's employment/location from an imported number. Existing registered WhatsApp eligibility is still required. The final provider guard rechecks shift preference, expiry, capacity and the canonical consent/suppression checks. Changing shift terms changes the frozen job fingerprint. No historical replay or new automatic-alert enablement is introduced.
+
+## Validation and limits
+
+Seven isolated PGlite runtime checks pass. They cover validated/idempotent submission, review visibility, cross-owner denial/grants, canonical application reuse and capacity, overlapping confirmed shifts, chronological work/payment transitions and independent candidate receipt, separate shift opt-in, actual existing alert worker/provider guard, plus retained Company and corrected Contractor functions including correction resubmission. No real service/provider/customer data is used.
+
+The complete regression passed 588/588 with zero failures/skips; the final focused same-day/public-page/artifact checks passed 40/40. All 47 allowlisted HTML routes and production artifact verification passed. Final frontend payload aggregate SHA-256: `6ff01ada035e7ba05d33933b8730231b96100cca93fc1f291b030022a2eff66b` (93 runtime payload files). JavaScript syntax and `git diff --check` pass. Browser visual preview could not be opened: this cloud browser's URL policy rejects local `file:` pages. No workaround was attempted. Desktop/mobile visual QA and live authenticated role walkthrough remain unverified; static responsive CSS and build/link checks are not substitutes for that evidence.
+
+## Deployment boundary
+
+Prepared only; no production DDL/configuration/site deployment, Meta change, alert enablement, real candidate registration, application or WhatsApp send is authorized by this implementation step. Repository `AGENTS.md` requires explicit human approval before any production deployment/database mutation.
+
+After approval, verify current production function/schema prerequisites, install the reviewed migration atomically, compare definitions/grants/RLS and before/after business counts, deploy the exact allowlisted artifact, and perform read-only role/navigation checks. Keep automatic alerts OFF while v4 remains PENDING; activation still requires fresh approved metadata, verified sender/worker and the authenticated Admin control. A real-message end-to-end test requires an explicitly intended vacancy/recipient and separate send authorization.

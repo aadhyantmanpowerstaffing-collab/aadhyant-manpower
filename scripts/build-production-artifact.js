@@ -26,6 +26,9 @@ const PRODUCTION_BINDING = Object.freeze({
 const SOURCE_RUNTIME_FILES = Object.freeze([
   'CNAME',
   'index.html',
+  'same-day-pay/index.html',
+  'same-day-pay/same-day.css',
+  'same-day-pay/same-day.js',
   'post-job/index.html',
   'post-job/post-job.css',
   'style.css',
