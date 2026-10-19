@@ -94,20 +94,30 @@
     try{await load();}catch(_){message('Place counts could not refresh. Use Refresh Places to retry.',true);}finally{refreshing=false;}
   }
 
-  function updateDuration(){const v=form.elements.starts_at.value;const hours=$('#duration').value;if(!v||hours==='custom')return;const [h,m]=v.split(':').map(Number);const end=h*60+m+Number(hours)*60;if(end>=1440){$('#duration').value='custom';return;}form.elements.ends_at.value=`${String(Math.floor(end/60)).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`;}
+  function updateDuration(){
+    const start=form.elements.starts_at,end=form.elements.ends_at,hours=$('#duration').value;
+    end.setCustomValidity('');end.readOnly=hours!=='custom';
+    const hint=$('#duration-hint');
+    if(hours==='custom'){hint.textContent='Enter the end time for your custom shift (same day).';return;}
+    if(!start.value){end.value='';hint.textContent='Choose a start time. End time will be calculated automatically.';return;}
+    const [h,m]=start.value.split(':').map(Number),minutes=h*60+m+Number(hours)*60;
+    if(minutes>=1440){end.value='';end.setCustomValidity('This shift ends on the next day. Choose an earlier start time for a same-day shift.');hint.textContent='This shift ends on the next day. Choose an earlier start time for a same-day shift.';return;}
+    end.value=`${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+    hint.textContent=`End time calculated automatically for a ${hours}-hour shift.`;
+  }
   function openForm(job=null){
     form.reset();submissionKey=crypto.randomUUID();$('#form-message').textContent='';form.elements.requirement_id.value=job?.id || '';
     $('#company-field').hidden=role!=='contractor';form.elements.company_name.required=role==='contractor';
     form.elements.work_date.min=indiaDate();$('#form-title').textContent=job?'Edit & Resubmit Shift':'Post Same-Day Pay Job';
     if(job){for(const [k,v] of Object.entries({...job,...job.terms}))if(form.elements[k]&&k!=='requirement_id')form.elements[k].value=v ?? '';$('#duration').value=['4','8'].includes(String(Number(job.hours)))?String(Number(job.hours)):'custom';}
-    $('#job-dialog').showModal();
+    updateDuration();$('#job-dialog').showModal();
   }
   async function start(){
     document.querySelector(`[data-role="${role}"]`).setAttribute('aria-current','page');
     $('#new-job').onclick=()=>openForm();$('#close-dialog').onclick=()=>$('#job-dialog').close();
-    $('#duration').onchange=updateDuration;form.elements.starts_at.onchange=updateDuration;
+    $('#duration').onchange=updateDuration;form.elements.starts_at.oninput=updateDuration;form.elements.starts_at.onchange=updateDuration;
     $('#previous').onclick=()=>{offset=Math.max(0,offset-20);load().catch(()=>message('Shifts could not be loaded.',true));};$('#next').onclick=()=>{offset+=20;load().catch(()=>message('Shifts could not be loaded.',true));};
-    form.onsubmit=e=>{e.preventDefault();write(async()=>{if(!form.reportValidity())return;const data=Object.fromEntries(new FormData(form));const id=data.requirement_id || null;delete data.requirement_id;await rpc('submit_same_day_job',{p_role:role,p_payload:data,p_request_key:submissionKey,p_requirement_id:id});$('#job-dialog').close();message('Submitted for Admin review. Candidates will see the shift after approval.');await load();}).catch(e=>{$('#form-message').textContent=e?.message || 'Submission could not be confirmed. Keep this form open and retry with the same details.';});};
+    form.onsubmit=e=>{e.preventDefault();write(async()=>{updateDuration();if(form.elements.ends_at.validity.customError){$('#form-message').textContent=$('#duration-hint').textContent;return;}if(!form.reportValidity())return;const data=Object.fromEntries(new FormData(form));const id=data.requirement_id || null;delete data.requirement_id;await rpc('submit_same_day_job',{p_role:role,p_payload:data,p_request_key:submissionKey,p_requirement_id:id});$('#job-dialog').close();message('Submitted for Admin review. Candidates will see the shift after approval.');await load();}).catch(e=>{$('#form-message').textContent=e?.message || 'Submission could not be confirmed. Keep this form open and retry with the same details.';});};
     if(!client){message('The portal connection is unavailable.',true);return;}
     const {data:{session}}=await client.auth.getSession();signedIn=!!session;
     if(signedIn){
