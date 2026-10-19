@@ -80,3 +80,17 @@ test('same-day wrapper works against retained Company and corrected Contractor v
  await db.query("update public.employer_requirements set review_status='correction_required' where id=$1;",[id]);await db.query("update public.requirement_contractors set submission_status='correction_required' where requirement_id=$1",[id]);await submit(db,{...p,pay_amount:'400'},'contractor',crypto.randomUUID(),id);
  assert.equal((await value(db,'select submission_status from public.requirement_contractors where requirement_id=$1',[id])).submission_status,'submitted');
  }finally{await db.close();}});
+
+test('immediate payment accepts morning completion, rejects delayed terms and preserves historical agreements and replay',async()=>{const {db,payload:p}=await setup();try{
+ const key=crypto.randomUUID(),legacy=await submit(db,p,'company',key);
+ await db.exec(fs.readFileSync('supabase/migrations/20261019045940_same_day_immediate_payment.sql','utf8'));
+ assert.equal((await value(db,'select payment_time::text t from private.same_day_job_terms where requirement_id=$1',[legacy])).t,'18:00:00');
+ assert.equal(await submit(db,p,'company',key),legacy);
+ for(const role of ['company','contractor']){
+  await db.query("select set_config('test.role',$1,false)",[role]);
+  const current={...p,payment_time:p.ends_at,payment_by:role};const id=await submit(db,current,role);
+  assert.equal((await value(db,'select payment_time=ends_at exact from private.same_day_job_terms where requirement_id=$1',[id])).exact,true);
+  await assert.rejects(submit(db,{...current,payment_time:'18:00'},role),/immediately/);
+  await assert.rejects(submit(db,{...current,payment_time:'11:00'},role),/immediately/);
+ }
+ }finally{await db.close();}});
