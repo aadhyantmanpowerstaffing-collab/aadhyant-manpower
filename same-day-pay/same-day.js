@@ -14,6 +14,28 @@
   const message = (v, error = false) => { $('#message').textContent = v; $('#message').classList.toggle('error',error); };
   let signedIn = false, allowed = false, candidate = false, offset = 0, busy = false, submissionKey = null, availability = null, poolOffset = 0, refreshing = false;
   const form = $('#job-form');
+  let activePanel='jobs';
+  function configureWorkspace(){
+    document.body.dataset.workspaceRole=role;
+    const employer=['company','contractor'].includes(role);
+    $('#workspace-label').textContent=`${nice(role).toUpperCase()} WORKSPACE · SAME-DAY PAY`;
+    $('#workspace-title').textContent=role==='admin'?'Review shifts. Track the work.':employer?'Post a shift. Manage your workers.':'Find a shift. Apply for work.';
+    $('#workspace-description').textContent=role==='admin'?'Review Company and Contractor posts, then monitor applications, attendance and payment records.':employer?'Create a job post, submit it for Aadhyant review, then manage applications after publication.':'Check the date, hours and pay. Apply to a specific shift and wait for the employer to confirm your place.';
+    $('#workflow-guide').textContent=role==='admin'?'1. Review job posts   →   2. Approve or request changes   →   3. Monitor applications & payments':employer?'1. Post a shift   →   2. Aadhyant reviews it   →   3. Confirm applicants & record work/payment':'1. Find a shift   →   2. Apply for that shift   →   3. Check My Applications for confirmation';
+    $('#portal-back').href=role==='candidate'?'/candidate/portal/':`/${role}/`;
+    const sections=role==='candidate'?[['jobs','Find Shifts'],['applications','My Applications'],['availability','My Availability'],['alerts','WhatsApp Alerts']]:[['jobs',role==='admin'?'Review Job Posts':'My Job Posts'],['applications','Applications & Payments'],['workers','Available Workers']];
+    for(const [key,label] of sections){const b=make('button',label,'secondary');b.type='button';b.dataset.workspaceTarget=key;b.onclick=()=>selectPanel(key);$('#workspace-nav').append(b);}
+    $('#status-filter-label').hidden=!employer&&role!=='admin';
+    $('#job-status-filter').onchange=()=>{offset=0;load().catch(()=>message('Posts could not be loaded. Refresh and retry.',true));};
+    selectPanel('jobs');
+  }
+  function selectPanel(key){
+    activePanel=key;
+    document.querySelectorAll('[data-workspace-panel]').forEach(n=>n.hidden=n.dataset.workspacePanel!==key);
+    document.querySelectorAll('[data-workspace-target]').forEach(n=>{if(n.dataset.workspaceTarget===key)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current');});
+    $('#workspace-help')?.remove();
+    if(key!=='jobs'&&((role==='candidate'&&!candidate)||(role!=='candidate'&&!allowed))){const p=make('p','Sign in with the correct portal account to use this section.','panel');p.id='workspace-help';$('#workspace-nav').after(p);}
+  }
   const write = async (fn) => { if(busy) return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);} };
   const button = (label, action, secondary = false) => { const b=make('button',label,secondary?'secondary':'');b.type='button';b.onclick=()=>write(action).catch(e=>message(e?.message || 'Action could not be completed. Refresh and retry.',true));return b; };
   const details = (pairs) => {const dl=make('dl');pairs.forEach(([k,v])=>{const d=make('div');d.append(make('dt',k),make('dd',v || 'Not specified'));dl.append(d);});return dl;};
@@ -22,16 +44,17 @@
     const t=job.terms, n=make('article',null,'job');n.id=`job-${job.requirement_code}`;
     n.append(make('span',nice(job.review_status),'badge'),make('h3',job.job_role),make('p',job.company_name,'company'),make('p',job.job_location),make('p',money(t.pay_amount),'pay'));
     n.querySelector('.pay').append(make('small','per person · complete shift'));
-    n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Confirmed',job.confirmed_count ?? '—'],['Places remaining',job.remaining_places ?? '—'],['Payment',`Same day, ${time(t.payment_time)} IST`],['Paid by',nice(t.payment_by)],['Method',nice(t.payment_method)],['Report at',t.reporting_point],['Supervisor',`${t.contact_name} · ${t.contact_phone}`]]));
-    if(t.facilities)n.append(make('p',t.facilities));
+    n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Places remaining',job.remaining_places ?? '—'],['Payment time',`Same day, ${time(t.payment_time)} IST`],['Payment method',nice(t.payment_method)]]));
+    const extra=make('details',null,'shift-extra');extra.append(make('summary','Reporting point, supervisor & facilities'),details([['Confirmed',job.confirmed_count ?? '—'],['Paid by',nice(t.payment_by)],['Report at',t.reporting_point],['Supervisor',`${t.contact_name} · ${t.contact_phone}`]]));
+    if(t.facilities)extra.append(make('p',t.facilities));n.append(extra);
     if(job.review_feedback)n.append(make('p',`Review feedback: ${job.review_feedback}`,'error'));
     if(job.expired)n.append(make('p','This shift has already started. No new availability is accepted.','error'));
     const actions=make('div',null,'actions');
     if(role==='candidate') {
-      if(job.my_application) actions.append(make('span','Availability submitted · see My Shifts','badge'));
+      if(job.my_application) actions.append(make('span','Applied · check My Applications','badge'));
       else if(Number(job.remaining_places)===0) actions.append(make('span','Fully booked','badge'));
       else if(job.expired) actions.append(make('span','Applications closed','badge'));
-      else if(candidate && !job.expired)actions.append(button('I’m Available',async()=>{await rpc('apply_same_day_job',{p_requirement_id:job.id});message('Availability submitted. Wait for the employer to confirm your place.');await load();}));
+      else if(candidate && !job.expired)actions.append(button('Apply for This Shift',async()=>{await rpc('apply_same_day_job',{p_requirement_id:job.id});message('Application submitted. Check My Applications for employer confirmation.');await load();selectPanel('applications');}));
       else {const a=make('a','Sign in to Apply');a.href=login();actions.append(a);}
     } else if(allowed && role!=='admin') {
       if(['draft','correction_required'].includes(job.review_status))actions.append(button('Edit & Resubmit',async()=>openForm(job),true));
@@ -46,8 +69,8 @@
   async function loadApplications(){
     if(!allowed&&!candidate)return;
     const rows=await rpc('list_same_day_applications');$('#applications-panel').hidden=false;$('#applications').replaceChildren();
-    $('#applications-title').textContent=role==='candidate'?'My Shifts':'Availability, Attendance & Payments';
-    if(!rows?.length)$('#applications').append(make('p','No shift applications yet.'));
+    $('#applications-title').textContent=role==='candidate'?'My Applications':'Applications & Payments';
+    if(!rows?.length)$('#applications').append(make('p',role==='candidate'?'You have not applied to a shift yet. Open Find Shifts and choose Apply for This Shift.':'No applications yet. Once a published shift receives applications, confirm places and record attendance here.','empty-state'));
     for(const r of rows || []){
       const n=make('article',null,'application');n.append(make('h3',`${r.requirement_code} · ${r.job_role}`),make('p',`${r.candidate_name} ${r.candidate_phone?`· ${r.candidate_phone}`:''}`),make('p',`${date(r.work_date)} · ${money(r.pay_amount)} · payment at ${time(r.payment_time)} IST`),make('span',r.work_status==='completed'?'Payment pending':r.work_status==='paid'?'Payment recorded':nice(r.work_status),'badge'));
       if(r.payment_received_at)n.append(make('p','Payment received — confirmed by candidate.'));
@@ -68,8 +91,10 @@
   async function load(){
     const scope=allowed&&role==='admin'?'admin':allowed&&['company','contractor'].includes(role)?'owner':'public';
     const rows=await rpc('list_same_day_jobs',{p_scope:scope,p_limit:20,p_offset:offset,p_code:query.get('job') || null});
-    $('#jobs').replaceChildren();(rows || []).forEach(j=>$('#jobs').append(card(j)));
-    if(!rows?.length)$('#jobs').append(make('p',scope==='public'?'No upcoming approved shifts yet. Check back soon.':'No Same-Day Pay jobs submitted yet.','panel'));
+    const filter=$('#job-status-filter').value;const shown=scope==='public'||filter==='all'?rows:(rows || []).filter(j=>j.review_status===filter);
+    $('#jobs').replaceChildren();(shown || []).forEach(j=>$('#jobs').append(card(j)));
+    if(rows?.length&&!shown?.length)$('#jobs').append(make('p','No posts with this status on the current page. Choose All statuses or check another page.','panel empty-state'));
+    if(!rows?.length)$('#jobs').append(make('p',scope==='public'?'No upcoming approved shifts yet. Check back soon.':(role==='admin'?'No shift posts to review yet. Company and Contractor submissions will appear here.':'You have not posted a shift yet. Select Post Same-Day Pay Job to create your first post.'),'panel'));
     $('#previous').hidden=offset===0;$('#next').hidden=rows?.length!==20;
     await loadApplications();
   }
@@ -85,7 +110,7 @@
     if(!allowed)return;
     const rows=await rpc('list_same_day_available_candidates',{p_date:$('#pool-date').value,p_limit:25,p_offset:poolOffset});
     const target=$('#pool-results');target.replaceChildren();
-    if(!rows?.length)target.append(make('p','No candidates have marked availability for this date.'));
+    if(!rows?.length)target.append(make('p','No workers have marked availability for this date. This list is not a list of applicants; manage applicants under Applications & Payments.'));
     for(const r of rows || []){const n=make('article',null,'application');n.append(make('h3',r.candidate_name),make('p',`${r.local_area} · ${date(r.available_date)}`));target.append(n);}
     $('#pool-previous').hidden=poolOffset===0;$('#pool-next').hidden=rows?.length!==25;
   }
@@ -113,6 +138,7 @@
     updateDuration();$('#job-dialog').showModal();
   }
   async function start(){
+    configureWorkspace();
     document.querySelector(`[data-role="${role}"]`).setAttribute('aria-current','page');
     $('#new-job').onclick=()=>openForm();$('#close-dialog').onclick=()=>$('#job-dialog').close();
     $('#duration').onchange=updateDuration;form.elements.starts_at.oninput=updateDuration;form.elements.starts_at.onchange=updateDuration;
@@ -153,7 +179,7 @@
     $('#refresh-jobs').onclick=refreshPlaces;
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPlaces();});
     setInterval(()=>{if(!document.hidden)refreshPlaces();},30000);
-    message('');await load();
+    message('');await load();selectPanel(activePanel);
   }
   start().catch(()=>message('This workspace is not available yet. Refresh after the portal update is deployed.',true));
 })();
