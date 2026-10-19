@@ -47,8 +47,15 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
  let campaign:null|string=null,automatic=false;
  try{
   const authorization=req.headers.get('authorization');const schedulerKey=env.get('WHATSAPP_WORKER_SECRET');const scheduler=Boolean(schedulerKey&&schedulerKey.length>=32&&constantTimeEqual(req.headers.get('x-whatsapp-worker-key')||'',schedulerKey));
-  if(!scheduler){if(req.headers.get('origin')!==origin||!authorization?.startsWith('Bearer '))return reply(401,{error:'Admin sign in required'});const r=await fetcher(base+'/rest/v1/rpc/admin_console_access',{method:'POST',headers:{authorization,apikey:env.get('SUPABASE_ANON_KEY'),'content-type':'application/json'},body:'{}',redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok||await r.json()!==true)return reply(403,{error:'Admin access required'});}
-  const raw=await req.text();if(raw.length>1000)return reply(400,{error:'Invalid request'});const body=JSON.parse(raw||'{}');if(!body||Array.isArray(body)||Object.keys(body).some(k=>!['campaign_id','automatic'].includes(k)))return reply(400,{error:'Invalid request'});if(body.campaign_id!==undefined){if(!uuid.test(body.campaign_id))return reply(400,{error:'Invalid campaign'});campaign=body.campaign_id;}if(body.automatic!==undefined){if(body.automatic!==true||!scheduler||campaign)return reply(400,{error:'Automatic scheduler request required'});automatic=true;}if(!scheduler&&!campaign)return reply(400,{error:'Choose a campaign'});
+  let databaseWake=false;
+  const wakeKey=req.headers.get('x-whatsapp-wake-key');
+  if(wakeKey){
+   if(!/^[a-f0-9]{64}$/.test(wakeKey))return reply(401,{error:'Invalid automatic wake'});
+   databaseWake=await rpc('console_verify_automatic_wake',{p_key:wakeKey})===true;
+   if(!databaseWake)return reply(401,{error:'Invalid automatic wake'});
+  }
+  if(!scheduler&&!databaseWake){if(req.headers.get('origin')!==origin||!authorization?.startsWith('Bearer '))return reply(401,{error:'Admin sign in required'});const r=await fetcher(base+'/rest/v1/rpc/admin_console_access',{method:'POST',headers:{authorization,apikey:env.get('SUPABASE_ANON_KEY'),'content-type':'application/json'},body:'{}',redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok||await r.json()!==true)return reply(403,{error:'Admin access required'});}
+  const raw=await req.text();if(raw.length>1000)return reply(400,{error:'Invalid request'});const body=JSON.parse(raw||'{}');if(!body||Array.isArray(body)||Object.keys(body).some(k=>!['campaign_id','automatic'].includes(k)))return reply(400,{error:'Invalid request'});if(body.campaign_id!==undefined){if(databaseWake||!uuid.test(body.campaign_id))return reply(400,{error:'Invalid campaign'});campaign=body.campaign_id;}if(body.automatic!==undefined){if(body.automatic!==true||(!scheduler&&!databaseWake)||campaign)return reply(400,{error:'Automatic scheduler request required'});automatic=true;}if(databaseWake&&!automatic)return reply(400,{error:'Automatic wake only'});if(!scheduler&&!databaseWake&&!campaign)return reply(400,{error:'Choose a campaign'});
   if(automatic){
    if(env.get('WHATSAPP_AUTOMATIC_ALERTS_ENABLED')!=='true')return reply(503,{error:'Automatic worker is not enabled'});
    // Refresh ownership and approval from Meta on every automatic run; never trust stale approval.
