@@ -44,7 +44,7 @@
     const t=job.terms, n=make('article',null,'job');n.id=`job-${job.requirement_code}`;
     n.append(make('span',nice(job.review_status),'badge'),make('h3',job.job_role),make('p',job.company_name,'company'),make('p',job.job_location),make('p',money(t.pay_amount),'pay'));
     n.querySelector('.pay').append(make('small','per person · complete shift'));
-    n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Places remaining',job.remaining_places ?? '—'],['Payment time',time(t.payment_time)===time(t.ends_at)?`Payment immediately after shift completion · ${time(t.payment_time)} IST`:`Same day, ${time(t.payment_time)} IST`],['Payment method',nice(t.payment_method)]]));
+    n.append(details([['Date',date(t.work_date)],['Shift',`${date(t.work_date)} ${time(t.starts_at)} → ${date(t.end_date||t.work_date)} ${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Places remaining',job.remaining_places ?? '—'],['Payment time',time(t.payment_time)===time(t.ends_at)?`Payment immediately after shift completion · ${date(t.payment_date||t.work_date)} ${time(t.payment_time)} IST`:`${date(t.payment_date||t.work_date)}, ${time(t.payment_time)} IST`],['Payment method',nice(t.payment_method)]]));
     const privateContact=allowed&&role!=='candidate';
     const extra=make('details',null,'shift-extra');extra.append(make('summary',privateContact?'Reporting point, supervisor & facilities':'Reporting point & facilities'),details([['Confirmed',job.confirmed_count ?? '—'],['Paid by',nice(t.payment_by)],['Report at',t.reporting_point]]));
     if(privateContact&&t.contact_phone)extra.append(details([['Supervisor',`${t.contact_name || ''} · ${t.contact_phone}`]]));
@@ -75,10 +75,10 @@
     $('#applications-title').textContent=role==='candidate'?'My Applications':'Applications & Payments';
     if(!rows?.length)$('#applications').append(make('p',role==='candidate'?'You have not applied to a shift yet. Open Find Shifts and choose Apply for This Shift.':'No applications yet. Once a published shift receives applications, confirm places and record attendance here.','empty-state'));
     for(const r of rows || []){
-      const n=make('article',null,'application');n.append(make('h3',`${r.requirement_code} · ${r.job_role}`),make('p',`${r.candidate_name} ${r.candidate_phone?`· ${r.candidate_phone}`:''}`),make('p',`${date(r.work_date)} · ${money(r.pay_amount)} · payment at ${time(r.payment_time)} IST`),make('span',r.work_status==='completed'?'Payment pending':r.work_status==='paid'?'Payment recorded':nice(r.work_status),'badge'));
+      const n=make('article',null,'application');n.append(make('h3',`${r.requirement_code} · ${r.job_role}`),make('p',`${r.candidate_name} ${r.candidate_phone?`· ${r.candidate_phone}`:''}`),make('p',`${date(r.work_date)} · ${money(r.pay_amount)} · payment on ${date(r.payment_date||r.work_date)} at ${time(r.payment_time)} IST`),make('span',r.work_status==='completed'?'Payment pending':r.work_status==='paid'?'Payment recorded':nice(r.work_status),'badge'));
       if(r.payment_received_at)n.append(make('p','Payment received — confirmed by candidate.'));
       else if(r.work_status==='paid')n.append(make('p','Waiting for candidate to confirm receipt.'));
-      else if(['completed','attended','confirmed'].includes(r.work_status)&&new Date(`${r.work_date}T${time(r.payment_time)}:00+05:30`)<new Date())n.append(make('p','Payment time has passed — review required.','error'));
+      else if(['completed','attended','confirmed'].includes(r.work_status)&&new Date(`${r.payment_date||r.work_date}T${time(r.payment_time)}:00+05:30`)<new Date())n.append(make('p','Payment time has passed — review required.','error'));
       if(r.payment_reference)n.append(make('p',`Payment reference: ${r.payment_reference}`));
       const actions=make('div',null,'actions');
       const change=async(action,reference=null)=>{await rpc('update_same_day_work',{p_application_id:r.application_id,p_action:action,p_reference:reference});await load();};
@@ -122,17 +122,23 @@
     try{await load();}catch(_){message('Place counts could not refresh. Use Refresh Places to retry.',true);}finally{refreshing=false;}
   }
 
-  function syncPaymentTime(){form.elements.payment_time.value=form.elements.ends_at.value;}
+  function nextDate(day){const d=new Date(`${day}T12:00:00Z`);if(!Number.isFinite(d.getTime()))return '';d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);}
+  function syncPaymentTime(){
+    const f=form.elements,start=f.starts_at.value,end=f.ends_at.value,day=f.work_date.value;
+    f.payment_time.value=end;
+    const endDay=day&&start&&end?(end<start?nextDate(day):day):'';
+    f.end_date.value=endDay;f.payment_date.value=endDay;
+  }
   function updateDuration(){
     const start=form.elements.starts_at,end=form.elements.ends_at,hours=$('#duration').value;
     end.setCustomValidity('');end.readOnly=hours!=='custom';
     const hint=$('#duration-hint');
-    if(hours==='custom'){hint.textContent='Enter the end time for your custom shift (same day).';syncPaymentTime();return;}
+    if(hours==='custom'){hint.textContent='Enter the end time. An earlier time means the next day (maximum 16 hours).';syncPaymentTime();return;}
     if(!start.value){end.value='';hint.textContent='Choose a start time. End time will be calculated automatically.';syncPaymentTime();return;}
     const [h,m]=start.value.split(':').map(Number),minutes=h*60+m+Number(hours)*60;
-    if(minutes>=1440){end.value='';end.setCustomValidity('This shift ends on the next day. Choose an earlier start time for a same-day shift.');hint.textContent='This shift ends on the next day. Choose an earlier start time for a same-day shift.';syncPaymentTime();return;}
-    end.value=`${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
-    hint.textContent=`End time calculated automatically for a ${hours}-hour shift.`;syncPaymentTime();
+    const clock=minutes%1440;
+    end.value=`${String(Math.floor(clock/60)).padStart(2,'0')}:${String(clock%60).padStart(2,'0')}`;
+    hint.textContent=`End time calculated for a ${hours}-hour shift${minutes>=1440?" · ends next day":""}.`;syncPaymentTime();
   }
   function openForm(job=null){
     form.reset();submissionKey=crypto.randomUUID();$('#form-message').textContent='';form.elements.requirement_id.value=job?.id || '';
@@ -145,7 +151,7 @@
     configureWorkspace();
     document.querySelector(`[data-role="${role}"]`).setAttribute('aria-current','page');
     $('#new-job').onclick=()=>openForm();$('#close-dialog').onclick=()=>$('#job-dialog').close();
-    $('#duration').onchange=updateDuration;form.elements.starts_at.oninput=updateDuration;form.elements.starts_at.onchange=updateDuration;form.elements.ends_at.oninput=syncPaymentTime;form.elements.ends_at.onchange=syncPaymentTime;
+    $('#duration').onchange=updateDuration;form.elements.starts_at.oninput=updateDuration;form.elements.starts_at.onchange=updateDuration;form.elements.work_date.oninput=syncPaymentTime;form.elements.work_date.onchange=syncPaymentTime;form.elements.ends_at.oninput=syncPaymentTime;form.elements.ends_at.onchange=syncPaymentTime;
     $('#previous').onclick=()=>{offset=Math.max(0,offset-20);load().catch(()=>message('Shifts could not be loaded.',true));};$('#next').onclick=()=>{offset+=20;load().catch(()=>message('Shifts could not be loaded.',true));};
     form.onsubmit=e=>{e.preventDefault();write(async()=>{updateDuration();if(form.elements.ends_at.validity.customError){$('#form-message').textContent=$('#duration-hint').textContent;return;}if(!form.reportValidity())return;const data=Object.fromEntries(new FormData(form));const id=data.requirement_id || null;delete data.requirement_id;await rpc('submit_same_day_job',{p_role:role,p_payload:data,p_request_key:submissionKey,p_requirement_id:id});$('#job-dialog').close();message('Submitted for Admin review. Candidates will see the shift after approval.');await load();}).catch(e=>{$('#form-message').textContent=e?.message || 'Submission could not be confirmed. Keep this form open and retry with the same details.';});};
     if(!client){message('The portal connection is unavailable.',true);return;}
