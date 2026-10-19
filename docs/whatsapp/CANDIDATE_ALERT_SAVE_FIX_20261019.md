@@ -1,0 +1,11 @@
+# Candidate alert-choice save correction — 19 October 2026
+
+Live database release approved by the user at 17:35:10 IST on 19 October 2026. The live Candidate Profile screenshot reports a combined profile/alert save failure. Read-only production evidence shows one valid active Candidate, no duplicates, no WhatsApp contacts, no saved alert choices. The live `private.save_candidate_alert_choices` writes its consent provenance (`candidate_portal` or `whatsapp_web`) directly into `audit_logs.source`; production `audit_logs_source_check` allows neither. The transaction therefore rolls back contact, preference and consent writes. A profile update is a separate preceding RPC and may already have committed.
+
+Upgrade migration `20261019120114_candidate_alert_audit_source_fix.sql` replaces only the helper's audit source expression: portal → `candidate`; WhatsApp form → `whatsapp`. Original provenance remains in choice source and contact consent_source. RPC signatures, consent/STOP checks, identity guards, location checks and grants are retained. No constraint is weakened; no real consent is backfilled or assumed.
+
+Isolated reproduction adds the actual production audit source constraint: the old helper fails with zero contact/choice residue; the corrected helper saves both Yes/Yes, supports No/No and later voluntary Yes, retains original provenance and blocks direct authenticated helper execution. The new test also covers WhatsApp form audit mapping. Focused8/8 pass.
+
+After approved database release: compare the live helper to the reviewed baseline, apply the migration, verify definition and privileges, and ask the Candidate to reopen My Profile and save their own intended choices. Existing AAD-2026-000006 publication had zero subscribers and remains empty; no automatic replay is part of the correction. No message or real Candidate data modification is authorized by preparation.
+
+Applied production migration `candidate_alert_audit_source_fix` successfully. Readback matches the reviewed function body exactly and retains postgres-only helper execution ACL. Full611/611 and focused8/8 passed before release. No real preferences were saved, contact created or message sent during deployment. Candidate must resubmit their own selected choices. No frontend/Edge change was necessary.
