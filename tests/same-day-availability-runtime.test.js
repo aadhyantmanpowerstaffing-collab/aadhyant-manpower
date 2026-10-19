@@ -43,3 +43,24 @@ test('availability is explicit, withdrawable, validated and disclosed only to ac
  await assert.rejects(db.query('select public.get_same_day_availability()'),/Candidate/);
  }finally{await db.close();}
 });
+
+test('public and Candidate shift cards exclude supervisor identity and mobile while owner and Admin retain private coordination',async()=>{
+ const {db,payload}=await setup();try{
+ const id=await submit(db,payload);await publish(db,id);
+ await db.exec(fs.readFileSync('supabase/migrations/20261019051702_same_day_private_supervisor_contact.sql','utf8'));
+ for(const role of ['company','contractor','candidate','anonymous']){
+  await db.query("select set_config('test.role',$1,false)",[role]);
+  const j=(await value(db,"select public.list_same_day_jobs('public') j")).j;
+  assert.equal('contact_phone' in j.terms,false);assert.equal('contact_name' in j.terms,false);
+  assert.equal(JSON.stringify(j).includes(payload.contact_phone),false);
+  assert.equal(j.terms.pay_amount,350);assert.equal(j.job_role,payload.job_role);
+ }
+ await db.exec("select set_config('test.role','company',false)");
+ const owner=(await value(db,"select public.list_same_day_jobs('owner') j")).j;assert.equal(owner.terms.contact_phone,payload.contact_phone);
+ await db.exec("select set_config('test.role','admin',false)");
+ const admin=(await value(db,"select public.list_same_day_jobs('admin') j")).j;assert.equal(admin.terms.contact_phone,payload.contact_phone);
+ await db.exec("select set_config('test.role','candidate',false)");
+ assert.equal((await db.query("select public.list_same_day_jobs('owner')")).rows.length,0);
+ await assert.rejects(db.query("select public.list_same_day_jobs('admin')"),/Access denied/);
+ }finally{await db.close();}
+});

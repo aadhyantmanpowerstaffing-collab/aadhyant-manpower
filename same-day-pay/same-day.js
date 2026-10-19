@@ -45,7 +45,10 @@
     n.append(make('span',nice(job.review_status),'badge'),make('h3',job.job_role),make('p',job.company_name,'company'),make('p',job.job_location),make('p',money(t.pay_amount),'pay'));
     n.querySelector('.pay').append(make('small','per person · complete shift'));
     n.append(details([['Date',date(t.work_date)],['Shift',`${time(t.starts_at)}–${time(t.ends_at)} IST · ${Number(job.hours)} hours`],['People needed',job.required_headcount],['Places remaining',job.remaining_places ?? '—'],['Payment time',time(t.payment_time)===time(t.ends_at)?`Payment immediately after shift completion · ${time(t.payment_time)} IST`:`Same day, ${time(t.payment_time)} IST`],['Payment method',nice(t.payment_method)]]));
-    const extra=make('details',null,'shift-extra');extra.append(make('summary','Reporting point, supervisor & facilities'),details([['Confirmed',job.confirmed_count ?? '—'],['Paid by',nice(t.payment_by)],['Report at',t.reporting_point],['Supervisor',`${t.contact_name} · ${t.contact_phone}`]]));
+    const privateContact=allowed&&role!=='candidate';
+    const extra=make('details',null,'shift-extra');extra.append(make('summary',privateContact?'Reporting point, supervisor & facilities':'Reporting point & facilities'),details([['Confirmed',job.confirmed_count ?? '—'],['Paid by',nice(t.payment_by)],['Report at',t.reporting_point]]));
+    if(privateContact&&t.contact_phone)extra.append(details([['Supervisor',`${t.contact_name || ''} · ${t.contact_phone}`]]));
+    else extra.append(make('p','Coordination through Aadhyant. Apply using this portal; our team will guide you.'));
     if(t.facilities)extra.append(make('p',t.facilities));n.append(extra);
     if(job.review_feedback)n.append(make('p',`Review feedback: ${job.review_feedback}`,'error'));
     if(job.expired)n.append(make('p','This shift has already started. No new availability is accepted.','error'));
