@@ -33,14 +33,17 @@
         || window.location.pathname.includes('/company/')
         || window.location.pathname.includes('/contractor/')
         || window.location.pathname.includes('/candidate/portal/')
-        || window.location.pathname.startsWith('/same-day-pay/');
+        || window.location.pathname.startsWith('/same-day-pay/')
+        || window.location.pathname.startsWith('/rooms-pg/');
       api.client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
         auth: usesAuthenticatedPortal
           ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
               ...((window.location.pathname.startsWith('/contractor/')
                 || (window.location.pathname.startsWith('/same-day-pay/')
                   && new URL(`${window.location.origin}${window.location.pathname}${window.location.search || ''}`).searchParams.get('role') === 'contractor'))
-                ? { storageKey: `sb-${config.supabaseProjectRef}-contractor-auth-token` } : {}) }
+                ? { storageKey: `sb-${config.supabaseProjectRef}-contractor-auth-token` }
+                : window.location.pathname.startsWith('/rooms-pg/owner/')
+                  ? { storageKey: `sb-${config.supabaseProjectRef}-room-owner-auth-token` } : {}) }
           : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
       api.isConfigured = true;

@@ -25,6 +25,13 @@ const PRODUCTION_BINDING = Object.freeze({
 // directory copy, or a repository-root copy.
 const SOURCE_RUNTIME_FILES = Object.freeze([
   'CNAME',
+  'rooms-pg/index.html',
+  'rooms-pg/admin.html',
+  'rooms-pg/rooms.css',
+  'rooms-pg/rooms.js',
+  'rooms-pg/owner/login.html',
+  'rooms-pg/owner/register.html',
+  'rooms-pg/owner/index.html',
   'index.html',
   'same-day-pay/index.html',
   'same-day-pay/same-day.css',
@@ -177,7 +184,7 @@ function transformRuntimeHtml(sourcePath, content, releaseRevision) {
   if (!transformed.includes('Content-Security-Policy')) {
     transformed = transformed.replace(/<meta\s+charset="[^"]+">/i, (match) => `${match}\n  ${productionCspMeta()}`);
   }
-  if (/^(?:admin\/|candidate\/portal\/|company\/|contractor\/)/i.test(sourcePath)
+  if (/^(?:admin\/|candidate\/portal\/|company\/|contractor\/|rooms-pg\/(?:owner\/|admin\.html))/i.test(sourcePath)
       && !/<meta\s+name="robots"/i.test(transformed)) {
     transformed = transformed.replace(/<meta\s+charset="[^"]+">/i, (match) => `${match}\n  <meta name="robots" content="noindex,nofollow">`);
   }
