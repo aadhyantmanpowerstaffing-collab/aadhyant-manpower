@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>My Profile | Candidate Portal</title>
-  <link rel="stylesheet" href="candidate.css">
+  <link rel="stylesheet" href="candidate.css?v=20261021-alert-restart">
 </head>
 <body data-candidate-page="profile">
   <p data-loading>Checking Candidate access…</p>
@@ -69,6 +69,21 @@
         <fieldset class="profile-section"><legend>WhatsApp Alert Choices</legend><p class="field-help">Choose Yes or No for each. Neither answer is selected for you. No does not prevent registration or applications. Reply STOP on WhatsApp to stop all alerts.</p><div class="form-grid"><label class="field">Receive WhatsApp Job Alerts? *<select name="general_job_alerts" required><option value="">Choose Yes or No</option><option value="yes">Yes, send me job alerts</option><option value="no">No, thanks</option></select></label><label class="field">Receive Same-Day Pay Job Alerts? *<select name="same_day_alerts" required><option value="">Choose Yes or No</option><option value="yes">Yes, send me Same-Day Pay alerts</option><option value="no">No, thanks</option></select></label><label class="field">Current Job Location<input name="current_job_location" maxlength="160" placeholder="Where you work now, or Not Working"></label></div><p class="field-help">Sanand GIDC shift alerts use your current living location, current job location or preferred work location. Choosing Yes saves your preference; automatic delivery requires an active approved WhatsApp sender.</p></fieldset>
         <button class="button" type="submit">Save Profile</button>
       </form>
+      <section data-alert-restart hidden class="profile-section">
+        <h2>Restart WhatsApp Alerts</h2>
+        <p>You previously stopped WhatsApp messages. To receive alerts again, choose Yes above for the alert types you want, then confirm your new permission.</p>
+        <button type="button" class="button" data-alert-restart-open>Restart WhatsApp Alerts</button>
+        <p data-alert-restart-message class="message" role="status"></p>
+      </section>
+      <dialog data-alert-restart-dialog aria-labelledby="alert-restart-title" aria-describedby="alert-restart-description">
+        <h2 id="alert-restart-title">Receive WhatsApp alerts again?</h2>
+        <p id="alert-restart-description">This will remove your previous WhatsApp STOP for your registered number and save the choices shown below.</p>
+        <p data-alert-restart-summary></p>
+        <p>Other profile changes still need Save Profile. You can reply STOP on WhatsApp at any time to stop messages again.</p>
+        <label><input type="checkbox" data-alert-restart-consent> I request and agree to receive the selected Aadhyant WhatsApp job alerts again.</label>
+        <p data-alert-restart-error class="message" role="alert"></p>
+        <div class="actions"><button type="button" class="button" data-alert-restart-confirm disabled>Confirm and Restart Alerts</button><button type="button" class="button secondary" data-alert-restart-cancel>Cancel</button></div>
+      </dialog>
       <p data-message class="message" role="status"></p>
     </main>
   </div>
@@ -76,6 +91,6 @@
   <script src="../../config.js"></script>
   <script src="../../supabase-client.js"></script>
   <script src="../../assets/js/registration-options.js"></script>
-  <script src="candidate.js?v=20261021-profile-feedback"></script>
+  <script src="candidate.js?v=20261021-alert-restart"></script>
 </body>
 </html>

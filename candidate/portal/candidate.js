@@ -31,14 +31,42 @@ function profileArgs(f,includeAadhaar=true){const d=new FormData(f),get=n=>Strin
 function validateCandidateForm(f){if(!f.checkValidity()){f.reportValidity();return false}const dob=new Date(`${f.elements.date_of_birth.value}T00:00:00`),today=new Date(),age=today.getFullYear()-dob.getFullYear()-Number(today<new Date(today.getFullYear(),dob.getMonth(),dob.getDate()));if(!Number.isFinite(dob.getTime())||age<16||age>75){message('Date of birth must correspond to an age between 16 and 75.','error');return false}if(options&&!options.sets.states.includes(f.elements.state.value)){message('Select a valid State.','error');return false}return true}
 function alertChoiceArgs(f){const g=f.elements.general_job_alerts?.value,d=f.elements.same_day_alerts?.value;if(!['yes','no'].includes(g)||!['yes','no'].includes(d))throw new Error('Choose Yes or No for both WhatsApp alert types.');return{p_general:g==='yes',p_same_day:d==='yes',p_current_job_location:f.elements.current_job_location.value.trim()}}
 async function saveAlertChoices(f){const r=await call('save_candidate_alert_choices',alertChoiceArgs(f));if(r?.saved!==true)throw new Error('Alert choices were not confirmed')}
-async function loadAlertChoices(f){const r=await call('get_candidate_alert_choices');f.elements.general_job_alerts.value=typeof r.general_alerts==='boolean'?(r.general_alerts?'yes':'no'):'';f.elements.same_day_alerts.value=typeof r.same_day_alerts==='boolean'?(r.same_day_alerts?'yes':'no'):'';f.elements.current_job_location.value=r.current_job_location||''}
+async function loadAlertChoices(f){const r=await call('get_candidate_alert_choices');f.elements.general_job_alerts.value=typeof r.general_alerts==='boolean'?(r.general_alerts?'yes':'no'):'';f.elements.same_day_alerts.value=typeof r.same_day_alerts==='boolean'?(r.same_day_alerts?'yes':'no'):'';f.elements.current_job_location.value=r.current_job_location||'';return r}
 async function onboarding(){const s=await session();if(!s){location.replace(withRequirement('login.html'));return}if(await routeAuthenticatedCandidate())return;let eligible=false;try{eligible=await call(rpc.eligibility)}catch(_){}if(!eligible){await client.auth.signOut();location.replace(withRequirement('login.html'));return}const f=document.querySelector('[data-onboarding-form]'),resume=f.elements.resume;options?.setupCandidateForm(f);options?.setupStateDistrict(f);resume.addEventListener('change',()=>setResumeFileName(resume.files[0]));f.onsubmit=async e=>{e.preventDefault();if(!validateCandidateForm(f))return;try{alertChoiceArgs(f)}catch(error){message('Choose Yes or No for both WhatsApp alert types.','error');return}const file=resume.files[0],resumeProblem=resumeValidation(file);if(resumeProblem){message(resumeProblem,'error');return}const button=f.querySelector('button[type="submit"]'),uploadState=document.querySelector('[data-resume-upload-state]');button.disabled=true;let profileCreated=false;try{message('Creating your Candidate profile…');const a=profileArgs(f);await call(rpc.create,{p_full_name:a.p_full_name,p_mobile:a.p_mobile,p_aadhaar:a.p_aadhaar,p_date_of_birth:a.p_date_of_birth,p_gender:a.p_gender,p_current_location:a.p_current_location,p_district:a.p_district,p_state:a.p_state,p_pincode:a.p_pincode,p_highest_qualification:a.p_highest_qualification,p_specialization:a.p_specialization,p_candidate_type:a.p_candidate_type,p_consent:f.elements.consent.checked});profileCreated=true;const updated=await call(rpc.update,a);if(updated!==true)throw new Error('profile-update');await saveAlertChoices(f);if(uploadState)uploadState.textContent='Uploading Resume/CV…';await uploadCandidateDocument(file,'resume');if(uploadState)uploadState.textContent='Resume/CV uploaded.';message('Candidate profile and Resume/CV created successfully.','success');setTimeout(()=>location.replace(afterProfile()),500)}catch(error){if(profileCreated){showExistingCandidateAccount({resumePending:true});message('Your Candidate profile is saved. Upload your Resume/CV to complete your Candidate registration.','error')}else message(registrationError(error),'error');button.disabled=false}}}
 async function dashboard(){if(!await gate())return;const m=first(await call(rpc.metrics))||{};Object.entries(m).forEach(([k,v])=>{const n=document.querySelector(`[data-metric="${k}"]`);if(n)n.textContent=v??0});document.querySelector('[data-profile-completion]').textContent=`${context.profile_completion}%`;document.querySelector('[data-aadhaar]').textContent=safe(context.aadhaar_masked,'Required')}
+function setupAlertRestart(f,state,confirmSession){
+ const panel=document.querySelector('[data-alert-restart]'),dialog=document.querySelector('[data-alert-restart-dialog]');
+ if(!panel||!dialog)return;panel.hidden=state?.can_restart_alerts!==true;
+ const open=panel.querySelector('[data-alert-restart-open]'),confirm=dialog.querySelector('[data-alert-restart-confirm]'),cancel=dialog.querySelector('[data-alert-restart-cancel]'),consent=dialog.querySelector('[data-alert-restart-consent]'),error=dialog.querySelector('[data-alert-restart-error]'),status=panel.querySelector('[data-alert-restart-message]');
+ let pending=null,busy=false;
+ consent.onchange=()=>{confirm.disabled=busy||!consent.checked};
+ cancel.onclick=()=>{if(!busy){pending=null;dialog.close()}};
+ dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();else pending=null});
+ open.onclick=()=>{
+  status.textContent='';error.textContent='';let choices;
+  try{choices=alertChoiceArgs(f)}catch(_){status.textContent='Choose Yes or No for both alert types above before restarting.';return}
+  if(!choices.p_general&&!choices.p_same_day){status.textContent='Choose Yes above for at least one alert type you want to receive.';return}
+  pending={...choices,p_operation_id:crypto.randomUUID(),p_confirmed:true};consent.checked=false;confirm.disabled=true;
+  dialog.querySelector('[data-alert-restart-summary]').textContent=`Job Alerts: ${choices.p_general?'Yes':'No'}. Same-Day Pay Alerts: ${choices.p_same_day?'Yes':'No'}. Current Job Location: ${choices.p_current_job_location||'Not specified'}.`;
+  dialog.showModal();
+ };
+ confirm.onclick=async()=>{
+  if(busy||!consent.checked||!pending)return;busy=true;confirm.disabled=true;cancel.disabled=true;open.disabled=true;consent.disabled=true;error.textContent='';
+  try{
+   const expectedUser=await confirmSession();const result=await call('restart_candidate_whatsapp_alerts',{...pending,p_expected_user_id:expectedUser});
+   if(result?.saved!==true)throw new Error('Restart was not confirmed');
+   await confirmSession();const saved=await loadAlertChoices(f);panel.hidden=saved?.can_restart_alerts!==true;
+   pending=null;dialog.close();message('WhatsApp alerts restarted with your new permission. Other profile changes still need Save Profile.','success');
+  }catch(problem){const detail=String(problem?.message||'').toLowerCase();
+   error.textContent=/session|active candidate|authentication/.test(detail)?'Your login changed or expired. Sign in with your Candidate account before restarting alerts.':/identity|mobile|cannot restart|review/.test(detail)?'Your WhatsApp contact needs review. Contact Aadhyant to restart alerts.':/already used|does not match/.test(detail)?'This confirmation has already been used. Cancel and open a new confirmation.':'Restart could not be confirmed. Your profile is unchanged. Retry this confirmation or reopen My Profile to check your alert status.';
+  }finally{busy=false;confirm.disabled=!consent.checked;cancel.disabled=false;open.disabled=false;consent.disabled=false}
+ };
+}
 function profileSaveFeedback(error,profileSaved){
  const detail=String(error?.message||'').toLowerCase(),code=String(error?.code||'').toLowerCase();
  const prefix=profileSaved?'Your profile was saved. WhatsApp alert choices were not saved. ':'Your profile update was not confirmed. ';
  if(code==='profile_session_changed'||/active candidate|authentication|session|jwt/.test(detail))return prefix+'Your login changed or expired. Sign in with your Candidate account and reopen My Profile.';
- if(profileSaved&&/whatsapp stop/.test(detail))return prefix+'WhatsApp STOP is active for your number. Select No for both alert types and save again, or contact Aadhyant to request alerts again.';
+ if(profileSaved&&/whatsapp stop/.test(detail))return prefix+'WhatsApp STOP is active for your number. Use Restart WhatsApp Alerts below to give new permission. Select No for both alert types and save again to keep alerts off.';
  if(profileSaved&&/identity requires review|mobile requires review/.test(detail))return prefix+'Your WhatsApp number needs review. Contact Aadhyant before enabling alerts.';
  if(profileSaved)return prefix+'Your entries are still here. Check your connection and try saving again. If this continues, contact Aadhyant.';
  if(/invalid|already in use|require review|aadhaar|date of birth/.test(detail))return prefix+'Review your required details, mobile number and Aadhaar. Contact Aadhyant if these details are already linked to another account.';
@@ -50,8 +78,8 @@ async function profile(){if(!await gate())return;
  Object.entries(d).forEach(([k,v])=>{const n=f.elements[k];if(!n)return;const value=Array.isArray(v)?v.join(', '):v??'';if(n.type==='checkbox')n.checked=v===true;else if(n.tagName==='SELECT')options?.setValue(n,value);else n.value=value});
  options?.setupCandidateForm(f,{specialization:d.specialization,totalExperience:d.total_experience});
  options?.setupStateDistrict(f,{state:d.state,district:d.district});f.elements.aadhaar.value='';
- try{await loadAlertChoices(f)}catch(_){message('Alert preferences could not be loaded. Review both choices before saving.','error')}
- const confirmProfileSession=async()=>{const active=await session();if(!profileUserId||active?.user?.id!==profileUserId){const error=new Error('Candidate session changed');error.code='profile_session_changed';throw error}};
+ const confirmProfileSession=async()=>{const active=await session();if(!profileUserId||active?.user?.id!==profileUserId){const error=new Error('Candidate session changed');error.code='profile_session_changed';throw error}return profileUserId};
+ try{const alertState=await loadAlertChoices(f);if(typeof setupAlertRestart==='function')setupAlertRestart(f,alertState,confirmProfileSession)}catch(_){message('Alert preferences could not be loaded. Review both choices before saving.','error')}
  f.onsubmit=async e=>{
   e.preventDefault();const button=f.querySelector('button[type="submit"]');if(button.disabled)return;
   if(!f.elements.aadhaar.value){message('Re-enter Aadhaar to authorize this profile update.','error');return}
@@ -63,7 +91,11 @@ async function profile(){if(!await gate())return;
    const ok=await call(rpc.update,profileArgs(f));if(ok!==true)throw new Error('Profile update was not confirmed');profileSaved=true;
    await confirmProfileSession();await saveAlertChoices(f);
    f.elements.aadhaar.value='';message('Candidate profile updated. Aadhaar remains masked after save.','success');setTimeout(()=>location.reload(),500);
-  }catch(error){message(profileSaveFeedback(error,profileSaved),'error');button.disabled=false}
+  }catch(error){message(profileSaveFeedback(error,profileSaved),'error');button.disabled=false;
+   if(profileSaved&&/whatsapp stop/i.test(String(error?.message||''))&&typeof setupAlertRestart==='function'){
+    try{await confirmProfileSession();const alertState=await call('get_candidate_alert_choices');setupAlertRestart(f,alertState,confirmProfileSession)}catch(_){}
+   }
+  }
  }
 }
 async function jobs(){if(!await gate())return;const list=document.querySelector('[data-job-list]'),search=document.querySelector('[name=search]');if(requestedRequirement)search.value=requestedRequirement;async function load(){const rows=await call(rpc.jobs,{p_search:search.value.trim()||null,p_limit:50,p_offset:0})||[];list.replaceChildren();document.querySelector('[data-empty]').hidden=!!rows.length;rows.forEach(r=>{const c=make('article','job');c.append(make('p','eyebrow',r.requirement_code),make('h2','',r.job_role),make('p','',`${safe(r.job_location)} - ${r.open_positions} openings`),make('p','muted',[r.qualification,r.iti_trade,r.experience_requirement].filter(Boolean).join(' - ')));const detail=make('dl','grid');[['Department',r.department],['Age',[r.age_min,r.age_max].filter(Boolean).join(' to ')],['Salary',[r.salary_min,r.salary_max].filter(v=>v!==null).join(' to ')],['Shift',r.shift_details],['Hours',r.working_hours],['Overtime',r.overtime_details],['Canteen',r.canteen],['Transport',r.transport],['Accommodation',r.accommodation],['Interview location',r.interview_location],['Expected joining',date(r.expected_joining_date)],['Description',r.safe_description]].forEach(([k,v])=>{if(v){const x=make('div');x.append(make('dt','',k),make('dd','',safe(v)));detail.append(x)}});c.append(detail);const b=make('button','button',r.already_applied?'Applied':'Apply');b.disabled=r.already_applied;b.onclick=async()=>{await call(rpc.apply,{p_requirement_code:r.requirement_code});b.textContent='Applied';b.disabled=true;message('Application submitted to Aadhyant.','success')};c.append(b);list.append(c)})}document.querySelector('[data-search]').onsubmit=e=>{e.preventDefault();load()};await load()}

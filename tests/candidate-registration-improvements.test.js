@@ -141,3 +141,18 @@ test('profile prevents a changed login from saving and does not claim failed upd
   if(scenario==='update-failed'){assert.match(messages.at(-1),/Your profile update was not confirmed/);assert.doesNotMatch(messages.at(-1),/profile was saved/)}
  }
 });
+
+test('alert restart requires a separate unchecked confirmation, freezes selected choices and checks Candidate session',async()=>{
+ function node(){return{hidden:false,disabled:false,checked:false,textContent:'',addEventListener(){},showModal(){this.open=true},close(){this.open=false}}}
+ const panel=node(),dialog=node(),open=node(),confirm=node(),cancel=node(),consent=node(),error=node(),status=node(),summary=node();
+ panel.querySelector=s=>s==='[data-alert-restart-open]'?open:status;
+ const controls={'[data-alert-restart-confirm]':confirm,'[data-alert-restart-cancel]':cancel,'[data-alert-restart-consent]':consent,'[data-alert-restart-error]':error,'[data-alert-restart-summary]':summary};dialog.querySelector=s=>controls[s];
+ let choices={p_general:false,p_same_day:true,p_current_job_location:'Sanand'},deny=false;const calls=[],messages=[];
+ const sandbox={document:{querySelector:s=>s==='[data-alert-restart]'?panel:dialog},crypto:{randomUUID:()=> '11111111-1111-4111-8111-111111111111'},alertChoiceArgs:()=>({...choices}),call:async(name,args)=>{calls.push({name,args});return{saved:true}},loadAlertChoices:async()=>({can_restart_alerts:false}),message:text=>messages.push(text)};
+ vm.createContext(sandbox);vm.runInContext(candidate.slice(candidate.indexOf('function setupAlertRestart('),candidate.indexOf('function profileSaveFeedback(')),sandbox);
+ sandbox.setupAlertRestart({}, {can_restart_alerts:true},async()=>{if(deny)throw new Error('Candidate session changed');return 'candidate-a'});
+ open.onclick();assert.equal(dialog.open,true);assert.equal(consent.checked,false);assert.equal(confirm.disabled,true);assert.match(summary.textContent,/Job Alerts: No.*Same-Day Pay Alerts: Yes/);
+ await confirm.onclick();assert.equal(calls.length,0);cancel.onclick();assert.equal(dialog.open,false);
+ open.onclick();consent.checked=true;consent.onchange();assert.equal(confirm.disabled,false);deny=true;await confirm.onclick();assert.equal(calls.length,0);assert.match(error.textContent,/login changed or expired/);
+ deny=false;choices={p_general:true,p_same_day:false,p_current_job_location:'Kadi'};await confirm.onclick();assert.equal(calls.length,1);assert.equal(calls[0].name,'restart_candidate_whatsapp_alerts');assert.equal(calls[0].args.p_general,false);assert.equal(calls[0].args.p_same_day,true);assert.equal(calls[0].args.p_current_job_location,'Sanand');assert.equal(calls[0].args.p_confirmed,true);assert.equal(calls[0].args.p_expected_user_id,'candidate-a');assert.equal(panel.hidden,true);assert.equal(dialog.open,false);assert.match(messages.at(-1),/new permission/);
+});
