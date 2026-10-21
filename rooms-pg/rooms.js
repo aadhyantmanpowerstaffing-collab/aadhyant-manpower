@@ -35,7 +35,7 @@
   const f=$('#filters'),values=f?new FormData(f):null;
   rows=await rpc('list_room_properties',{p_scope:page==='owner'?'owner':page==='admin'?'admin':'public',p_area:values?.get('area')?.trim()||'',p_max_rent:values?.get('max_rent')?Number(values.get('max_rent')):null,p_type:values?.get('property_type')||'',p_offset:offset});
   $('#properties').replaceChildren();for(const p of rows||[])$('#properties').append(render(p));
-  if(!rows?.length)$('#properties').append(make('p',page==='browse'?'No approved properties currently match these filters. Try a nearby area or a higher budget.':page==='owner'?'No properties yet. Add your first property for Admin review.':'No properties to review.','panel'));
+  if(!rows?.length)$('#properties').append(make('p',page==='browse'?'No approved properties currently match these filters. Try a nearby area or a higher budget.':page==='owner'?(offset?'No more properties on this page. Use Previous to return.':'No properties yet. Add your first property for Admin review.'):'No properties to review.','panel'));
   $('#previous').hidden=offset===0;$('#next').hidden=rows?.length!==12;
  }
  async function loadEnquiries(){
@@ -51,13 +51,21 @@
   return result;
  }
  function openProperty(p=null){editing=p?.id||null;draftKey=crypto.randomUUID();photos=p?.photos||[];const f=$('#property-form');f.reset();for(const k of ['title','property_type','area','address','rent','deposit','unit','suitable_for','sharing','capacity','available','facilities','rules','map_url'])if(p)f.elements[k].value=p[k]??'';$('#property-form-title').textContent=p?'Edit Property':'Add Property';$('#photo-preview').replaceChildren(...photos.map(src=>photoNode(src,'Existing property photo')));f.querySelector('.form-message').textContent='';$('#property-dialog').showModal();}
+ function ownerStatus(){
+  const status=context?.status||'incomplete';
+  const copy={incomplete:['Complete your owner profile','Profile needed','Submit your name and mobile below. Aadhyant will review your owner account before property posting is enabled.'],pending:['Your account is under review','Pending approval','Your owner details have been submitted. After Aadhyant approves your account, you can add properties here. Each property is reviewed separately before it appears publicly.'],active:['Your owner account is approved','Approved owner','You can add and manage properties below. New listings and changes to property details need a separate review. Availability updates do not restart that review.'],suspended:['Your owner account is suspended','Access suspended','Property management is paused and your listings are hidden from public search. Contact Aadhyant for assistance.']}[status]||['Owner access unavailable','Review required','Contact Aadhyant to check your owner account.'];
+  $('#owner-status').hidden=false;$('#owner-status-title').textContent=copy[0];$('#owner-status-badge').textContent=copy[1];$('#owner-status-description').textContent=copy[2];$('#owner-display-name').textContent=context?`${context.display_name} · ${context.phone}`:'';
+  $('#refresh-owner-status').onclick=()=>busy($('#refresh-owner-status'),async()=>{await owner();say('Account status refreshed.');});
+ }
  async function owner(){
-  context=await rpc('room_owner_context');$('#logout').hidden=false;
-  if(!context){$('#owner-profile').hidden=false;$('#owner-profile-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;busy(f.querySelector('button'),async()=>{await rpc('register_room_owner',{p_name:f.elements.name.value.trim(),p_phone:f.elements.phone.value.trim()});$('#owner-profile').hidden=true;say('Owner details submitted. Aadhyant will review your account before property posting is enabled.');});};return;}
-  if(context.status!=='active'){say(`Owner account: ${nice(context.status)}. Aadhyant approval is required before managing properties.`);return;}
+  $('#owner-workspace').hidden=true;$('#owner-profile').hidden=true;document.querySelectorAll('[data-owner-management-nav]').forEach(n=>n.hidden=true);
+  context=await rpc('room_owner_context');$('#logout').hidden=false;ownerStatus();
+  if(!context){$('#owner-profile').hidden=false;$('#owner-profile-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;busy(f.querySelector('button'),async()=>{await rpc('register_room_owner',{p_name:f.elements.name.value.trim(),p_phone:f.elements.phone.value.trim()});await owner();say('Owner details submitted. Your account is awaiting Aadhyant approval.');});};return;}
+  if(context.status!=='active'){say(`Owner account: ${context.status==='pending'?'pending approval':nice(context.status)}. See your account status below.`);return;}
+  say('');document.querySelectorAll('[data-owner-management-nav]').forEach(n=>n.hidden=false);
   $('#owner-workspace').hidden=false;$('#add-property').onclick=()=>openProperty();
-  $('#property-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;busy(f.querySelector('button:not([type=button])'),async()=>{const data=Object.fromEntries(new FormData(f));if(Number(data.available)>Number(data.capacity)){f.querySelector('.form-message').textContent='Available units cannot exceed total capacity.';return;}if(data.map_url&&!safeMap(data.map_url)){f.querySelector('.form-message').textContent='Use a Google Maps link.';return;}data.photos=$('#clear-photos').checked?[]:$('#photo-input').files.length?await resizePhotos([...$('#photo-input').files]):photos;await rpc('save_room_property',{p_id:editing,p_data:data,p_request_key:draftKey});$('#property-dialog').close();await loadProperties();say('Property submitted for Admin review.');});};
-  await loadProperties();await loadEnquiries();
+  $('#property-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;busy(f.querySelector('button:not([type=button])'),async()=>{const data=Object.fromEntries(new FormData(f));if(Number(data.available)>Number(data.capacity)){f.querySelector('.form-message').textContent='Available units cannot exceed total capacity.';return;}if(data.map_url&&!safeMap(data.map_url)){f.querySelector('.form-message').textContent='Use a Google Maps link.';return;}data.photos=$('#clear-photos').checked?[]:$('#photo-input').files.length?await resizePhotos([...$('#photo-input').files]):photos;await rpc('save_room_property',{p_id:editing,p_data:data,p_request_key:draftKey});$('#property-dialog').close();offset=0;await loadProperties();say('Property submitted for Admin review.');});};
+  await loadProperties();try{await loadEnquiries();}catch(_){$('#enquiry-list').replaceChildren(make('p','Enquiries could not be loaded. Refresh Account Status to retry.','panel'));}
  }
  async function admin(){
   const owners=await rpc('list_room_owners');$('#admin-workspace').hidden=false;
@@ -75,8 +83,8 @@
   const {data,error}=await client.auth.getSession();if(error)throw error;
   if(['owner','admin'].includes(page)&&!data.session){say('Sign in to the correct portal to continue.');$('#message').append(link('Sign In',page==='owner'?'/rooms-pg/owner/login.html':'/admin/login.html'));return;}
   const userId=data.session?.user?.id;
-  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||event==='SIGNED_IN'&&session?.user?.id!==userId){document.querySelectorAll('#owner-workspace,#admin-workspace,#enquiries,#owner-profile').forEach(n=>n.hidden=true);$('#properties')?.replaceChildren();$('#enquiry-list')?.replaceChildren();location.reload();}});
-  $('#logout').onclick=async()=>{await client.auth.signOut();location.href='/rooms-pg/owner/login.html';};
+  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||event==='SIGNED_IN'&&session?.user?.id!==userId){document.querySelectorAll('#owner-workspace,#admin-workspace,#enquiries,#owner-profile,#owner-status,[data-owner-management-nav]').forEach(n=>n.hidden=true);$('#properties')?.replaceChildren();$('#enquiry-list')?.replaceChildren();location.reload();}});
+  if(page==='owner')$('#logout').hidden=!data.session;$('#logout').onclick=()=>busy($('#logout'),async()=>{const {error}=await client.auth.signOut();if(error)throw error;location.href='/rooms-pg/owner/login.html';});
   if($('#previous')){$('#previous').onclick=()=>{offset=Math.max(0,offset-12);loadProperties().catch(()=>say('Could not load properties. Retry.'));};$('#next').onclick=()=>{offset+=12;loadProperties().catch(()=>say('Could not load properties. Retry.'));};}
   if(page==='owner'){await owner();return;}if(page==='admin'){await admin();return;}
   $('#filters').onsubmit=e=>{e.preventDefault();offset=0;busy(e.currentTarget.querySelector('button'),loadProperties);};
@@ -84,7 +92,7 @@
   $('#enquiry-form').onsubmit=e=>{e.preventDefault();const f=e.currentTarget;busy(f.querySelector('button[type=submit]'),async()=>{await rpc('send_room_enquiry',{p_property:enquiryProperty,p_phone:f.elements.phone.value.trim(),p_message:f.elements.message.value.trim(),p_consent:f.elements.consent.checked});$('#enquiry-dialog').close();say('Enquiry sent. The owner can now view your message and shared contact. This is not a booking.');});};
   await loadProperties();
  }
- window.addEventListener('pagehide',()=>{if(['owner','admin'].includes(page))document.querySelectorAll('#owner-workspace,#admin-workspace,#owner-profile').forEach(n=>n.hidden=true);});
+ window.addEventListener('pagehide',()=>{if(['owner','admin'].includes(page))document.querySelectorAll('#owner-workspace,#admin-workspace,#owner-profile,#owner-status,[data-owner-management-nav]').forEach(n=>n.hidden=true);});
  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
  start().catch(()=>say('Accommodation access could not be confirmed. Check your portal account or try again after the module is activated.'));
 })();

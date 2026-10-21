@@ -27,3 +27,7 @@ The first release accepts up to three browser-resized JPEG photos per property, 
 `node --test tests/rooms-pg-runtime.test.js tests/rooms-pg-ui.test.js` exercises actual migration functions in disposable PGlite and executes frontend access gates. Covers confirmed-email onboarding, approval separation, cross-owner denials, re-review, freshness/capacity, explicit consent, withdrawal, replay identity, invalid maps/photos, RLS/grants, session isolation and source packaging. `npm test` includes these tests and all retained regression suites.
 
 Runtime SQL and permission testing is local and synthetic. Hosted mutation and publication require deployment authorization. Authenticated live browser verification remains necessary after deployment; no real Owner/Candidate account was created by the implementation tests.
+
+## Owner workspace navigation
+
+The Owner header contains Dashboard plus My Properties and Enquiries for approved accounts only. Public listings open separately from the workspace footer; they are browsing, not a Candidate login shortcut. An account overview distinguishes profile submission, pending approval, approved and suspended states. Refresh Account Status rechecks the server before revealing management. Signed-out access remains gated. Property submission returns to the first page, and an enquiry-read failure has its own retry message without hiding loaded properties. Sign-out errors preserve the session and report failure.
