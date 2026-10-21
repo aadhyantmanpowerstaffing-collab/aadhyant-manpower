@@ -9,7 +9,7 @@
   <script src="../config.js" defer></script>
   <script src="../supabase-client.js?v=20261021-contractor-session" defer></script>
   <script src="../assets/js/registration-options.js" defer></script>
-  <script src="contractor.js" defer></script>
+  <script src="contractor.js?v=20261021-full-profile" defer></script>
 </head>
 <body data-contractor-page="profile">
   <div class="loading" data-loading>Verifying contractor access…</div>
@@ -19,12 +19,12 @@
     <main class="portal-main">
       <div class="message" data-page-message role="status"></div>
       <h1>Contractor Profile</h1>
-      <p>Legal identity, email, registration, verification, and account state remain controlled by Aadhyant.</p>
+      <p>Edit your business, contact, address and registration details below. Changes to business identity or registration details require Aadhyant verification again.</p>
       <form class="vacancy-form card" data-profile-form>
-        <label>Firm / agency<input name="agency_name" disabled></label>
+        <label>Firm / agency<input name="agency_name" required maxlength="240"></label>
         <label>Contact person<input name="owner_name" maxlength="160"></label>
-        <label>Phone<input name="main_phone" maxlength="10"></label>
-        <label>Email<input name="main_email" disabled></label>
+        <label>Phone<input name="main_phone" required inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10"></label>
+        <label>Contact email<input name="main_email" type="email" required maxlength="254"><small>Business contact email. Login email is managed separately below.</small></label>
         <label>Website<input name="website" type="url" maxlength="500"></label>
         <label>Address<textarea name="address" maxlength="1000"></textarea></label>
         <label>City<input name="city" maxlength="160"></label>
@@ -34,14 +34,23 @@
         <label>Operating locations<input name="operating_locations"></label>
         <label>Workforce capacity<input name="workforce_capacity" type="number" min="0" max="1000000"></label>
         <label>Manpower categories<input name="manpower_categories"></label>
-        <label>GSTIN<input name="gstin" disabled></label>
-        <label>ESIC code<input name="esic_code" disabled></label>
-        <label>EPFO code<input name="epfo_code" disabled></label>
-        <label>Labour licence<input name="labour_license_number" disabled></label>
-        <label>Verification<input name="verification_status" disabled></label>
-        <label>Account status<input name="account_status" disabled></label>
+        <label>GSTIN<input name="gstin" maxlength="15"></label>
+        <label>ESIC code<input name="esic_code" maxlength="100"></label>
+        <label>EPFO code<input name="epfo_code" maxlength="100"></label>
+        <label>Labour licence<input name="labour_license_number" maxlength="100"></label>
+        <label>Verification (managed by Aadhyant)<input name="verification_status" disabled></label>
+        <label>Account status (managed by Aadhyant)<input name="account_status" disabled></label>
         <div class="wide"><button class="button primary" type="submit">Save Profile</button></div>
       </form>
+      <section class="card" data-login-email-section hidden>
+        <h2>Login email</h2>
+        <p>Current login: <strong data-current-login-email></strong></p>
+        <p>Changing your contact email above does not change your login. Confirm the email-change links sent by Aadhyant before using a new login email.</p>
+        <form class="vacancy-form" data-login-email-form>
+          <label>New login email<input name="loginEmail" type="email" required maxlength="254" autocomplete="email"></label>
+          <button class="button primary" type="submit">Send Email Verification</button>
+        </form>
+      </section>
     </main>
   </div>
 </body>

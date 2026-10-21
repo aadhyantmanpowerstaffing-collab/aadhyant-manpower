@@ -34,6 +34,65 @@ async function vacancies(){if(!await gate())return;const body=document.querySele
 async function applications(){if(!await gate())return;const body=document.querySelector('[data-applications-body]'),dialog=document.querySelector('[data-application-dialog]'),detail=document.querySelector('[data-application-detail]'),rows=await call(rpc.applications,{p_requirement_id:null,p_stage:null,p_limit:100,p_offset:0})||[];document.querySelector('[data-empty]').hidden=!!rows.length;rows.forEach(r=>{const row=make('tr');cells(row,[r.candidate_name,`${r.requirement_code} · ${r.job_role}`,r.qualification,r.specialization,r.current_location,readable(r.application_stage),readable(r.interview_status),readable(r.joining_status)]);const c=make('td'),b=make('button','table-action','View');b.onclick=async()=>{const d=await call(rpc.application,{p_application_id:r.application_id});detail.replaceChildren();[['Candidate',d.candidate_name],['Requirement',`${d.requirement_code} · ${d.job_role}`],['Qualification',d.qualification],['Trade',d.specialization],['Experience',d.experience_summary],['Location',[d.current_location,d.district,d.state].filter(Boolean).join(', ')],['Stage',readable(d.application_stage)]].forEach(([k,v])=>{const x=make('div');x.append(make('dt','',k),make('dd','',safe(v)));detail.append(x)});dialog.querySelector('[data-tenant-resume]')?.remove();const resume=make('section');resume.dataset.tenantResume='';detail.after(resume);dialog.showModal();window.AadhyantResumeSharing?.tenant(resume,client,r.application_id,'contractor')};c.append(b);row.append(c);body.append(row)});document.querySelectorAll('[data-close-dialog]').forEach(b=>b.onclick=()=>dialog.close())}
 async function readOnly(type){if(!await gate())return;const rows=await call(type==='interviews'?rpc.interviews:rpc.joinings,{p_limit:100,p_offset:0})||[],body=document.querySelector('[data-list-body]');document.querySelector('[data-empty]').hidden=!!rows.length;rows.forEach(r=>{const row=make('tr');cells(row,type==='interviews'?[r.candidate_name,`${r.requirement_code} · ${r.job_role}`,r.interview_round,date(r.scheduled_at,true),readable(r.mode),r.location,readable(r.status),readable(r.result)]:[r.candidate_name,`${r.requirement_code} · ${r.job_role}`,date(r.expected_joining_date),date(r.actual_joining_date),readable(r.joining_status)]);body.append(row)})}
 async function assignments(){if(!await gate())return;const rows=await call('get_staffing_partner_assignments'),body=document.querySelector('[data-assignment-body]');document.querySelector('[data-empty]').hidden=!!rows?.length;(rows||[]).forEach(r=>{const row=make('tr');cells(row,[`${r.requirement_code} · ${r.job_role}`,r.company_name,r.job_location,r.assigned_headcount,readable(r.assignment_status),date(r.assigned_at)]);const cell=make('td');if(r.assignment_status==='assigned'){[['accepted','Accept'],['declined','Decline']].forEach(([value,label])=>{const button=make('button','table-action',label);button.type='button';button.onclick=async()=>{await call('staffing_partner_respond_requirement_assignment',{p_assignment_id:r.id,p_response:value,p_reason:null});location.reload()};cell.append(button)})}row.append(cell);body.append(row)})}
-async function profile(){if(!await gate())return;const f=document.querySelector('[data-profile-form]');options?.initialize(f);async function load(){const d=first(await call(rpc.profile));Object.entries(d).forEach(([k,v])=>{const n=f.elements[k];if(!n)return;const value=Array.isArray(v)?v.join(', '):v??'';if(n.tagName==='SELECT')options?.setValue(n,value);else n.value=value});options?.setupStateDistrict(f,{state:d.state,district:d.district});f.querySelectorAll('input:not(:disabled),select,textarea').forEach(n=>{n.disabled=!d.can_update||(n.name==='district'&&!f.elements.state.value)});f.querySelector('button[type=submit]').hidden=!d.can_update}f.onsubmit=async e=>{e.preventDefault();const v=new FormData(f),list=n=>String(v.get(n)||'').split(',').map(x=>x.trim()).filter(Boolean),ok=await call(rpc.updateProfile,{p_owner_name:String(v.get('owner_name')||''),p_main_phone:String(v.get('main_phone')||''),p_website:String(v.get('website')||''),p_address:String(v.get('address')||''),p_city:String(v.get('city')||''),p_district:String(v.get('district')||''),p_state:String(v.get('state')||''),p_pincode:String(v.get('pincode')||''),p_operating_locations:list('operating_locations'),p_workforce_capacity:v.get('workforce_capacity')?Number(v.get('workforce_capacity')):null,p_manpower_categories:list('manpower_categories')});if(ok!==true)throw new Error('Profile update was not confirmed');await load();message('Contractor profile updated. Legal and verification fields remain controlled by Aadhyant.','success')};await load()}
+async function profile(){
+  if(!await gate())return;
+  const f=document.querySelector('[data-profile-form]');
+  const editableFields=['agency_name','owner_name','main_phone','main_email','website','address','city','district','state','pincode','operating_locations','workforce_capacity','manpower_categories','gstin','esic_code','epfo_code','labour_license_number'];
+  const loginForm=document.querySelector('[data-login-email-form]');
+  const initial=(await client.auth.getSession()).data.session;
+  const profileUserId=initial?.user?.id;
+  let editable=false,saving=false;
+  options?.initialize(f);
+  async function assertSameAccount(){
+    const {data,error}=await client.auth.getSession();
+    if(error||!profileUserId||data?.session?.user?.id!==profileUserId)throw new Error('Your Contractor login has changed. Sign in again before saving.');
+  }
+  async function load(){
+    await assertSameAccount();
+    const d=first(await call(rpc.profile));
+    Object.entries(d).forEach(([k,v])=>{const n=f.elements[k];if(!n)return;const value=Array.isArray(v)?v.join(', '):v??'';if(n.tagName==='SELECT')options?.setValue(n,value);else n.value=value});
+    options?.setupStateDistrict(f,{state:d.state,district:d.district});
+    editable=d.can_update===true;
+    editableFields.forEach(name=>{f.elements[name].disabled=!editable||(name==='district'&&!f.elements.state.value)});
+    f.querySelector('button[type=submit]').hidden=!editable;
+    document.querySelector('[data-login-email-section]').hidden=!editable;
+    document.querySelector('[data-current-login-email]').textContent=initial.user.email||'';
+  }
+  f.onsubmit=async e=>{
+    e.preventDefault();if(saving||!editable||!f.reportValidity())return;
+    const v=new FormData(f),list=n=>String(v.get(n)||'').split(',').map(x=>x.trim()).filter(Boolean);
+    const payload={};
+    editableFields.forEach(name=>{payload[name]=String(v.get(name)||'').trim()});
+    payload.gstin=payload.gstin.toUpperCase();
+    payload.operating_locations=list('operating_locations');payload.manpower_categories=list('manpower_categories');
+    payload.workforce_capacity=v.get('workforce_capacity')?Number(v.get('workforce_capacity')):null;
+    if(payload.gstin&&!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(payload.gstin)){message('Enter a valid 15-character GSTIN.','error');return}
+    saving=true;f.querySelector('button[type=submit]').disabled=true;
+    try{
+      await assertSameAccount();
+      const ok=await call(rpc.updateProfile,{p_profile:payload});
+      if(ok!==true)throw new Error('Profile update was not confirmed');
+      await load();
+      message('Profile saved successfully. Business identity or registration changes require Aadhyant verification again.','success');
+    }catch(error){
+      const text=String(error?.message||'');
+      message(/Your Contractor login|valid Indian mobile|valid pincode|Workforce capacity|valid contact email|valid 15-character GSTIN|Firm \/ agency name|Website must/.test(text)?text:'Profile could not be saved. Your entered details have been kept. Please check the fields and try again.','error');
+    }finally{saving=false;f.querySelector('button[type=submit]').disabled=false}
+  };
+  loginForm.onsubmit=async e=>{
+    e.preventDefault();if(saving||!editable||!loginForm.reportValidity())return;
+    const email=loginForm.elements.loginEmail.value.trim().toLowerCase();
+    if(email===initial.user.email?.toLowerCase()){message('This is already your login email.','error');return}
+    saving=true;const button=loginForm.querySelector('button');button.disabled=true;
+    try{
+      await assertSameAccount();
+      const {error}=await client.auth.updateUser({email},{emailRedirectTo:new URL('login.html',window.location.href).href});
+      if(error)throw error;
+      message('Email-change request sent. Check your current and new email inboxes and complete the required verification links. Your business contact email is unchanged.','success');
+    }catch(_){message('Login email change could not be requested. Check the address and try again; your current login remains available.','error')}
+    finally{saving=false;button.disabled=false}
+  };
+  await load();
+}
 window.aadhyantContractorPortal={rpc,safe,readable,vacancyParams,validateVacancy,validateRegistration};if(page==='login')login();if(page==='register')register();if(page==='dashboard')dashboard();if(page==='assignments')assignments();if(page==='vacancies')vacancies();if(page==='applications')applications();if(page==='interviews')readOnly('interviews');if(page==='joinings')readOnly('joinings');if(page==='profile')profile();
 })();
