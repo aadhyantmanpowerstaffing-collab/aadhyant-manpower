@@ -14,13 +14,13 @@
   <script src="../assets/js/password-recovery.js" defer></script>
   <script src="company.js?v=20261016-post-job" defer></script>
 </head>
-<body class="auth-page" data-company-page="login" data-password-recovery-portal="company" data-password-recovery-min-length="8">
-  <main class="auth-shell">
-    <a class="company-brand light-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong></a>
-    <section class="auth-card" aria-labelledby="company-login-title">
+<body class="auth-page portal-signin" data-company-page="login" data-password-recovery-portal="company" data-password-recovery-min-length="8">
+  <main class="auth-shell signin-layout">
+    <aside class="signin-intro" aria-label="Employer Portal"><a class="company-brand light-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong></a><div class="signin-intro-copy"><p class="signin-kicker">EMPLOYER PORTAL</p><h2>The right people.<br>A stronger team.</h2><p>Keep your hiring requirements and recruitment progress together.</p><ul><li>Manage hiring requirements</li><li>Track recruitment progress</li><li>Maintain your company profile</li></ul></div><p class="signin-footnote">Aadhyant Manpower &amp; Staffing</p></aside>
+    <section class="auth-card signin-card" aria-labelledby="company-login-title">
       <div data-recovery-login-content>
         <p class="eyebrow">Secure Employer access</p>
-        <h1 id="company-login-title">Employer Login</h1>
+        <p class="signin-welcome">WELCOME BACK</p><h1 id="company-login-title">Employer Login</h1>
         <p>Sign in to check your approval status and access your Employer workspace.</p>
         <div class="company-message" data-page-message role="status" aria-live="polite"></div>
         <form data-login-form novalidate>
@@ -29,7 +29,7 @@
           <button class="company-button company-button-primary" type="submit">Sign In</button>
         </form>
         <button class="reset-link" type="button" data-password-recovery-request>Forgot your password?</button>
-        <p class="auth-alternate">New to the Employer Portal? <a href="register.html">Create an Employer account</a></p>
+        <div class="signin-alternate"><span>New to the Employer Portal?</span><a href="register.html">Create an Employer account <span aria-hidden="true">→</span></a></div>
         <p class="auth-help">Account access is activated only after review by Aadhyant.</p>
       </div>
       <section data-recovery-set-password hidden aria-labelledby="company-new-password-title">

@@ -13,16 +13,16 @@
   <script src="admin-auth.js" defer></script>
   <script src="admin.js" defer></script>
 </head>
-<body class="admin-login-page" data-admin-page="login">
-  <main class="login-shell">
-    <a class="admin-brand" href="../index.html" aria-label="Return to Aadhyant Manpower & Staffing website">
+<body class="admin-login-page portal-signin" data-admin-page="login">
+  <main class="login-shell signin-layout">
+    <aside class="signin-intro" aria-label="Admin Workspace"><a class="admin-brand" href="../index.html" aria-label="Return to Aadhyant Manpower & Staffing website">
       <span aria-hidden="true">A</span>
       <strong>AADHYANT <small>ADMIN</small></strong>
-    </a>
-    <section class="login-card" aria-labelledby="login-title">
+    </a><div class="signin-intro-copy"><p class="signin-kicker">ADMIN WORKSPACE</p><h2>A clearer view.<br>Better decisions.</h2><p>Manage recruitment operations from one connected workspace.</p><ul><li>Review vacancies and registrations</li><li>Monitor recruitment progress</li><li>Manage day-to-day operations</li></ul></div><p class="signin-footnote">Aadhyant Manpower &amp; Staffing</p></aside>
+    <section class="login-card signin-card" aria-labelledby="login-title">
       <p class="admin-eyebrow">Secure administration</p>
-      <h1 id="login-title">Admin Login</h1>
-      <p>Sign in with an approved Supabase Auth account.</p>
+      <p class="signin-welcome">WELCOME BACK</p><h1 id="login-title">Admin Login</h1>
+      <p>Sign in to your Aadhyant administration workspace.</p>
       <div class="admin-message" data-auth-message role="status" aria-live="polite"></div>
       <form data-login-form novalidate>
         <div class="admin-field">

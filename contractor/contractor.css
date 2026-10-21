@@ -4,3 +4,52 @@
 @media(max-width:760px){.filters,.vacancy-form{grid-template-columns:1fr}.vacancy-form .wide{grid-column:auto}.portal-nav{flex-wrap:nowrap}.portal-nav a{white-space:nowrap}.gate dl{grid-template-columns:1fr}}
 
 .registration-next-steps{width:min(540px,calc(100% - 32px));max-height:85vh;overflow:auto;padding:28px;border:1px solid var(--line);border-radius:18px;color:var(--ink);box-shadow:0 24px 80px #07132640}.registration-next-steps::backdrop{background:#07132699}.registration-next-steps h2{margin:8px 0 16px;font-size:28px}.registration-next-steps li{margin:12px 0}.registration-next-steps p{overflow-wrap:anywhere}.registration-next-steps form{margin:24px 0 14px}.registration-next-steps button{width:100%}
+
+/* Shared Aadhyant portal sign-in presentation; authentication hooks are unchanged. */
+body.portal-signin{min-height:100svh;display:grid;place-items:center;background:#edf2f8;padding:48px 24px}
+.portal-signin .signin-layout{width:min(100%,920px);display:grid;grid-template-columns:minmax(0,440px) minmax(0,480px);gap:0;align-items:stretch}
+.signin-intro{display:flex;flex-direction:column;justify-content:space-between;padding:42px;color:#fff;background:linear-gradient(145deg,#102447,#173d70);border-radius:24px 0 0 24px;min-height:610px;position:relative;overflow:hidden}
+.signin-intro:after{content:"";position:absolute;width:280px;height:280px;border:1px solid #ffffff14;border-radius:50%;right:-150px;bottom:-100px;pointer-events:none}
+.portal-signin .signin-intro>a{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;margin:0;font-size:18px;font-weight:800;letter-spacing:.08em}
+.portal-signin .signin-intro>a>span{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:13px;background:#fff;color:#173d70;font-size:27px;letter-spacing:0}
+.portal-signin .signin-intro small{display:block;font-size:9px;font-weight:500;letter-spacing:.15em;margin-top:5px;color:#c6d7ee}
+.signin-kicker{font-size:10px;letter-spacing:.19em;color:#90c9ff;font-weight:800}
+.signin-intro h2{font-size:36px;line-height:1.2;letter-spacing:-.03em;margin:18px 0;color:#fff}
+.signin-intro-copy>p:not(.signin-kicker){color:#d2dff0;line-height:1.7;font-size:14px;max-width:280px}
+.signin-intro ul{list-style:none;padding:0;margin:28px 0;display:grid;gap:17px;font-size:13px;color:#e5edf8}
+.signin-intro li{display:flex;align-items:flex-start;gap:10px}
+.signin-intro li:before{content:"✓";display:inline-grid;place-items:center;flex:none;width:23px;height:23px;background:#ffffff12;border-radius:50%;color:#9ddbc8}
+.signin-footnote{color:#acbdd6;font-size:11px;margin:0}
+.portal-signin .signin-card{width:100%;min-width:0;padding:46px 40px;border:1px solid #dce5ef;border-left:0;border-radius:0 24px 24px 0;box-shadow:16px 20px 60px #1024470c;display:flex;flex-direction:column;justify-content:center;background:#fff}
+.portal-signin .signin-card :is(.eyebrow,.admin-eyebrow){font-size:10px;letter-spacing:.1em;margin:0 0 26px;color:#2268ad}
+.portal-signin .signin-welcome{font-size:10px;font-weight:700;letter-spacing:.14em;color:#7b889b;margin:0 0 8px}
+.portal-signin .signin-card h1{font-size:29px;letter-spacing:-.035em;line-height:1.2;margin:0 0 13px;color:#102447}
+.portal-signin .signin-card h1+p{color:#6b778a;font-size:13px;line-height:1.7;margin:0 0 24px}
+.portal-signin .signin-card form{display:grid;gap:17px;margin-top:24px}
+.portal-signin .signin-card label{font-size:12px;font-weight:650;color:#334661}
+.portal-signin .signin-card input{min-height:49px;border:1px solid #d5deea;border-radius:10px;padding:13px 14px;background:#f9fbfe;font-size:15px;color:#172033;transition:border-color .15s,box-shadow .15s}
+.portal-signin .signin-card input:focus{outline:none;border-color:#2877bf;box-shadow:0 0 0 3px #2877bf20;background:#fff}
+.portal-signin .signin-card form>button{min-height:50px;width:100%;border-radius:10px;background:#1769aa;color:#fff;box-shadow:0 5px 13px #1769aa26;margin-top:4px;font-size:14px}
+.portal-signin .signin-card form>button:hover:not(:disabled){background:#12578e}
+.portal-signin :is(a,button):focus-visible{outline:3px solid #76baff;outline-offset:4px}
+.portal-signin .signin-card :is(small[data-error],.field-error):empty{display:none}
+.portal-signin .signin-card .reset-link{display:block;margin:18px auto 0;background:transparent;border:0;color:#316da3;padding:8px;font-size:12px;font-weight:600;min-height:40px;cursor:pointer}
+.portal-signin .signin-card .reset-link:hover{background:#eff5fc;border-radius:8px}
+.signin-alternate{border-top:1px solid #e7edf4;padding-top:22px;margin-top:17px;display:grid;gap:12px;font-size:12px;color:#758296;text-align:center}
+.signin-alternate a{display:flex;align-items:center;justify-content:center;gap:16px;min-height:46px;padding:10px;border:1px solid #cddcec;border-radius:10px;color:#174f82;font-size:13px;font-weight:700;text-decoration:none;background:#fff}
+.signin-alternate a:hover{background:#f0f6fd;border-color:#8fafd1}
+.portal-signin .auth-help,.portal-signin .login-help{color:#758296;font-size:11px;line-height:1.7}
+@media(max-width:700px){body.portal-signin{padding:20px 16px;align-items:start}.portal-signin .signin-layout{grid-template-columns:minmax(0,1fr);max-width:480px}.signin-intro{min-height:0;border-radius:20px 20px 0 0;padding:24px}.signin-intro-copy,.signin-footnote{display:none}.portal-signin .signin-card{border-left:1px solid #dce5ef;border-top:0;border-radius:0 0 20px 20px;padding:30px 24px}.portal-signin .signin-card h1{font-size:27px}}
+
+/* Portal workspace controls and cards. */
+.button{min-height:44px;border-radius:10px;font-size:12px;gap:8px;text-decoration:none}
+.button.primary{background:#1769aa;color:#fff;box-shadow:0 3px 9px #1769aa20}
+.primary{background:#1769aa}
+.primary:hover:not(:disabled){background:#12578e}
+.portal-nav{background:#fff;gap:8px}
+.portal-nav a{min-height:42px;display:inline-flex;align-items:center;border-radius:9px;padding:9px 14px}
+.portal-nav a[aria-current="page"]{background:#173d70;color:#fff;box-shadow:0 3px 9px #10244715}
+.portal-main :is(.stats article,.metric-card,.profile-card,.future-section){border-color:#dce5ef;border-radius:14px;box-shadow:0 4px 16px #10244706}
+.portal-main :is(.stats article,.metric-card){border-top:3px solid #b9d4ef}
+.portal-main :is(.table-action,.requirement-action){min-height:36px;border-radius:8px}
+.portal-main :is(.filters,.requirement-filters){border-radius:12px;background:#f7f9fc}
