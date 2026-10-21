@@ -48,6 +48,8 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'admin/whatsapp-console.css',
   'assets/js/sharing-contact-import.js',
   'assets/js/excel-export.js',
+  'assets/js/registration-next-steps.js',
+  'assets/css/registration-next-steps.css',
   'admin/admin.css',
   'admin/admin.js',
   'admin/index.html',
