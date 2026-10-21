@@ -31,3 +31,15 @@ Runtime SQL and permission testing is local and synthetic. Hosted mutation and p
 ## Owner workspace navigation
 
 The Owner header contains Dashboard plus My Properties and Enquiries for approved accounts only. Public listings open separately from the workspace footer; they are browsing, not a Candidate login shortcut. An account overview distinguishes profile submission, pending approval, approved and suspended states. Refresh Account Status rechecks the server before revealing management. Signed-out access remains gated. Property submission returns to the first page, and an enquiry-read failure has its own retry message without hiding loaded properties. Sign-out errors preserve the session and report failure.
+
+## Search presentation and filters (21 October 2026)
+
+Candidate search now uses compact horizontal cards, an explicit whole-room/per-bed rent explanation, readable suitability, a photo cover with an honest no-photo placeholder, and a gallery for the existing Owner-uploaded photos. The Owner property form continues to support up to three resized JPEG photos; no synthetic property photos are published.
+
+Apply `20261021131329_rooms_search_filters.sql` before publishing these frontend files. Its additional `list_room_properties(p_filters jsonb, p_offset integer)` signature is public-search-only and preserves the original scoped signature used by Owner/Admin. It validates an allowlist of area/address, budget, type, suitability, rent unit, maximum sharing, literal facilities keyword and sort inputs. Approval, active Owner, listing, capacity and 30-day availability checks occur before filtering, sorting, pagination and counting. The public result omits internal review notes and Owner identifiers. No table grants or data writes are added.
+
+Workplace text stays in the browser and is used only when the user opens a Google Maps directions link. A supplied safe map link is preferred for View on Map; otherwise the UI labels its generated address search accurately. Directions use the published address, so users should verify the destination. No numeric distance is guessed without coordinates or a routing service.
+
+A confirmed canonical enquiry response opens a success dialog, explains that this is not a booking, and links to My Room Enquiries. A failed request retains form entries and does not show success. The canonical Candidate login, explicit unchecked contact-sharing consent, server availability checks and unique property/Candidate enquiry record remain unchanged.
+
+Validation includes SQL tests for filtering before pagination, exact totals, ordering, legacy Owner/Admin compatibility, approval/freshness, rejected private-scope filters, public projections and narrow grants. VM UI tests cover safe map links, escaped directions, rent labels, placeholders, server filter payloads and confirmed versus failed enquiry writes. Browser QA uses an isolated synthetic fixture with no live Supabase calls or real enquiries.
