@@ -20,7 +20,7 @@
     if (navigation) {
       const currentPath = window.location.pathname;
       const links = [
-        ['Jobs', '/jobs/'], ['For Employers', '/hire-manpower/'], ['For Contractors', '/staffing-partner/'],
+        ['Jobs', '/jobs/'], ['Rooms & PG', '/rooms-pg/'], ['For Employers', '/hire-manpower/'], ['For Contractors', '/staffing-partner/'],
         ['About', '/about/'], ['Contact', '/contact/']
       ];
       navigation.replaceChildren();
@@ -34,7 +34,7 @@
       const portal = document.createElement('div');
       portal.className = 'public-portal';
       portal.dataset.publicPortal = '';
-      portal.innerHTML = '<button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button><div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu><p>Choose your workspace</p><a href="/candidate/portal/login.html"><strong>Candidate Portal</strong><span>Profile, jobs and applications</span></a><a href="/company/login.html"><strong>Employer Portal</strong><span>Requirements and hiring progress</span></a><a href="/contractor/login.html"><strong>Contractor Portal</strong><span>Vacancies and assignments</span></a></div>';
+      portal.innerHTML = '<button class="public-portal__trigger" type="button" aria-expanded="false" aria-controls="portal-login-menu" data-public-portal-button>Portal Login <span aria-hidden="true">⌄</span></button><div class="public-portal__menu" id="portal-login-menu" data-public-portal-menu><p>Choose your workspace</p><a href="/rooms-pg/owner/login.html"><strong>PG / Room Owner</strong><span>Properties, availability and enquiries</span></a><a href="/candidate/portal/login.html"><strong>Candidate Portal</strong><span>Profile, jobs and applications</span></a><a href="/company/login.html"><strong>Employer Portal</strong><span>Requirements and hiring progress</span></a><a href="/contractor/login.html"><strong>Contractor Portal</strong><span>Vacancies and assignments</span></a></div>';
       navigation.append(portal);
     }
 

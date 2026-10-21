@@ -36,8 +36,8 @@ test('final primary navigation is audience-led on core public pages', () => {
   });
 });
 
-test('portal selection names all three supported role workspaces', () => {
-  ['Candidate Portal', 'Employer Portal', 'Contractor Portal'].forEach((label) => {
+test('portal selection retains all four workspaces after shared navigation rebuild', () => {
+  ['PG / Room Owner', 'Candidate Portal', 'Employer Portal', 'Contractor Portal'].forEach((label) => {
     assert.match(pages.home, new RegExp(label));
     assert.match(navigation, new RegExp(label));
   });
@@ -45,10 +45,12 @@ test('portal selection names all three supported role workspaces', () => {
   assert.match(pages.home, /company\/login\.html/);
   assert.match(pages.home, /contractor\/login\.html/);
   const menuTemplate = navigation.match(/portal\.innerHTML = '([\s\S]*?)';/)[1];
-  ['Candidate Portal', 'Employer Portal', 'Contractor Portal'].forEach((label) => {
+  ['PG / Room Owner', 'Candidate Portal', 'Employer Portal', 'Contractor Portal'].forEach((label) => {
     assert.equal((menuTemplate.match(new RegExp(`<strong>${label}<`, 'g')) || []).length, 1);
   });
-  assert.equal((menuTemplate.match(/<a href=/g) || []).length, 3);
+  assert.equal((menuTemplate.match(/<a href=/g) || []).length, 4);
+  assert.match(menuTemplate, /href="\/rooms-pg\/owner\/login\.html"/);
+  assert.match(navigation, /\['Rooms & PG', '\/rooms-pg\/'\]/);
   assert.doesNotMatch(navigation, /portalMenu\.prepend|candidateLink/);
   assert.match(navigation, /if \(navigation\) \{/);
 });
