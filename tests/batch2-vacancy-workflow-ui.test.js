@@ -1,5 +1,35 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
 const read=(file)=>fs.readFileSync(file,'utf8');
+test('Contractor login storage is isolated from Admin across login, recovery and vacancy pages',()=>{
+  const vm=require('node:vm');
+  const captured=[];
+  const ref='abcdefghijklmnopqrst';
+  for(const pathname of ['/admin/index.html','/contractor/login.html','/contractor/vacancies.html']){
+    const window={location:{origin:'https://example.test',pathname},AADHYANT_CONFIG:{expectedOrigin:'https://example.test',supabaseUrl:`https://${ref}.supabase.co`,supabaseProjectRef:ref,supabasePublishableKey:'test-public'},supabase:{createClient:(_url,_key,options)=>{captured.push(options.auth);return {};}}};
+    vm.runInNewContext(read('supabase-client.js'),{window,URL});
+  }
+  assert.equal(captured[0].storageKey,undefined);
+  assert.equal(captured[1].storageKey,`sb-${ref}-contractor-auth-token`);
+  assert.equal(captured[2].storageKey,captured[1].storageKey);
+  assert.equal(captured[1].detectSessionInUrl,true);
+});
+test('a changed or signed-out account cannot send a vacancy RPC; original account can resume',async()=>{
+  const vm=require('node:vm');
+  let user='contractor-one',calls=0,notices=0;
+  const window={location:{search:''},aadhyantSupabase:{client:{auth:{getSession:async()=>({data:{session:user?{user:{id:user}}:null}})},rpc:async()=>{calls++;return {data:'ok'};}}}};
+  const source=read('contractor/batch2-vacancies.js').replace('  start().catch(',"  window.checkCall=call; workspaceUserId='contractor-one'; reportSessionChange=()=>window.notice(); return;\n  start().catch(");
+  window.notice=()=>{notices++;};
+  vm.runInNewContext(source,{window,document:{body:{dataset:{contractorPage:'vacancies-batch2'}}},URLSearchParams});
+  assert.equal(await window.checkCall('manage_contractor_portal_vacancy'),'ok');
+  user='admin';
+  await assert.rejects(window.checkCall('manage_contractor_portal_vacancy'),/Contractor login has changed/);
+  user=null;
+  await assert.rejects(window.checkCall('manage_contractor_portal_vacancy'),/Contractor login has changed/);
+  assert.equal(calls,1);assert.equal(notices,2);
+  user='contractor-one';
+  assert.equal(await window.checkCall('manage_contractor_portal_vacancy'),'ok');
+  assert.equal(calls,2);
+});
 const companyHtml=read('company/requirements.html'),company=read('company/batch2-vacancies.js'),contractorHtml=read('contractor/vacancies.html'),contractor=read('contractor/batch2-vacancies.js'),candidateHtml=read('candidate/portal/jobs.html'),candidate=read('candidate/portal/batch2-jobs.js'),admin=read('admin/vacancy-review.js'),operations=read('admin/recruitment-operations.js'),options=read('assets/js/registration-options.js');
 test('Company vacancy creation uses the M043 extended RPC contract and a one-step submit UX',()=>{['p_iti_trade','p_expected_joining_date','create_and_submit','resubmit','Submit Vacancy','Save Draft','Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.'].forEach(token=>assert.match(`${companyHtml}\n${company}`,new RegExp(token)));assert.doesNotMatch(company,/\.from\s*\(/);assert.match(company,/list_company_portal_vacancy_reviews/);});
 test('Contractor vacancy creation is sectioned, uses shared controls, and keeps Draft secondary',()=>{['A. Job Details','B. Candidate Requirements','C. Salary &amp; Work Conditions','D. Structured Salary / Wage','E. Facilities','F. Interview / Joining','Minimum CTC','Maximum CTC','data-option-set="qualifications"','data-option-set="vacancyFacilities"','Submit Vacancy','Save Draft'].forEach(token=>assert.match(contractorHtml,new RegExp(token)));['create_and_submit','resubmit','correction_required','Vacancy submitted successfully. It is pending Admin approval and is not visible to candidates yet.'].forEach(token=>assert.match(contractor,new RegExp(token)));assert.doesNotMatch(contractor,/\.from\s*\(/);});

@@ -11,7 +11,19 @@
   const fields = ['clientName', 'department', 'jobRole', 'jobLocation', 'requiredHeadcount', 'qualification', 'itiTrade', 'experienceRequirement', 'genderPreference', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax', 'shiftDetails', 'workingHours', 'overtimeDetails', 'canteen', 'transport', 'interviewLocation', 'expectedJoiningDate', 'additionalNotes'];
   const map = { clientName: 'client_name', department: 'department', jobRole: 'job_role', jobLocation: 'job_location', requiredHeadcount: 'required_headcount', qualification: 'qualification', itiTrade: 'iti_trade', experienceRequirement: 'experience_requirement', genderPreference: 'gender_preference', ageMin: 'age_min', ageMax: 'age_max', salaryMin: 'salary_min', salaryMax: 'salary_max', shiftDetails: 'shift_details', workingHours: 'working_hours', overtimeDetails: 'overtime_details', canteen: 'canteen', transport: 'transport', interviewLocation: 'interview_location', expectedJoiningDate: 'expected_joining_date', additionalNotes: 'additional_notes' };
   const numericFields = new Set(['requiredHeadcount', 'ageMin', 'ageMax', 'salaryMin', 'salaryMax']);
-  const call = async (name, args = {}) => { const { data, error } = await client.rpc(name, args); if (error) throw error; return data; };
+  let workspaceUserId = null;
+  let reportSessionChange = () => {};
+  const sessionChangeMessage = 'Your Contractor login has changed or expired. Sign in to the same Contractor account in another tab, then return here. Your entered details have been kept.';
+  const call = async (name, args = {}) => {
+    if (workspaceUserId) {
+      const { data, error } = await client.auth.getSession();
+      if (error || data?.session?.user?.id !== workspaceUserId) {
+        reportSessionChange();
+        throw new Error(sessionChangeMessage);
+      }
+    }
+    const { data, error } = await client.rpc(name, args); if (error) throw error; return data;
+  };
   const first = (value) => Array.isArray(value) ? value[0] : value;
   const indiaToday = () => {
     const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
@@ -35,9 +47,10 @@
     if (!client) return;
     const { data: sessionData } = await client.auth.getSession();
     if (!sessionData.session) { location.replace(employerPostJobLogin); return; }
+    workspaceUserId = sessionData.session.user.id;
     let context;
     try { context = first(await call('get_contractor_portal_context')); } catch (_) { location.replace(employerPostJobLogin); return; }
-    if (!context?.can_manage_vacancies && context?.platform_status !== 'active') { location.replace('index.html'); return; }
+    if (!context?.can_manage_vacancies || context?.platform_status !== 'active') { location.replace('index.html'); return; }
 
     document.querySelector('[data-loading]')?.setAttribute('hidden', '');
     document.querySelector('[data-portal]')?.removeAttribute('hidden');
@@ -51,15 +64,29 @@
     const formMessage = document.querySelector('[data-vacancy-form-message]');
     let current = null;
     let submitInFlight = false;
+    let sessionBlocked = false;
     let submissionKey = null;
     let originalExpectedJoiningDate = '';
     const message = (text, type = '', inForm = false) => {
       pageMessage.textContent = text; pageMessage.className = `message ${type}`;
       if (formMessage) { formMessage.textContent = inForm ? text : ''; formMessage.hidden = !inForm; }
     };
+    reportSessionChange = () => {
+      sessionBlocked = true;
+      message(sessionChangeMessage, 'error', true);
+      form.querySelectorAll('[data-submit],[data-save]').forEach((button) => { button.disabled = true; });
+    };
+    client.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.id !== workspaceUserId) reportSessionChange();
+      else {
+        if (sessionBlocked) message('Contractor login restored. You can continue with your entered details.', 'success', true);
+        sessionBlocked = false;
+        form.querySelectorAll('[data-submit],[data-save]').forEach((button) => { button.disabled = submitInFlight; });
+      }
+    });
     const setSubmitInFlight = (value) => {
       submitInFlight = value;
-      form.querySelectorAll('[data-submit],[data-save]').forEach((button) => { button.disabled = value; });
+      form.querySelectorAll('[data-submit],[data-save]').forEach((button) => { button.disabled = value || sessionBlocked; });
     };
     const valid = () => {
       if (!['clientName', 'jobRole', 'jobLocation'].every((name) => form.elements[name].value.trim()) || Number(form.elements.requiredHeadcount.value) <= 0) {
@@ -182,14 +209,15 @@
       try { await submit(); }
       catch (error) {
         const text = String(error?.message || '');
-        const safe = /Expected joining date/.test(text) ? 'Expected joining date must be today or a future date.'
+        const safe = text === sessionChangeMessage ? sessionChangeMessage
+          : /Expected joining date/.test(text) ? 'Expected joining date must be today or a future date.'
           : /Vacancy criteria are invalid/.test(text) ? 'Check the salary range and vacancy criteria.'
           : /accommodation/i.test(text) ? 'Enter a valid accommodation charge and basis.'
           : 'The vacancy could not be submitted right now. Please try again or contact Aadhyant.';
         message(safe, 'error', true);
       }
     };
-    form.querySelector('[data-save]').onclick = async () => { try { await save(); } catch (_) { message('The vacancy could not be saved. No changes were made.', 'error'); } };
+    form.querySelector('[data-save]').onclick = async () => { try { await save(); } catch (error) { message(error?.message === sessionChangeMessage ? sessionChangeMessage : 'The vacancy could not be saved. No changes were made.', 'error', true); } };
     form.querySelector('[data-delete-vacancy]').onclick = () => lifecycle('delete_contractor_portal_draft_vacancy', 'Delete this draft vacancy? This action cannot be undone.', 'Draft vacancy deleted.');
     form.querySelector('[data-withdraw-vacancy]').onclick = () => lifecycle('withdraw_contractor_portal_vacancy', 'Withdraw this vacancy from review?', 'Vacancy withdrawn from review.');
     form.querySelector('[data-cancel-vacancy]').onclick = () => lifecycle('close_contractor_portal_open_vacancy', 'Close this vacancy? Existing recruitment history will remain available.', 'Vacancy closed. Recruitment history remains available.');

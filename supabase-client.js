@@ -36,7 +36,9 @@
         || window.location.pathname.startsWith('/same-day-pay/');
       api.client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
         auth: usesAuthenticatedPortal
-          ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+          ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+              ...(window.location.pathname.startsWith('/contractor/')
+                ? { storageKey: `sb-${config.supabaseProjectRef}-contractor-auth-token` } : {}) }
           : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
       api.isConfigured = true;
