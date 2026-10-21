@@ -37,7 +37,9 @@
       api.client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
         auth: usesAuthenticatedPortal
           ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
-              ...(window.location.pathname.startsWith('/contractor/')
+              ...((window.location.pathname.startsWith('/contractor/')
+                || (window.location.pathname.startsWith('/same-day-pay/')
+                  && new URL(`${window.location.origin}${window.location.pathname}${window.location.search || ''}`).searchParams.get('role') === 'contractor'))
                 ? { storageKey: `sb-${config.supabaseProjectRef}-contractor-auth-token` } : {}) }
           : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });

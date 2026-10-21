@@ -7,3 +7,18 @@ body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;li
 @media(max-width:700px){.hero{flex-direction:column;gap:10px;padding:20px 0 14px}.portal-back{padding:0}.workspace-nav button{padding:10px 12px;font-size:13px}.workflow-guide{font-size:12px}.list-tools .note{order:3;flex-basis:100%}.list-tools label{flex:1}.section-head h2{font-size:22px}#preference-form{grid-template-columns:1fr}.panel,.job{padding:18px}.excel-export-toolbar{justify-content:flex-start}.excel-export-toolbar small{width:100%}dialog .dialog-heading{top:-18px}}
 
 .form-section{min-width:0;border:1px solid var(--line);border-radius:10px;padding:16px;margin:18px 0}.form-section legend{font-weight:750;font-size:15px;padding:0 8px;color:var(--green)}.form-section .grid{margin-top:0}
+
+/* Match the main portals and keep access prompts separate from work lists. */
+:root{--ink:#172b47;--muted:#64748b;--green:#1769aa;--line:#dce5ef;--paper:#edf2f8}
+.hero{padding:30px;margin:24px 0;background:linear-gradient(135deg,#102447,#173d70);border:0;border-radius:20px;color:#fff}
+.hero h1{font-size:clamp(28px,3.2vw,42px);letter-spacing:-.035em;color:#fff}
+.hero .eyebrow{color:#90c9ff}.hero #workspace-description{color:#d2dff0;max-width:760px;line-height:1.7}
+.hero .portal-back{flex:none;display:inline-flex;align-items:center;min-height:42px;padding:10px 14px;border:1px solid #ffffff40;border-radius:10px;color:#fff;text-decoration:none;background:#ffffff0a}
+.workspace-nav{padding:8px;background:#fff;border:1px solid var(--line);border-radius:13px;gap:8px}
+.workspace-nav button{border-radius:9px;min-height:44px}.workspace-nav button[aria-current=page]{background:#1769aa;border-color:#1769aa;color:#fff}
+.workflow-guide{background:#f8fbff;border-color:#d7e5f4;color:#365778;border-radius:12px}
+.panel,.job{border-radius:16px;box-shadow:0 5px 20px #10244705}
+#access{padding:32px;max-width:780px;margin:28px auto;border-top:3px solid #9dc4e8}#access h2{color:#102447;font-size:25px}#access>p{max-width:660px;line-height:1.8}
+.access-actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 10px}.access-actions a{min-height:46px;display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;border-radius:10px;font-weight:700;text-decoration:none;font-size:13px}.access-primary{background:#1769aa;color:#fff}.access-secondary{border:1px solid #cddcec;background:#fff;color:#174f82}
+button,input,select,textarea{border-radius:10px}button{min-height:44px}.list-tools{background:#fff;border:1px solid var(--line);padding:16px;border-radius:12px}
+@media(max-width:650px){.hero{padding:24px 20px;margin-top:16px}.hero .portal-back{align-self:flex-start}.access-actions{flex-direction:column}#access{padding:24px}.workspace-nav button{flex:1 1 140px}}

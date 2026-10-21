@@ -1,6 +1,6 @@
 (function(){'use strict';
   const employerPostJobRequested=()=>new URLSearchParams(window.location.search).get('postJob')==='1';
-  const employerPostJobDestination=()=>employerPostJobRequested()?'vacancies.html?postJob=1':'index.html';
+  const employerPostJobDestination=()=>new URLSearchParams(window.location.search).get('sameDay')==='1'?'/same-day-pay/?role=contractor':employerPostJobRequested()?'vacancies.html?postJob=1':'index.html';
 const page=document.body.dataset.contractorPage,conn=window.aadhyantSupabase,client=conn?.client,options=window.AadhyantRegistrationOptions;
 const rpc={context:'get_contractor_portal_context',metrics:'get_contractor_dashboard_metrics',profile:'get_contractor_portal_profile',updateProfile:'update_contractor_portal_profile',vacancies:'list_contractor_portal_vacancies',vacancy:'get_contractor_portal_vacancy',manage:'manage_contractor_portal_vacancy',applications:'list_contractor_portal_applications',application:'get_contractor_portal_application',interviews:'list_contractor_portal_interviews',joinings:'list_contractor_portal_joinings'};let context;
 const safe=(v,f='Not available')=>v===null||v===undefined||v===''?f:String(v),readable=(v)=>safe(v).replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase()),date=(v,t=false)=>v?new Date(v).toLocaleString('en-IN',t?{dateStyle:'medium',timeStyle:'short'}:{dateStyle:'medium'}):'Not available';

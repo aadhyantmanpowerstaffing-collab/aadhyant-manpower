@@ -14,14 +14,17 @@
   const message = (v, error = false) => { $('#message').textContent = v; $('#message').classList.toggle('error',error); };
   let signedIn = false, allowed = false, candidate = false, offset = 0, busy = false, submissionKey = null, availability = null, poolOffset = 0, refreshing = false;
   const form = $('#job-form');
-  let activePanel='jobs';
+  let activePanel='jobs', accessChecked=false;
   function configureWorkspace(){
     document.body.dataset.workspaceRole=role;
     const employer=['company','contractor'].includes(role);
+    $('#workspace-nav').hidden=role!=='candidate';
     $('#workspace-label').textContent=`${nice(role).toUpperCase()} WORKSPACE · SAME-DAY PAY`;
     $('#workspace-title').textContent=role==='admin'?'Review shifts. Track the work.':employer?'Post a shift. Manage your workers.':'Find a shift. Apply for work.';
     $('#workspace-description').textContent=role==='admin'?'Review Company and Contractor posts, then monitor applications, attendance and payment records.':employer?'Create a job post, submit it for Aadhyant review, then manage applications after publication.':'Check the date, hours and pay. Apply to a specific shift and wait for the employer to confirm your place.';
     $('#workflow-guide').textContent=role==='admin'?'1. Review job posts   →   2. Approve or request changes   →   3. Monitor applications & payments':employer?'1. Post a shift   →   2. Aadhyant reviews it   →   3. Confirm applicants & record work/payment':'1. Find a shift   →   2. Apply for that shift   →   3. Check My Applications for confirmation';
+    $('#portal-back').textContent=`Back to ${nice(role).replace(/^./,c=>c.toUpperCase())} Portal`;
+    document.querySelector('.workspace-switch').hidden=role!=='candidate';
     $('#portal-back').href=role==='candidate'?'/candidate/portal/':`/${role}/`;
     const sections=role==='candidate'?[['jobs','Find Shifts'],['applications','My Applications'],['availability','My Availability'],['alerts','WhatsApp Alerts']]:[['jobs',role==='admin'?'Review Job Posts':'My Job Posts'],['applications','Applications & Payments'],['workers','Available Workers']];
     for(const [key,label] of sections){const b=make('button',label,'secondary');b.type='button';b.dataset.workspaceTarget=key;b.onclick=()=>selectPanel(key);$('#workspace-nav').append(b);}
@@ -30,8 +33,9 @@
     selectPanel('jobs');
   }
   function selectPanel(key){
+    if(accessChecked&&role!=='candidate'&&!allowed)return;
     activePanel=key;
-    document.querySelectorAll('[data-workspace-panel]').forEach(n=>n.hidden=n.dataset.workspacePanel!==key);
+    document.querySelectorAll('[data-workspace-panel]').forEach(n=>n.hidden=(!accessChecked&&role!=='candidate')||n.dataset.workspacePanel!==key);
     document.querySelectorAll('[data-workspace-target]').forEach(n=>{if(n.dataset.workspaceTarget===key)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current');});
     $('#workspace-help')?.remove();
     if(key!=='jobs'&&((role==='candidate'&&!candidate)||(role!=='candidate'&&!allowed))){const p=make('p','Sign in with the correct portal account to use this section.','panel');p.id='workspace-help';$('#workspace-nav').after(p);}
@@ -39,7 +43,7 @@
   const write = async (fn) => { if(busy) return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);} };
   const button = (label, action, secondary = false) => { const b=make('button',label,secondary?'secondary':'');b.type='button';b.onclick=()=>write(action).catch(e=>message(e?.message || 'Action could not be completed. Refresh and retry.',true));return b; };
   const details = (pairs) => {const dl=make('dl');pairs.forEach(([k,v])=>{const d=make('div');d.append(make('dt',k),make('dd',v || 'Not specified'));dl.append(d);});return dl;};
-  const login = () => role==='candidate'?'/candidate/portal/login.html':`/${role}/login.html`;
+  const login = () => role==='candidate'?'/candidate/portal/login.html':`/${role}/login.html${['company','contractor'].includes(role)?'?sameDay=1':''}`;
   const card = (job) => {
     const t=job.terms, n=make('article',null,'job');n.id=`job-${job.requirement_code}`;
     n.append(make('span',nice(job.review_status),'badge'),make('h3',job.job_role),make('p',job.company_name,'company'),make('p',job.job_location),make('p',money(t.pay_amount),'pay'));
@@ -92,6 +96,7 @@
     }
   }
   async function load(){
+    if(role!=='candidate'&&!allowed)return;
     const scope=allowed&&role==='admin'?'admin':allowed&&['company','contractor'].includes(role)?'owner':'public';
     const rows=await rpc('list_same_day_jobs',{p_scope:scope,p_limit:20,p_offset:offset,p_code:query.get('job') || null});
     const filter=$('#job-status-filter').value;const shown=scope==='public'||filter==='all'?rows:(rows || []).filter(j=>j.review_status===filter);
@@ -155,17 +160,25 @@
     $('#previous').onclick=()=>{offset=Math.max(0,offset-20);load().catch(()=>message('Shifts could not be loaded.',true));};$('#next').onclick=()=>{offset+=20;load().catch(()=>message('Shifts could not be loaded.',true));};
     form.onsubmit=e=>{e.preventDefault();write(async()=>{updateDuration();if(form.elements.ends_at.validity.customError){$('#form-message').textContent=$('#duration-hint').textContent;return;}if(!form.reportValidity())return;const data=Object.fromEntries(new FormData(form));const id=data.requirement_id || null;delete data.requirement_id;await rpc('submit_same_day_job',{p_role:role,p_payload:data,p_request_key:submissionKey,p_requirement_id:id});$('#job-dialog').close();message('Submitted for Admin review. Candidates will see the shift after approval.');await load();}).catch(e=>{$('#form-message').textContent=e?.message || 'Submission could not be confirmed. Keep this form open and retry with the same details.';});};
     if(!client){message('The portal connection is unavailable.',true);return;}
-    const {data:{session}}=await client.auth.getSession();signedIn=!!session;
+    const {data:{session},error:sessionError}=await client.auth.getSession();if(sessionError)throw sessionError;signedIn=!!session;
     if(signedIn){
       if(role==='candidate'){try{const pref=await rpc('get_candidate_alert_choices');candidate=true;$('#preferences').hidden=false;const fields=$('#preference-form').elements;fields.general.value=typeof pref.general_alerts==='boolean'?(pref.general_alerts?'yes':'no'):'';fields.same_day.value=typeof pref.same_day_alerts==='boolean'?(pref.same_day_alerts?'yes':'no'):'';fields.current_job_location.value=pref.current_job_location||'';}catch(_){/* Other account types can browse public shifts. */}}
       else if(role==='admin'){try{await rpc('list_same_day_jobs',{p_scope:'admin',p_limit:1,p_offset:0,p_code:null});allowed=true;}catch(_){}}
       else {try{const data=await rpc(role==='company'?'get_company_portal_context':'get_contractor_portal_context');const c=Array.isArray(data)?data[0]:data;allowed=role==='company'?c?.can_manage_requirements===true:c?.can_manage_vacancies===true;}catch(_){}}
     }
-    if((role==='candidate'&&!candidate)||(role!=='candidate'&&!allowed)){
-      const access=$('#access');access.hidden=false;access.append(make('h2',signedIn?'Choose your account workspace':'Use your existing portal account'),make('p',signedIn?'This account does not have access to the selected workspace. Choose the correct role above, or sign in with the appropriate account.':'Sign in, then open Same-Day Pay Jobs from your portal. New candidates can register using the existing Candidate registration form.'));
-      const a=make('a',`Open ${nice(role)} Login`);a.href=login();access.append(a);
-      if(role==='candidate'){const a=make('a',' · Register as Candidate');a.href='/candidate/portal/register.html';access.append(a);}
+    accessChecked=true;
+    const needsAccess=(role==='candidate'&&!candidate)||(role!=='candidate'&&!allowed);
+    $('#workspace-nav').hidden=role!=='candidate'&&!allowed;
+    if(needsAccess){
+      const access=$('#access');access.hidden=false;access.replaceChildren();
+      const portalName=role==='company'?'Company':role==='contractor'?'Contractor':role==='admin'?'Admin':'Candidate';
+      access.append(make('p',`${portalName.toUpperCase()} PORTAL · SAME-DAY PAY`,'eyebrow'),make('h2',signedIn?`${portalName} access could not be confirmed`:`Sign in to your ${portalName} account`),make('p',signedIn?'Return to your portal to check account approval, or sign in with the correct account. Your account permissions still apply here.':`Use the same ${portalName} account you use for your portal. After signing in, return to your Same-Day Pay workspace.`));
+      const actions=make('div',null,'access-actions');const a=make('a',`${portalName} Sign In`,'access-primary');a.href=login();actions.append(a);
+      const back=make('a',`Back to ${portalName} Portal`,'access-secondary');back.href=$('#portal-back').href;actions.append(back);access.append(actions);
+      if(role==='candidate'){const a=make('a','Create Candidate Account');a.href='/candidate/portal/register.html';access.append(a);}
+      if(role!=='candidate'){document.querySelectorAll('[data-workspace-panel]').forEach(n=>n.hidden=true);message('');return;}
     }
+    if(client.auth.onAuthStateChange){const userId=session?.user?.id;client.auth.onAuthStateChange((event,nextSession)=>{if(event==='SIGNED_OUT'||(event==='SIGNED_IN'&&nextSession?.user?.id!==userId)){allowed=false;candidate=false;document.querySelectorAll('[data-workspace-panel]').forEach(n=>n.hidden=true);$('#job-dialog').close();location.reload();}});}
     $('#new-job').hidden=!allowed||role==='admin';
     if(allowed){$('#list-eyebrow').textContent=role==='admin'?'REVIEW & OPERATIONS':'MY SHIFT POSTS';$('#list-title').textContent=role==='admin'?'Same-Day Pay Review':'My Same-Day Pay Jobs';}
     $('#preference-form').onsubmit=e=>{e.preventDefault();write(async()=>{const f=e.currentTarget;if(!['yes','no'].includes(f.elements.general.value)||!['yes','no'].includes(f.elements.same_day.value))throw new Error('Choose Yes or No for both alerts.');await rpc('save_candidate_alert_choices',{p_general:f.elements.general.value==='yes',p_same_day:f.elements.same_day.value==='yes',p_current_job_location:f.elements.current_job_location.value.trim()});message('Both WhatsApp alert choices saved. Sanand location rules apply to Same-Day Pay alerts.');}).catch(()=>message('Preference could not be saved.',true));};

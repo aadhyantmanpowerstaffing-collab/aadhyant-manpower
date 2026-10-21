@@ -1,6 +1,6 @@
 (function initializeCompanyPortal(){
   const employerPostJobRequested=()=>new URLSearchParams(window.location.search).get('postJob')==='1';
-  const employerPostJobDestination=()=>employerPostJobRequested()?'requirements.html?postJob=1':'index.html';
+  const employerPostJobDestination=()=>new URLSearchParams(window.location.search).get('sameDay')==='1'?'/same-day-pay/?role=company':employerPostJobRequested()?'requirements.html?postJob=1':'index.html';
   const pageType=document.body.dataset.companyPage,connection=window.aadhyantSupabase,client=connection?.client,options=window.AadhyantRegistrationOptions;
   const rpcNames=Object.freeze({context:'get_company_portal_context',dashboard:'get_company_dashboard_metrics',profile:'get_company_profile',updateProfile:'update_company_profile',requirements:'list_company_portal_requirements',requirement:'get_company_portal_requirement',manageRequirement:'manage_company_portal_requirement',applications:'list_company_portal_applications',application:'get_company_portal_application',interviews:'list_company_portal_interviews',joinings:'list_company_portal_joinings'});
   const safe=(value,fallback='Not available')=>value===null||value===undefined||value===''?fallback:String(value);

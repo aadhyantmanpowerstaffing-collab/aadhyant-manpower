@@ -40,3 +40,46 @@ test('other portal identities cannot enter candidate onboarding',()=>{assert.mat
 test('Joining form preserves saved UAN and ESIC declarations without changing checkbox submission values',()=>{const window={AADHYANT_CONFIG:{environment:'staging'}},document={body:{dataset:{candidatePage:'test'}},querySelectorAll(){return[];},querySelector(){return null;}};vm.runInNewContext(js,{window,document,location:{search:'',hash:''},URLSearchParams,addEventListener(){},performance:{getEntriesByType:()=>[]}});const bank={elements:{has_existing_uan:{type:'checkbox',checked:false,value:'on'},has_existing_esic_ip:{type:'checkbox',checked:false,value:'on'},bank_account_masked:{type:'text',value:''}}};window.aadhyantCandidatePortal.populateJoiningForm(bank,{has_existing_uan:true,has_existing_esic_ip:false,bank_account_masked:'XXXX XXXX 1234'});assert.equal(bank.elements.has_existing_uan.checked,true);assert.equal(bank.elements.has_existing_uan.value,'on');assert.equal(bank.elements.has_existing_esic_ip.checked,false);assert.equal(bank.elements.bank_account_masked.value,'XXXX XXXX 1234');});
 
 test('Same-Day Pay reuses authenticated portal sessions while public forms stay nonpersistent',()=>{const code=fs.readFileSync(path.join(root,'supabase-client.js'),'utf8');for(const [pathname,persist] of [['/same-day-pay/',true],['/admin/index.html',true],['/jobs/',false],['/candidate/apply/',false]]){let options;const window={location:{pathname,origin:'https://aadhyantmanpower.in'},AADHYANT_CONFIG:{expectedOrigin:'https://aadhyantmanpower.in',supabaseUrl:'https://wsuctjhbqiedttfnwjvf.supabase.co',supabaseProjectRef:'wsuctjhbqiedttfnwjvf',supabasePublishableKey:'synthetic-public-key'},supabase:{createClient:(_url,_key,o)=>{options=o;return {};}}};vm.runInNewContext(code,{window,URL});assert.equal(options.auth.persistSession,persist,pathname);assert.equal(options.auth.autoRefreshToken,persist,pathname);}});
+
+test('Same-Day Contractor workspace uses exactly the Contractor login session without adopting other roles',()=>{
+  const source=fs.readFileSync(path.join(root,'supabase-client.js'),'utf8');
+  const optionsFor=(pathname,search='')=>{let options;const window={location:{pathname,search,origin:'https://aadhyantmanpower.in'},AADHYANT_CONFIG:{expectedOrigin:'https://aadhyantmanpower.in',supabaseUrl:'https://wsuctjhbqiedttfnwjvf.supabase.co',supabaseProjectRef:'wsuctjhbqiedttfnwjvf',supabasePublishableKey:'synthetic-public-key'},supabase:{createClient:(_u,_k,o)=>{options=o;return {};}}};vm.runInNewContext(source,{window,URL});return options.auth;};
+  const contractor=optionsFor('/contractor/login.html');
+  assert.ok(contractor.storageKey);
+  assert.equal(optionsFor('/same-day-pay/','?role=contractor').storageKey,contractor.storageKey);
+  assert.equal(optionsFor('/same-day-pay/index.html','?role=contractor&job=TEST').storageKey,contractor.storageKey);
+  for(const role of ['company','candidate','admin','other'])assert.equal(optionsFor('/same-day-pay/',`?role=${role}`).storageKey,undefined);
+  assert.equal(optionsFor('/jobs/','?role=contractor').persistSession,false);
+});
+
+test('Same-Day employer access gates lists until server context succeeds and preserves return-to-workspace login',async()=>{
+ const source=fs.readFileSync(path.join(root,'same-day-pay/same-day.js'),'utf8');
+ async function run(role,signedIn,permitted){
+  const nodes=new Map(),calls=[],panels=['jobs','applications','workers','alerts','availability'].map(key=>({dataset:{workspacePanel:key},hidden:key!=='jobs'}));
+  const node=()=>({children:[],hidden:false,dataset:{},value:'all',classList:{toggle(){}},append(...n){this.children.push(...n);},replaceChildren(...n){this.children=n;},setAttribute(){},removeAttribute(){},after(){},remove(){},close(){},elements:new Proxy({},{get:(o,k)=>o[k]||(o[k]={value:'',validity:{},setCustomValidity(){}})})});
+  const get=s=>{if(!nodes.has(s))nodes.set(s,node());return nodes.get(s);};
+  get('#access').hidden=true;
+  const document={body:{dataset:{}},hidden:false,createElement:node,querySelector:get,querySelectorAll:s=>s==='[data-workspace-panel]'?panels:[],addEventListener(){}};
+  const client={auth:{getSession:async()=>({data:{session:signedIn?{user:{id:'synthetic-user'}}:null}}),onAuthStateChange(){}},rpc:async(name,args)=>{calls.push({name,args});if(name.endsWith('_portal_context'))return {data:{can_manage_vacancies:permitted,can_manage_requirements:permitted}};return {data:[]};}};
+  const code=source.replace("  start().catch(()=>message('This workspace is not available yet. Refresh after the portal update is deployed.',true));","  window.finished=start();");
+  const window={aadhyantSupabase:{client}};
+  vm.runInNewContext(code,{window,document,location:{search:`?role=${role}`,reload(){}},URLSearchParams,Intl,Date,setInterval(){}});
+  await window.finished;return {get,calls,panels};
+ }
+ for(const role of ['contractor','company']){
+  for(const signedIn of [false,true]){const f=await run(role,signedIn,false);assert.equal(f.get('#workspace-nav').hidden,true);assert.ok(f.panels.every(p=>p.hidden));assert.ok(!f.calls.some(c=>c.name==='list_same_day_jobs'));const actions=f.get('#access').children.find(n=>n.className==='access-actions');assert.equal(actions.children[0].href,`/${role}/login.html?sameDay=1`);}
+  const f=await run(role,true,true);assert.equal(f.get('#access').hidden,true);assert.equal(f.get('#workspace-nav').hidden,false);assert.equal(f.get('#new-job').hidden,false);assert.ok(f.calls.some(c=>c.name==='list_same_day_jobs'&&c.args.p_scope==='owner'));assert.equal(f.panels.find(p=>p.dataset.workspacePanel==='jobs').hidden,false);
+ }
+});
+
+test('Employer sign-in returns only to the fixed matching Same-Day workspace and keeps normal vacancy links',()=>{
+ for(const [role,page] of [['contractor','vacancies'],['company','requirements']]){
+  const code=fs.readFileSync(path.join(root,role,`${role}.js`),'utf8');
+  const declarations=code.slice(code.indexOf('const employerPostJobRequested'),code.indexOf('\n',code.indexOf('const employerPostJobDestination')));
+  const destination=search=>vm.runInNewContext(`${declarations};employerPostJobDestination()`,{window:{location:{search}},URLSearchParams});
+  assert.equal(destination('?sameDay=1'),`/same-day-pay/?role=${role}`);
+  assert.equal(destination('?postJob=1'),`${page}.html?postJob=1`);
+  assert.equal(destination('?sameDay=https://example.invalid&next=https://example.invalid'),'index.html');
+  assert.equal(destination(''),'index.html');
+ }
+});
