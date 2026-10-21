@@ -56,3 +56,39 @@ dialog::backdrop{background:#07152aaa}
 .auth-callback-actions .button{text-decoration:none}
 @media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{height:auto;position:static}.sidebar nav{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
 @media(max-width:620px){.main{padding:16px}.sidebar nav{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.field-wide{grid-column:auto}.metrics{grid-template-columns:1fr 1fr}.topbar{align-items:flex-start;flex-direction:column}.button{min-height:44px;width:100%}.auth-page{padding:12px}.registration-card{padding:14px}.profile-section{padding:14px}}
+
+/* Candidate sign-in: scoped to preserve all other portal layouts. */
+body[data-candidate-page="login"]{background:#edf2f8}
+body[data-candidate-page="login"] .auth-page{grid-template-columns:minmax(280px,440px) minmax(0,480px);justify-content:center;align-content:center;gap:0;padding:48px 24px;min-height:100svh}
+.login-intro{align-self:stretch;display:flex;flex-direction:column;justify-content:space-between;padding:42px;color:#fff;background:linear-gradient(145deg,#102447,#173d70);border-radius:24px 0 0 24px;min-height:610px;position:relative;overflow:hidden}
+.login-intro:after{content:"";position:absolute;width:280px;height:280px;border:1px solid #ffffff14;border-radius:50%;right:-150px;bottom:-100px;pointer-events:none}
+.login-brand{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-size:18px;font-weight:800;letter-spacing:.08em}
+.brand-mark{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#fff;color:#173d70;font-size:27px;letter-spacing:0}
+.login-brand small{display:block;font-size:9px;font-weight:500;letter-spacing:.15em;margin-top:5px;color:#c6d7ee}
+.intro-label{font-size:10px;letter-spacing:.19em;color:#90c9ff;font-weight:800}
+.login-intro h2{font-size:36px;line-height:1.2;letter-spacing:-.03em;margin:18px 0}
+.login-intro-copy>p:not(.intro-label){color:#d2dff0;line-height:1.7;font-size:14px;max-width:280px}
+.login-intro ul{list-style:none;padding:0;margin:28px 0;display:grid;gap:17px;font-size:13px;color:#e5edf8}
+.login-intro li:before{content:"✓";display:inline-grid;place-items:center;width:23px;height:23px;margin-right:10px;background:#ffffff12;border-radius:50%;color:#9ddbc8}
+.intro-footer{color:#acbdd6;font-size:11px;margin:0}
+body[data-candidate-page="login"] .auth-card{width:100%;align-self:stretch;padding:46px 40px;border-radius:0 24px 24px 0;border:1px solid #dce5ef;border-left:0;box-shadow:16px 20px 60px #1024470c;display:flex;flex-direction:column;justify-content:center;min-width:0}
+body[data-candidate-page="login"] .eyebrow{font-size:11px;letter-spacing:.1em;margin:0 0 30px;color:#2268ad}
+.login-welcome{font-size:10px;font-weight:700;letter-spacing:.14em;color:#7b889b;margin-bottom:8px}
+body[data-candidate-page="login"] h1{font-size:29px;letter-spacing:-.04em;line-height:1.2;margin:0 0 13px;color:#102447}
+body[data-candidate-page="login"] h1+p{color:#6b778a;font-size:13px;line-height:1.7;margin:0 0 28px}
+body[data-candidate-page="login"] .form-grid{gap:18px}
+body[data-candidate-page="login"] .field{font-size:12px;font-weight:650;color:#334661;gap:8px}
+body[data-candidate-page="login"] .field input{min-height:49px;border:1px solid #d5deea;border-radius:10px;padding:13px 14px;background:#f9fbfe;font-size:15px;color:#172033;transition:border-color .15s,box-shadow .15s}
+body[data-candidate-page="login"] .field input:focus{outline:none;border-color:#2877bf;box-shadow:0 0 0 3px #2877bf20;background:#fff}
+body[data-candidate-page="login"] .form-grid>.button{grid-column:1/-1;min-height:50px;width:100%;border-radius:10px;background:#1769aa;box-shadow:0 5px 13px #1769aa26;margin-top:4px;font-size:14px}
+body[data-candidate-page="login"] .button:hover:not(:disabled){background:#12578e}
+body[data-candidate-page="login"] :is(a,button):focus-visible{outline:3px solid #76baff;outline-offset:4px}
+body[data-candidate-page="login"] .message:empty{min-height:0;margin:0}
+body[data-candidate-page="login"] .message:not(:empty){font-size:13px;line-height:1.6}
+.login-footer{margin-top:18px;text-align:center}
+body[data-candidate-page="login"] .login-footer .secondary{background:transparent;color:#316da3;padding:8px;font-size:12px;font-weight:600;min-height:40px;width:auto}
+body[data-candidate-page="login"] .login-footer .secondary:hover{background:#eff5fc}
+.login-register{border-top:1px solid #e7edf4;padding-top:22px;margin-top:17px;display:grid;gap:12px;font-size:12px;color:#758296}
+.login-register a{display:flex;align-items:center;justify-content:center;gap:16px;min-height:46px;padding:10px;border:1px solid #cddcec;border-radius:10px;color:#174f82;font-size:13px;font-weight:700;text-decoration:none;background:#fff}
+.login-register a:hover{background:#f0f6fd;border-color:#8fafd1}
+@media(max-width:700px){body[data-candidate-page="login"] .auth-page{grid-template-columns:minmax(0,480px);padding:20px 16px;align-content:start}.login-intro{min-height:0;border-radius:20px 20px 0 0;padding:24px}.login-intro-copy,.intro-footer{display:none}body[data-candidate-page="login"] .auth-card{border-left:1px solid #dce5ef;border-top:0;border-radius:0 0 20px 20px;padding:30px 24px}body[data-candidate-page="login"] h1{font-size:27px}body[data-candidate-page="login"] .eyebrow{margin-bottom:24px}}
