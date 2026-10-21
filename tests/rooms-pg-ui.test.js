@@ -10,10 +10,10 @@ test('Existing Candidate and Admin navigation links point to accommodation and p
  assert.match(fs.readFileSync('admin/index.html','utf8'),/\/rooms-pg\/admin.html/);
  const build=fs.readFileSync('scripts/build-production-artifact.js','utf8');for(const f of ['index.html','admin.html','rooms.js','rooms.css','owner/index.html','owner/login.html','owner/register.html'])assert.ok(build.includes(`'rooms-pg/${f}'`));
 });
-async function fixture(page,{session=null,owner=null,propertyRows=[]}={}){
+async function fixture(page,{session=null,owner=null,candidate=null,propertyRows=[]}={}){
  const nodes=new Map(),calls=[];const node=()=>({hidden:true,children:[],dataset:{},append(...n){this.children.push(...n);},replaceChildren(...n){this.children=n;},querySelector(){return node();},closest(){return null;},classList:{},elements:{},scrollIntoView(){}});
  const get=s=>{if(!nodes.has(s))nodes.set(s,node());return nodes.get(s);};
- const connection={auth:{getSession:async()=>({data:{session}}),onAuthStateChange(){}},rpc:async(name,args)=>{calls.push({name,args});return {data:name==='room_owner_context'?owner:name==='list_room_properties'?propertyRows:[]};}};
+ const connection={auth:{getSession:async()=>({data:{session}}),onAuthStateChange(){}},rpc:async(name,args)=>{calls.push({name,args});return {data:name==='room_owner_context'?owner:name==='get_candidate_portal_context'?candidate:name==='list_room_properties'?propertyRows:[]};}};
  const document={body:{dataset:{roomsPage:page}},querySelector:s=>s==='#filters'&&page!=='browse'?null:get(s),querySelectorAll:s=>s==='[data-owner-management-nav]'?[get(s)]:[],createElement:node};
  const window={aadhyantSupabase:{client:connection,isConfigured:true},addEventListener(){}};
  const code=js.replace(" start().catch(()=>say('Accommodation access could not be confirmed. Check your portal account or try again after the module is activated.'));"," window.finished=start();");
@@ -41,4 +41,13 @@ test('Owner status explains incomplete, pending and suspended states without exp
  const first=await fixture('owner',{session:{user:{id:'synthetic'}}});assert.equal(first.get('#owner-profile').hidden,false);assert.equal(first.get('#owner-status').hidden,false);assert.match(first.get('#owner-status-title').textContent,/Complete your owner profile/);
  for(const status of ['pending','suspended']){const f=await fixture('owner',{session:{user:{id:'synthetic'}},owner:{status,display_name:'Synthetic Owner',phone:'9000000000'}});assert.equal(f.get('#owner-workspace').hidden,true);assert.equal(f.get('[data-owner-management-nav]').hidden,true);assert.equal(f.get('#owner-status').hidden,false);assert.match(f.get('#owner-status-description').textContent,status==='pending'?/Each property is reviewed separately/:/listings are hidden/);assert.ok(!f.calls.some(c=>['list_room_properties','list_room_enquiries'].includes(c.name)));}
  const active=await fixture('owner',{session:{user:{id:'synthetic'}},owner:{status:'active',display_name:'Synthetic Owner',phone:'9000000000'}});assert.equal(active.get('[data-owner-management-nav]').hidden,false);assert.match(active.get('#owner-status-title').textContent,/approved/);assert.equal(active.get('#owner-profile').hidden,true);
+});
+
+test('Candidate room search removes Owner switching and verifies Candidate context before showing Dashboard and Sign Out',async()=>{
+ const html=fs.readFileSync('rooms-pg/index.html','utf8'),header=html.match(/<header[\s\S]*?<\/header>/)[0];assert.doesNotMatch(header,/Owner Portal|Find a Room|Candidate Portal/);assert.match(header,/My Room Enquiries/);assert.equal((html.match(/id="my-enquiries"/g)||[]).length,1);
+ // All types is an intentionally empty filter value, so it cannot be required.
+ assert.doesNotMatch(html,/<select name="property_type" required/);
+ const member=await fixture('browse',{session:{user:{id:'synthetic'}},candidate:[{candidate_id:'candidate-synthetic'}]});assert.equal(member.get('[data-candidate-dashboard]').textContent,'Candidate Dashboard');assert.equal(member.get('[data-candidate-dashboard]').href,'/candidate/portal/');assert.equal(member.get('#logout').hidden,false);
+ const other=await fixture('browse',{session:{user:{id:'synthetic-admin'}}});assert.equal(other.get('#logout').hidden,true);assert.notEqual(other.get('[data-candidate-dashboard]').textContent,'Candidate Dashboard');
+ const guest=await fixture('browse');assert.ok(!guest.calls.some(c=>c.name==='get_candidate_portal_context'));assert.equal(guest.get('#logout').hidden,true);
 });
