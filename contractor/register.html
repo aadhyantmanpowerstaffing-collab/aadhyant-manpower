@@ -13,15 +13,15 @@
   <script src="../assets/js/registration-options.js" defer></script>
   <script src="contractor.js" defer></script>
 </head>
-<body data-contractor-page="register">
-  <header class="portal-header"><a class="brand" href="../index.html"><span>A</span><strong>AADHYANT<small>CONTRACTOR PORTAL</small></strong></a><a href="login.html">Contractor Portal</a></header>
-  <main class="register-layout">
-    <section><p class="eyebrow">Contractor / Staffing Partner onboarding</p><h1>Register as a Staffing Partner</h1><p>Register your agency for review and controlled manpower requirement assignments.</p></section>
-    <section class="card">
+<body class="registration-page" data-contractor-page="register">
+<header class="registration-header"><a class="registration-brand" href="../index.html"><span aria-hidden="true">A</span><strong>AADHYANT<small>STAFFING PARTNER PORTAL</small></strong></a><a class="registration-login-link" href="login.html">Sign In <span aria-hidden="true">&nbsp;→</span></a></header>
+  <main class="register-layout registration-layout">
+<aside class="registration-intro"><p class="registration-kicker">Staffing Partner Portal</p><h1>More connections.<br>More possibilities.</h1><p>Bring your agency, vacancies and recruitment progress together.</p><ol class="registration-journey"><li>Register your agency</li><li>Confirm your email</li><li>Account reviewed by Aadhyant</li></ol></aside>
+    <section class="card registration-card"><div class="registration-form-heading"><p class="eyebrow">Create your account</p><h2>Staffing Partner Registration</h2><p>Fields marked * are required. Your agency details will be reviewed by Aadhyant.</p></div>
       <div class="message" data-page-message role="status" aria-live="polite"></div>
       <form data-register-form novalidate>
         <fieldset><legend>Account</legend><div class="grid">
-          <label>Work email *<input name="email" type="email" autocomplete="email" maxlength="254" required><small data-error="email"></small></label>
+          <label class="wide">Work email *<input name="email" type="email" autocomplete="email" maxlength="254" required><small data-error="email"></small></label>
           <label>Password *<input name="password" type="password" autocomplete="new-password" minlength="8" required><small data-error="password"></small></label>
           <label>Confirm password *<input name="confirmPassword" type="password" autocomplete="new-password" required><small data-error="confirmPassword"></small></label>
         </div></fieldset>
@@ -43,7 +43,7 @@
         <label class="consent"><input name="consent" type="checkbox" required><span>I acknowledge that Aadhyant may review these details before activating this staffing partner account.</span></label>
         <small data-error="consent"></small>
         <button class="button primary" type="submit">Create Staffing Partner Account</button>
-      </form>
+      </form><p class="registration-return">Already have an account? <a href="login.html">Sign In →</a></p>
     </section>
   </main>
   <dialog class="registration-next-steps" data-registration-result aria-labelledby="registration-result-title" aria-describedby="registration-result-description">

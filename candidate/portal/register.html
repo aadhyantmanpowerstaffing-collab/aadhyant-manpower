@@ -6,18 +6,19 @@
   <title>Candidate Account Registration | Aadhyant</title>
   <link rel="stylesheet" href="candidate.css">
 </head>
-<body data-candidate-page="register">
-  <main class="auth-page">
-    <section class="auth-card">
-      <p class="eyebrow">Candidate Portal · Step 1 of 2</p>
+<body class="registration-page" data-candidate-page="register">
+  <header class="registration-header"><a class="registration-brand" href="../../index.html"><span aria-hidden="true">A</span><strong>AADHYANT<small>CANDIDATE PORTAL</small></strong></a><a class="registration-login-link" href="login.html">Sign In <span aria-hidden="true">&nbsp;→</span></a></header>
+  <main class="registration-layout"><aside class="registration-intro"><p class="registration-kicker">Candidate Portal</p><h2>Your next chapter<br>starts here.</h2><p>Create your account and take the next step towards a new opportunity.</p><ol class="registration-journey"><li>Create your login</li><li>Complete your profile</li><li>Explore suitable opportunities</li></ol></aside>
+    <section class="auth-card registration-card">
+<div class="registration-form-heading">      <p class="eyebrow">Candidate Portal · Step 1 of 2</p>
       <h1>Create Candidate Account</h1>
       <p>Create your private login. Next, add your core profile details so you can review suitable opportunities without repeating basic information.</p>
-      <form data-register-form class="form-grid">
+</div>      <form data-register-form class="form-grid">
         <label class="field field-wide">Email <span aria-hidden="true">*</span><input name="email" type="email" autocomplete="email" required></label>
-        <label class="field field-wide">Password <span aria-hidden="true">*</span><input name="password" type="password" minlength="10" autocomplete="new-password" required></label>
+        <label class="field field-wide">Password <span aria-hidden="true">*</span><input name="password" type="password" minlength="10" autocomplete="new-password" aria-describedby="candidate-password-help" required><small id="candidate-password-help" class="registration-password-help">Use at least 10 characters.</small></label>
         <button class="button" type="submit">Continue to Profile</button>
       </form>
-      <p class="auth-callback-actions" data-registration-account-actions>Already registered? <a href="login.html">Sign In</a> <a href="login.html">Forgot Password</a></p>
+      <p class="auth-callback-actions registration-return" data-registration-account-actions>Already registered? <a href="login.html">Sign In</a> <a href="login.html">Forgot Password</a></p>
       <section class="auth-callback-notice" data-existing-candidate-account hidden aria-labelledby="existing-candidate-account-heading">
         <h2 id="existing-candidate-account-heading">Your Candidate account already exists.</h2>
         <p data-existing-candidate-message>Use your existing account to continue securely.</p>
@@ -28,7 +29,7 @@
         </div>
       </section>
       <p data-message class="message" role="status"></p>
-      <a href="login.html">Return to login</a>
+      <a class="registration-back" href="login.html">Return to login</a>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script>

@@ -92,3 +92,47 @@ body[data-candidate-page="login"] .login-footer .secondary:hover{background:#eff
 .login-register a{display:flex;align-items:center;justify-content:center;gap:16px;min-height:46px;padding:10px;border:1px solid #cddcec;border-radius:10px;color:#174f82;font-size:13px;font-weight:700;text-decoration:none;background:#fff}
 .login-register a:hover{background:#f0f6fd;border-color:#8fafd1}
 @media(max-width:700px){body[data-candidate-page="login"] .auth-page{grid-template-columns:minmax(0,480px);padding:20px 16px;align-content:start}.login-intro{min-height:0;border-radius:20px 20px 0 0;padding:24px}.login-intro-copy,.intro-footer{display:none}body[data-candidate-page="login"] .auth-card{border-left:1px solid #dce5ef;border-top:0;border-radius:0 0 20px 20px;padding:30px 24px}body[data-candidate-page="login"] h1{font-size:27px}body[data-candidate-page="login"] .eyebrow{margin-bottom:24px}}
+
+/* Registration presentation, scoped independently from login and operational pages. */
+body.registration-page{background:#edf2f8;min-height:100svh;color:#172b47}
+.registration-header{max-width:1200px;width:calc(100% - 48px);margin:auto;min-height:88px;display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:16px 0}
+.registration-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#102447;font-size:16px;font-weight:800;letter-spacing:.09em}
+.registration-brand>span{width:42px;height:42px;display:grid;place-items:center;background:#102447;color:#fff;border-radius:12px;font-size:25px;letter-spacing:0}
+.registration-brand small{display:block;font-size:9px;letter-spacing:.13em;color:#718096;margin-top:2px}
+.registration-login-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 17px;border:1px solid #cad8e8;border-radius:10px;background:#fff;color:#174f82;font-size:12px;font-weight:700;text-decoration:none}
+.registration-layout{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:32px;align-items:start;max-width:1200px;width:calc(100% - 48px);margin:20px auto 64px}
+.registration-intro{position:sticky;top:24px;min-width:0;padding:42px 34px;color:#fff;background:linear-gradient(145deg,#102447,#173d70);border-radius:22px;overflow:hidden;box-shadow:0 12px 32px #1024470c}
+.registration-intro .registration-kicker{font-size:10px;letter-spacing:.17em;font-weight:800;color:#90c9ff;margin:0 0 24px;text-transform:uppercase}
+.registration-intro h1,.registration-intro h2{font-size:clamp(30px,3.2vw,43px);line-height:1.15;letter-spacing:-.035em;color:#fff;margin:0 0 20px}
+.registration-intro>p:not(.registration-kicker){color:#cfdef0;font-size:14px;line-height:1.8;margin:0 0 28px}
+.registration-journey{counter-reset:registration-step;display:grid;gap:19px;padding:26px 0 0;margin:0;list-style:none;border-top:1px solid #ffffff20}
+.registration-journey li{counter-increment:registration-step;display:flex;align-items:center;gap:12px;font-size:13px;color:#edf4ff;line-height:1.5}
+.registration-journey li:before{content:counter(registration-step,decimal-leading-zero);display:grid;place-items:center;flex:none;width:32px;height:32px;border:1px solid #ffffff25;border-radius:10px;background:#ffffff0c;color:#a8d4ff;font-size:11px;font-weight:800}
+.registration-page .registration-card{min-width:0;width:100%;padding:36px;border:1px solid #dce5ef;border-radius:22px;box-shadow:0 10px 35px #10244708;background:#fff}
+.registration-page .registration-card .registration-form-heading{padding-bottom:24px;border-bottom:1px solid #e5ecf4;margin-bottom:26px}
+.registration-form-heading .eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;color:#2268ad;margin:0 0 10px;text-transform:uppercase}
+.registration-page .registration-card .registration-form-heading :is(h1,h2){font-size:28px;line-height:1.2;letter-spacing:-.03em;color:#102447;margin:0 0 10px}
+.registration-page .registration-card .registration-form-heading>p:last-child{font-size:12px;line-height:1.7;color:#6a7b91;margin:0}
+.registration-page .registration-card form{gap:24px;margin-top:0}
+.registration-page .registration-card fieldset{min-width:0;margin:0;padding:0 0 26px;border:0;border-bottom:1px solid #e6edf5}
+.registration-page .registration-card legend{width:100%;display:block;color:#183d64;font-size:14px;font-weight:800;padding:0 0 16px;margin:0;border:0;letter-spacing:-.01em}
+.registration-page .registration-card :is(.grid,.form-grid){gap:18px}
+.registration-page .registration-card label,.registration-page .registration-card .field label{font-size:12px;line-height:1.5;font-weight:650;color:#334b69}
+.registration-page .registration-card input:not([type=checkbox]),.registration-page .registration-card select,.registration-page .registration-card textarea{width:100%;min-height:48px;padding:12px 13px;color:#172033;font-size:14px;background:#f9fbfe;border:1px solid #d5dfeb;border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.registration-page .registration-card :is(input,select,textarea):focus{outline:0;border-color:#2877bf;box-shadow:0 0 0 3px #2877bf20;background:#fff}
+.registration-page .registration-card :is(input,select,textarea):disabled{background:#eef2f7;color:#7a889b}
+.registration-page .registration-card :is(.field-error,small[data-error]):empty{display:none}
+.registration-page .registration-card :is(.field-help,label span){font-size:11px;color:#73839a;font-weight:400}
+.registration-page .registration-card :is(.consent,.consent-field){padding:16px;background:#f4f8fd;border:1px solid #dde7f3;border-radius:12px;line-height:1.7}
+.registration-page .registration-card :is(.consent,.consent-field) input[type=checkbox]{width:18px;height:18px;min-height:18px;flex:none;accent-color:#1769aa;margin-top:3px}
+.registration-page .registration-card :is(.consent,.consent-field) span{font-size:12px;color:#53657e}
+.registration-page .registration-card form>button[type=submit]{grid-column:1/-1;width:100%;min-height:51px;padding:13px 18px;border:0;border-radius:11px;background:#1769aa;color:#fff;font-size:14px;font-weight:750;box-shadow:0 5px 14px #1769aa25;cursor:pointer}
+.registration-page .registration-card form>button[type=submit]:hover:not(:disabled){background:#12578e}
+.registration-page .registration-card .registration-return{margin:24px 0 0;padding-top:20px;border-top:1px solid #e5ecf4;font-size:12px;color:#73839a;line-height:1.8;text-align:center}
+.registration-return a{color:#1769aa;font-weight:700;text-decoration:none;margin-left:7px}
+.registration-page :is(a,button):focus-visible{outline:3px solid #76baff;outline-offset:4px}
+.registration-page .registration-card .registration-password-help{display:block;margin-top:7px;color:#73839a;font-size:11px;font-weight:400}
+@media(max-width:900px){.registration-layout{grid-template-columns:minmax(0,.65fr) minmax(0,1fr);gap:20px}.registration-intro{padding:30px 24px}.registration-page .registration-card{padding:28px}}
+@media(max-width:700px){.registration-header{width:calc(100% - 32px);min-height:76px}.registration-brand{font-size:13px}.registration-brand small{font-size:8px}.registration-login-link{padding:9px 12px}.registration-layout{width:calc(100% - 32px);grid-template-columns:minmax(0,1fr);margin:10px auto 36px;gap:18px}.registration-intro{position:static;padding:25px;border-radius:18px}.registration-intro h1,.registration-intro h2{font-size:30px}.registration-intro .registration-kicker{margin-bottom:14px}.registration-intro>p:not(.registration-kicker){margin-bottom:0;font-size:13px}.registration-journey{display:none}.registration-page .registration-card{padding:25px 20px;border-radius:18px}.registration-page .registration-card :is(.grid,.form-grid){grid-template-columns:minmax(0,1fr)}.registration-page .registration-card :is(.wide,.field-wide){grid-column:auto}.registration-page .registration-card .registration-form-heading :is(h1,h2){font-size:25px}}
+
+.registration-page .registration-card .field{display:block}.registration-page .registration-card .field input{display:block;margin-top:8px}.registration-page .registration-card .registration-back{display:block;margin-top:16px;text-align:center;color:#73839a;font-size:11px}.registration-page .registration-card .auth-callback-actions{justify-content:center;gap:10px}

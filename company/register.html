@@ -14,16 +14,12 @@
   <script src="../assets/js/registration-options.js" defer></script>
   <script src="company.js" defer></script>
 </head>
-<body data-company-page="register">
-  <header class="company-header"><a class="company-brand" href="../index.html" aria-label="Aadhyant Manpower and Staffing home"><span aria-hidden="true">A</span><strong>AADHYANT <small>EMPLOYER PORTAL</small></strong></a><a class="text-link" href="login.html">Employer Login</a></header>
-  <main class="onboarding-layout">
-    <aside class="onboarding-intro">
-      <p class="eyebrow">Employer onboarding</p><h1>Create your Employer workspace.</h1>
-      <p>Register your organization for review by Aadhyant. Approved Employer accounts receive secure access to the Company profile and supported requirement workflows.</p>
-      <ul class="benefit-list"><li><span>01</span> Submit verified company details</li><li><span>02</span> Aadhyant reviews your account</li><li><span>03</span> Access activates after approval</li></ul>
-    </aside>
-    <section class="form-card" aria-labelledby="registration-title">
-      <div class="form-heading"><p class="eyebrow">Create an Employer account</p><h2 id="registration-title">Employer Registration</h2><p>Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p></div>
+<body class="registration-page" data-company-page="register">
+<header class="registration-header"><a class="registration-brand" href="../index.html"><span aria-hidden="true">A</span><strong>AADHYANT<small>EMPLOYER PORTAL</small></strong></a><a class="registration-login-link" href="login.html">Sign In <span aria-hidden="true">&nbsp;→</span></a></header>
+  <main class="onboarding-layout registration-layout">
+<aside class="registration-intro"><p class="registration-kicker">Employer Portal</p><h1>Great teams<br>begin here.</h1><p>Create your company account and bring your hiring needs into one workspace.</p><ol class="registration-journey"><li>Register your company</li><li>Confirm your email</li><li>Access follows account approval</li></ol></aside>
+    <section class="form-card registration-card" aria-labelledby="registration-title">
+      <div class="form-heading registration-form-heading"><p class="eyebrow">Create an Employer account</p><h2 id="registration-title">Employer Registration</h2><p>Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p></div>
       <div class="company-message" data-page-message role="status" aria-live="polite"></div>
       <form data-registration-form novalidate>
         <fieldset><legend>Account details</legend><div class="form-grid">
@@ -47,7 +43,7 @@
         <div class="consent-field field"><label><input name="consent" type="checkbox" required> <span>I acknowledge that Aadhyant may review these details to approve or reject company account access. *</span></label><span class="field-error" data-error-for="consent"></span></div>
         <button class="company-button company-button-primary submit-button" type="submit">Create Company Account</button>
         <p class="form-footnote">Registration does not activate your account automatically. Approval is controlled by Aadhyant.</p>
-      </form>
+      </form><p class="registration-return">Already have an account? <a href="login.html">Sign In →</a></p>
     </section>
   </main>
   <footer class="company-footer">Aadhyant Manpower &amp; Staffing · <a href="../contact/">Contact us</a></footer>
