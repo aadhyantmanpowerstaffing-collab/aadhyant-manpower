@@ -118,3 +118,26 @@ test('Candidate password recovery remains isolated from registration improvement
   assert.match(login,/This password reset link has expired or was already used\./);
   assert.doesNotMatch(candidate,/service_role|SUPABASE_SERVICE/i);
 });
+
+test('profile reports STOP separately after a confirmed profile save, retains entries and allows No retry',async()=>{
+ const button={disabled:false},fields={aadhaar:{value:''},immediate_joining:{type:'checkbox',checked:true}},form={elements:fields,querySelector:()=>button};
+ const messages=[],writes=[];let stop=true;
+ const sandbox={document:{querySelector:()=>form},gate:async()=>true,session:async()=>({user:{id:'candidate-a'}}),rpc:{profile:'profile',update:'update'},first:x=>x,options:undefined,loadAlertChoices:async()=>{},validateCandidateForm:()=>true,alertChoiceArgs:()=>({}),profileArgs:()=>({}),message:(text)=>messages.push(text),setTimeout:()=>{},location:{reload(){}},call:async name=>{if(name==='profile')return{immediate_joining:false};writes.push(name);return true},saveAlertChoices:async()=>{writes.push('alerts');if(stop)throw new Error('WhatsApp STOP is active; contact Aadhyant to review re-enrolment')}};
+ vm.createContext(sandbox);vm.runInContext(candidate.slice(candidate.indexOf('function profileSaveFeedback('),candidate.indexOf('async function jobs(){')),sandbox);
+ await sandbox.profile();assert.equal(fields.immediate_joining.checked,false);fields.aadhaar.value='synthetic';
+ await form.onsubmit({preventDefault(){}});assert.deepEqual(writes,['update','alerts']);assert.match(messages.at(-1),/Your profile was saved.*WhatsApp STOP is active/);assert.match(messages.at(-1),/Select No for both/);assert.equal(button.disabled,false);assert.equal(fields.aadhaar.value,'synthetic');
+ stop=false;await form.onsubmit({preventDefault(){}});assert.match(messages.at(-1),/Candidate profile updated/);assert.equal(fields.aadhaar.value,'');
+});
+
+test('profile prevents a changed login from saving and does not claim failed updates succeeded',async()=>{
+ for(const scenario of ['changed-before-save','changed-before-alerts','update-failed']){
+  const button={disabled:false},form={elements:{aadhaar:{value:''}},querySelector:()=>button},messages=[],writes=[];let checks=0;
+  const sandbox={document:{querySelector:()=>form},gate:async()=>true,session:async()=>({user:{id:++checks> (scenario==='changed-before-alerts'?2:1)&&scenario!=='update-failed'?'admin-b':'candidate-a'}}),rpc:{profile:'profile',update:'update'},first:x=>x,options:undefined,loadAlertChoices:async()=>{},validateCandidateForm:()=>true,alertChoiceArgs:()=>({}),profileArgs:()=>({}),message:text=>messages.push(text),setTimeout:()=>{},call:async name=>{if(name==='profile')return{};writes.push(name);if(scenario==='update-failed')throw new Error('Profile details are invalid or already in use');return true},saveAlertChoices:async()=>{writes.push('alerts')}};
+  vm.createContext(sandbox);vm.runInContext(candidate.slice(candidate.indexOf('function profileSaveFeedback('),candidate.indexOf('async function jobs(){')),sandbox);
+  await sandbox.profile();form.elements.aadhaar.value='synthetic';await form.onsubmit({preventDefault(){}});
+  assert.equal(writes.includes('alerts'),false);assert.equal(button.disabled,false);
+  if(scenario==='changed-before-save'){assert.deepEqual(writes,[]);assert.match(messages.at(-1),/login changed or expired/)}
+  if(scenario==='changed-before-alerts')assert.match(messages.at(-1),/Your profile was saved.*login changed or expired/);
+  if(scenario==='update-failed'){assert.match(messages.at(-1),/Your profile update was not confirmed/);assert.doesNotMatch(messages.at(-1),/profile was saved/)}
+ }
+});
