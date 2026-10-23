@@ -17,3 +17,10 @@ let calls=0;const noFetch=async()=>{calls++;throw Error('Unexpected fetch');};co
 assert.equal((await handleReels(new Request('https://example.test',{method:'POST'}),get,noFetch as typeof fetch)).status,401);assert.equal(calls,0);
 assert.equal((await handleReels(new Request('https://example.test',{method:'POST',headers:{origin:'https://aadhyantmanpower.in',authorization:'Bearer test'},body:JSON.stringify({id:'../../other'})}),k=>k==='SUPABASE_SERVICE_ROLE_KEY'?'server-key':'',noFetch as typeof fetch)).status,400);assert.equal(calls,0);
 });
+
+test('browser SDK preflight and authenticated preview preserve private object access',async()=>{
+ const get=(k:string)=>({SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-key',SUPABASE_ANON_KEY:'anon-key'}[k]||'');
+ const preflight=await handleReels(new Request('https://example.test',{method:'OPTIONS'}),get);assert.match(preflight.headers.get('access-control-allow-headers')||'',/x-client-info/);
+ const calls:any[]=[];const fetcher=async(url:any,options:any)=>{calls.push({url,options});if(String(url).includes('admin_reel_object')){assert.equal(options.headers.authorization,'Bearer admin-session');return Response.json('job/claim.mp4');}assert.equal(options.headers.authorization,'Bearer server-key');return Response.json({signedURL:'/object/sign/recruitment-reels/job/claim.mp4?token=test'});};
+ const r=await handleReels(new Request('https://example.test',{method:'POST',headers:{origin:'https://aadhyantmanpower.in',authorization:'Bearer admin-session'},body:JSON.stringify({id:'00000000-0000-0000-0000-000000000001'})}),get,fetcher as typeof fetch);assert.equal(r.status,200);assert.equal((await r.json()).url,'https://example.supabase.co/storage/v1/object/sign/recruitment-reels/job/claim.mp4?token=test');assert.equal(calls.length,2);
+});

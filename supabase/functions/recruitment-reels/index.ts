@@ -2,7 +2,7 @@ import {runtimeServerKey,serverDatabaseHeaders} from '../_shared/whatsapp/server
 import {verifyWorker} from './auth.ts';
 const origin='https://aadhyantmanpower.in',uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 export async function handleReels(req:Request,get:(k:string)=>string,fetcher:typeof fetch=fetch):Promise<Response>{
- const headers={'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':origin,'access-control-allow-headers':'authorization,apikey,content-type,x-job-id,x-claim-token','access-control-allow-methods':'POST,OPTIONS','vary':'Origin'};
+ const headers={'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':origin,'access-control-allow-headers':'authorization,apikey,content-type,x-client-info,x-supabase-api-version,x-job-id,x-claim-token','access-control-allow-methods':'POST,OPTIONS','vary':'Origin'};
  const reply=(status:number,data:unknown)=>Response.json(data,{status,headers});
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(req.method!=='POST')return reply(405,{error:'POST required'});
