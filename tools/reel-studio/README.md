@@ -23,11 +23,17 @@ python tools/reel-studio/studio.py --json tools/reel-studio/example.json --outpu
 
 The renderer synthesizes exactly the approved text and appends the name/contact. Hindi phone digits are expanded individually. A post can be up to 1800 characters; audio longer than three minutes is rejected. Generated text card timings are evenly distributed and are not word-synchronized subtitles. Review salaries, facts and pronunciation before publishing.
 
-## Current boundaries / portal integration
+## Portal integration
 
-This is **local-only**, not a deployed portal feature or an automatic post-save hook. The portal is static GitHub Pages and cannot execute FFmpeg. Live automatic rendering requires a durable background worker, authenticated job submission, private result storage, job status/retries and an explicit render trigger from the canonical employer requirement save workflow. These are not supplied or deployed by this change. Do not make this local HTTP server publicly accessible or remove its localhost restriction.
+`admin/reels.html` lists private generated videos and can queue an existing approved, public, open canonical requirement. The additive Reel migration installs a derived media queue, a guarded publication trigger and Admin/worker RPCs. Installation starts paused and does not backfill old vacancies or send messages.
 
-Voice uses the unofficial `edge-tts` client (the same voice route used for the manually produced reel). It requires no configured account key but its service availability is not guaranteed. A supported, licensed TTS provider and its credentials must be selected/configured before this becomes an unattended production service. Input text is sent to that voice service; do not include private candidate information. No credentials are bundled. TLS verification remains enabled.
+`.github/workflows/recruitment-reels.yml` on the default `main` branch checks out an immutable reviewed renderer revision. A GitHub-hosted runner polls every five minutes (GitHub may delay scheduled runs), claims at most one job and uses `cloud_worker.py` to create and return the MP4. The Edge endpoint validates GitHub's RS256 signature, audience, repository/owner IDs, main branch, exact workflow path, approved workflow SHA, event, hosted runner and token lifetime. No service-role key is stored in GitHub. A rotated per-job claim binds uploads and completions to one run, with a 15-minute lease and three attempts. The queue has a default rolling cap of 30 jobs per day.
+
+The private Storage bucket is never public. The browser obtains a five-minute signed preview only after the existing server-side Admin check and current vacancy fingerprint/eligibility check. Closing or changing a job invalidates the previous preview request. Source figures and terms are read from the existing canonical public job summary, not independently inferred from a poster. The final voice reads Hindi framing with the job's stored names and values; it does not translate every English free-text value. Admin must review pronunciation and facts before sharing.
+
+Voice uses the same `edge-tts` route used for the manually produced Reel. It is an unofficial client, requires no account key, and availability is best-effort. Failures are shown and retries are bounded; replace `synthesize()` with a contracted TTS provider if service guarantees are required. Only public recruitment facts and the intended public contact are sent for voice generation. No candidate information, credentials or internal notes are included. TLS verification remains enabled.
+
+The local HTTP studio remains local-only: do not expose it publicly or remove its localhost restriction. Online operation uses the separately authenticated Edge/runner path, not this HTTP server.
 
 Hindi font: Noto Sans Devanagari, SIL Open Font License (bundled). `REEL_FONT` can supply another shaping-compatible font. Music is generated mathematically without an external recording.
 
@@ -37,4 +43,4 @@ Hindi font: Noto Sans Devanagari, SIL Open Font License (bundled). `REEL_FONT` c
 python -m unittest discover -s tools/reel-studio -p 'test_*.py'
 ```
 
-The HTTP endpoint uses a random per-process same-origin request token, validates Host to prevent DNS rebinding, limits body/poster size and permits only one generation at once. Downloads accept only known random job IDs. No database changes, external publishing, WhatsApp sends, or existing website changes.
+The HTTP endpoint uses a random per-process same-origin request token, validates Host to prevent DNS rebinding, limits body/poster size and permits only one generation at once. Downloads accept only known random job IDs. The local HTTP endpoint does not perform database writes or publish content. The online integration has separate scoped RPCs; neither path sends WhatsApp messages or publishes Meta advertisements.
