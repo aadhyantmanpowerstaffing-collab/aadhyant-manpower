@@ -20,7 +20,7 @@ jobs:
       - name: Check out reviewed immutable renderer
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: __REEL_SOURCE_SHA__
+          ref: 9fb34130d1aea78c6925c44483223ba5333d84ad
           persist-credentials: false
       - name: Claim at most one current public job
         run: python3 tools/reel-studio/cloud_worker.py claim "$RUNNER_TEMP/reel-job.json"
