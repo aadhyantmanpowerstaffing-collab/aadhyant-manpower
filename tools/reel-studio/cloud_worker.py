@@ -26,13 +26,19 @@ def call(payload=None,video=None,job=None):
     with urllib.request.urlopen(req,timeout=120) as response: return json.load(response)
 
 def main():
-    if len(sys.argv)!=3 or sys.argv[1] not in ('claim','render'): raise ValueError('Expected claim/render and a local job path')
+    if len(sys.argv)!=3 or sys.argv[1] not in ('claim','render','fail'): raise ValueError('Expected claim/render and a local job path')
     path=Path(sys.argv[2])
     if sys.argv[1]=='claim':
         job=call({'action':'claim'})['job']
         if job:
             path.write_text(json.dumps(job),encoding='utf-8');path.chmod(0o600)
         print('Video queued for rendering.' if job else 'No video pending.')
+        return
+    if sys.argv[1]=='fail':
+        if path.exists():
+            job=json.loads(path.read_text())
+            try: call({'action':'fail','id':job['id'],'claim':job['claim']})
+            finally: path.unlink(missing_ok=True)
         return
     job=json.loads(path.read_text())
     try:
