@@ -82,3 +82,36 @@ test('Hindi source, duty and interview time retain numeric facts; editing source
   const u=ui();await u.el('poster-read').emit('click');await u.el('poster-translate').emit('click');assert.ok(u.el('poster-hindi').value);
   await u.el('poster-raw').emit('input');assert.equal(u.el('poster-hindi').value,'');
 });
+
+test('readable low-confidence OCR produces a provisional Hindi draft instead of the blanket unreadable-marks error',async()=>{
+  const u=ui({confidence:60});await u.el('poster-read').emit('click');
+  assert.match(u.el('poster-status').textContent,/provisional/);
+  await u.el('poster-translate').emit('click');
+  assert.match(u.el('poster-hindi').value,/कंपनी टेस्ट/);assert.match(u.el('poster-hindi').value,/20000/);
+  assert.equal(u.stats().translations,3);assert.equal(u.el('poster-issues').hidden,false);assert.equal(u.calls.length,0);
+});
+test('isolated unreadable marks are omitted and shown beside a successful Hindi draft',async()=>{
+  const u=ui();await u.el('poster-read').emit('click');
+  u.el('poster-raw').value+='\n~~ / \\\n== | {}';await u.el('poster-raw').emit('input');
+  await u.el('poster-translate').emit('click');assert.match(u.el('poster-hindi').value,/वेतन 20000/);
+  assert.equal(u.stats().translations,3);assert.equal(u.el('poster-issues').hidden,false);
+  assert.match(u.el('poster-issues').textContent,/Details omitted/);assert.match(u.el('poster-issues').textContent,/==/);
+});
+test('unresolved numeric lines are explicitly omitted from the translation source; source remains intact',()=>{
+  const source='Company FCC CLUTCH\nSalary 719000\nDuty 8 hours\nContact 9586785800';
+  const prepared=api.prepareDraft(source,['Salary 719000']);
+  assert.equal(prepared.usable,true);assert.doesNotMatch(prepared.text,/719000/);assert.match(prepared.text,/9586785800/);
+  assert.deepEqual(prepared.omitted,['Salary 719000']);
+  const corrected=api.prepareDraft(source.replace('719000','19000'),['Salary 719000']);
+  assert.match(corrected.text,/19000/);assert.deepEqual(corrected.omitted,[]);
+});
+test('mixed unreadable fragments cannot become a draft when no substantial recruitment text remains',()=>{
+  assert.equal(api.prepareDraft('~~ / \\\n== | {}\nPy EEERy hs').usable,false);
+});
+test('draft progress and omission messages are placed beside the draft action, not below video submission',()=>{
+  const html=fs.readFileSync('admin/reels.html','utf8');
+  assert.equal((html.match(/id="poster-status"/g)||[]).length,1);
+  assert.ok(html.indexOf('id="poster-status"')>html.indexOf('id="poster-translate"'));
+  assert.ok(html.indexOf('id="poster-status"')<html.indexOf('id="poster-hindi"'));
+  assert.match(html,/id="poster-issues"/);assert.match(html,/any omitted details/);
+});

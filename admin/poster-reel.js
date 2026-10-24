@@ -43,14 +43,26 @@
     selected.sort((a,b)=>(a.bbox?.y0??0)-(b.bbox?.y0??0)||(a.bbox?.x0??0)-(b.bbox?.x0??0));
     const text=normalize(selected.map(x=>x.text).join('\n'));
     const confidence=selected.length?selected.reduce((sum,x)=>sum+x.confidence,0)/selected.length:0;
-    const conflicts=selected.filter(line=>!line.verified&&all.some(other=>other!==line&&other.confidence>=55&&overlap(other.bbox,line.bbox)>.65&&numbers(other.text).length&&numbers(line.text).length&&JSON.stringify(numbers(other.text))!==JSON.stringify(numbers(line.text)))).length;
-    return {text,confidence,uncertain,conflicts,reliable:selected.length>=3&&confidence>=65&&text.length>=30&&conflicts===0};
+    const conflictLines=selected.filter(line=>!line.verified&&all.some(other=>other!==line&&other.confidence>=55&&overlap(other.bbox,line.bbox)>.65&&numbers(other.text).length&&numbers(line.text).length&&JSON.stringify(numbers(other.text))!==JSON.stringify(numbers(line.text)))).map(line=>line.text);
+    const conflicts=conflictLines.length;
+    return {text,confidence,uncertain,conflicts,conflictLines,reliable:selected.length>=3&&confidence>=65&&text.length>=30&&conflicts===0};
   }
   const sourceQuality=value=>{
     const rows=normalize(value).split('\n').filter(Boolean);
     return rows.length>0&&rows.filter(usableLine).length/rows.length>=.85&&!/[\\^=]{2}|[|{}]{2}/.test(value);
   };
-  const api={normalize,numbers,validNarration,ocrSize,extractPoster,sourceQuality};
+  function prepareDraft(value,conflictLines=[]){
+    const omitted=[],lines=[];
+    const conflicts=new Set(conflictLines.map(cleanLine));
+    for(const rawLine of normalize(value).split('\n').filter(Boolean)){
+      const line=cleanLine(rawLine);
+      if(!usableLine(line)||conflicts.has(line)){omitted.push(rawLine);continue;}
+      lines.push(line);
+    }
+    const text=normalize(lines.join('\n'));
+    return {text,omitted,usable:text.length>=30&&sourceQuality(text)};
+  }
+  const api={normalize,numbers,validNarration,ocrSize,extractPoster,sourceQuality,prepareDraft};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(!root.document)return;
   let loadingOCR;
@@ -69,18 +81,20 @@
   }
   api.init=({client,onQueued})=>{
     const $=id=>document.getElementById(id),file=$('poster-file'),read=$('poster-read'),source=$('poster-source'),raw=$('poster-raw'),text=$('poster-hindi'),title=$('poster-title'),review=$('poster-reviewed'),translate=$('poster-translate'),create=$('poster-create'),message=$('poster-status'),image=$('poster-image');
-    let poster=null,requestId=null,busy=false,ocrReliable=false,extractedText='';
+    let poster=null,requestId=null,busy=false,ocrReliable=false,conflictLines=[];
+    const issues=$('poster-issues');
+    const showIssues=(omitted=[],advisory=false)=>{issues.hidden=!omitted.length&&!advisory;issues.textContent=omitted.length?'Details omitted from this draft — compare with the poster and add any missing facts before creating the video:\n'+omitted.join('\n'):advisory?'Some text was uncertain. A provisional draft can still be created from readable lines. Compare all details with the poster before creating the video.':'';};
     raw.addEventListener('change',()=>{text.value='';changed();});
     const changed=()=>{review.checked=false;requestId=null;};
     const lock=value=>{busy=value;for(const el of [file,read,source,raw,text,title,translate,create,review])el.disabled=value;};
     for(const el of [text,title])el.addEventListener('input',changed);
     for(const el of [raw,source])el.addEventListener('input',()=>{text.value='';changed();});
-    file.addEventListener('change',()=>{poster=null;image.removeAttribute('src');image.hidden=true;raw.value='';text.value='';changed();message.textContent='Choose Read poster to extract the text.';});
+    file.addEventListener('change',()=>{poster=null;image.removeAttribute('src');image.hidden=true;raw.value='';text.value='';conflictLines=[];showIssues();changed();message.textContent='Choose Read poster to extract the text.';});
     read.addEventListener('click',async()=>{
       if(busy)return;
       const selected=file.files[0];
       if(!selected||!['image/jpeg','image/png'].includes(selected.type)||selected.size>6000000){message.textContent='Choose a JPG or PNG recruitment poster smaller than 6 MB.';return;}
-      changed();poster=null;ocrReliable=false;lock(true);raw.value='';text.value='';let worker,timer,aborted=false;
+      changed();poster=null;ocrReliable=false;conflictLines=[];showIssues();lock(true);raw.value='';text.value='';let worker,timer,aborted=false;
       try{
         message.textContent='Reading the poster on this device. The first use downloads language files…';
         const bitmap=await createImageBitmap(selected);
@@ -149,11 +163,11 @@
           })();
           const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Reading took too long. Retry with a clearer, smaller poster.')),180000);});
           const result=await Promise.race([task,timeout]),found=result.text;
-          ocrReliable=result.reliable;
+          ocrReliable=result.reliable;conflictLines=result.conflictLines;showIssues(conflictLines,!ocrReliable);
           if(found.length<10)throw Error('Not enough text could be read. Try a sharper image.');
           if(found.length>12000)throw Error('Too much text in this image. Crop it to the recruitment announcement.');
-          raw.value=found;extractedText=found;poster=cover.split(',')[1];image.src=cover;image.hidden=false;
-          if(!ocrReliable)message.textContent='Some poster text could not be read reliably. Compare the extracted text with the preview before translating. Try a sharper original if details are missing.';
+          raw.value=found;poster=cover.split(',')[1];image.src=cover;image.hidden=false;
+          if(!ocrReliable)message.textContent='Poster text is ready. Select Create Hindi draft for a provisional narration; uncertain numbers will be omitted and listed for review.';
           else message.textContent=source.value==='gu'?'Text extracted. Enter the final Hindi narration below; automatic Gujarati translation is not available in this version.':'Poster read in two passes. Check the preview, especially amounts and dates, then create the Hindi draft. Low-confidence marks were excluded; verify that no detail is missing.';
         }finally{bitmap.close();}
       }catch(e){message.textContent=e.message||'Poster could not be read. Please retry.';}
@@ -161,11 +175,13 @@
     });
     translate.addEventListener('click',async()=>{
       if(busy)return;changed();
-      const original=normalize(raw.value);
-      if(original.length<10||original.length>6000){message.textContent='Keep the source announcement between 10 and 6000 characters before translating.';return;}
+      const sourceText=normalize(raw.value);
+      if(sourceText.length<10||sourceText.length>6000){message.textContent='Keep the source announcement between 10 and 6000 characters before translating.';return;}
       text.value='';
-      if(!sourceQuality(original)||(!ocrReliable&&original===extractedText)){message.textContent='The extracted text contains unreadable marks. Correct it against the poster before creating narration.';return;}
-      if(!/[A-Za-z]{3}/.test(original)&&source.value==='hi'){text.value=original;message.textContent='Review the Hindi narration against the poster before confirming.';return;}
+      const prepared=prepareDraft(sourceText,conflictLines),original=prepared.text;
+      showIssues(prepared.omitted,!ocrReliable);
+      if(!prepared.usable){message.textContent='Not enough readable text for a Hindi draft. Use a clearer poster or add the recruitment details in step 2.';return;}
+      if(!/[A-Za-z]{3}/.test(original)&&source.value==='hi'){text.value=original;message.textContent='Hindi draft is ready in step 3. Review it and any omitted details before confirming.';return;}
       if(source.value==='gu'||!root.Translator){message.textContent='Automatic translation needs a supported desktop Chrome browser and an English poster. You can enter the final Hindi narration below.';return;}
       lock(true);let translator;
       try{
@@ -178,8 +194,9 @@
         }
         const translated=normalize(paragraphs.join('\n'));
         if(JSON.stringify(numbers(original))!==JSON.stringify(numbers(translated)))throw Error('Translation changed a number. Enter or correct the Hindi narration using the source text.');
+        if(!validNarration(translated)&&translated.length<=1800)throw Error('The browser did not return a Hindi translation. Retry or enter the Hindi narration below.');
         text.value=translated;
-        message.textContent=translated.length>1800?'Hindi translation is ready. Shorten it to 1800 characters and verify every detail.':'Hindi draft is ready. Check names, salary, dates, duty and phone numbers before confirming.';
+        message.textContent=translated.length>1800?'Hindi translation is ready. Shorten it to 1800 characters and verify every detail.':prepared.omitted.length?'Provisional Hindi draft is ready in step 3. The listed unreadable or conflicting details were omitted. Correct or add them before confirming.':'Hindi draft is ready in step 3. Check names, salary, dates, duty and phone numbers before confirming.';
       }catch(e){message.textContent=e.message||'Translation is unavailable. Enter the Hindi narration manually.';}
       finally{translator?.destroy();lock(false);}
     });
