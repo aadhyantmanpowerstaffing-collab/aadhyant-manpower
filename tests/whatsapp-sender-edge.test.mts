@@ -49,3 +49,8 @@ test('video worker signs only a leased canonical Reel, validates media limits, a
   else assert.equal(calls.some(u=>u.endsWith('/messages')),false);
  }
 });
+test('Hindi video uses Hindi message language, ordered job details, Hindi Apply button contract and STOP',()=>{
+ const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64)};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'जानकारी';
+ const r={...row,template_name:'aadhyant_registered_job_video_hi_v1',template_language:'hi',template_variables:v};const p=templatePayload(r,'https://fixture.invalid/hindi.mp4');assert.equal(p.template.name,r.template_name);assert.equal(p.template.language.code,'hi');assert.equal(p.template.components[0].parameters[0].type,'video');assert.deepEqual(p.template.components[1].parameters.map(x=>x.text),names.map(k=>v[k]));assert.equal(p.template.components[2].parameters[0].text,'JOB-1');assert.equal(p.template.components[3].parameters[0].payload,'STOP');
+ assert.throws(()=>templatePayload({...r,template_language:'en'},'https://fixture.invalid/hindi.mp4'));
+});
