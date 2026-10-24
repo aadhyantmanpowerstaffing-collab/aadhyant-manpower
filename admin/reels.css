@@ -115,3 +115,10 @@ body{background:#f3f5f9}
 .reel-library-group:first-child{border-top:3px solid #27746b}
 .reel-library-group:last-child{border-top:3px solid #183e70}
 @media(max-width:580px){.reel-group-grid{grid-template-columns:1fr}.reel-library-group{padding:14px}}
+
+.studio-tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;margin:0 0 22px;padding:8px;background:#f3f5f9;border:1px solid #dce4ef;border-radius:12px;box-shadow:0 4px 12px #14294c09}
+.studio-tabs button{flex:1;min-height:48px;padding:12px 18px;border:0;border-radius:8px;background:transparent;color:#536582;font:inherit;font-size:14px;font-weight:750;cursor:pointer}
+.studio-tabs button[aria-selected=true]{color:white;background:#183e70;box-shadow:0 2px 6px #14294c20}
+.studio-tabs button:hover:not([aria-selected=true]){background:#e5ecf5;color:#183e70}
+#studio-library-panel{margin-top:0;padding-top:4px;border-top:0}
+@media(max-width:580px){.studio-tabs button{font-size:12px;padding:10px 8px}}
