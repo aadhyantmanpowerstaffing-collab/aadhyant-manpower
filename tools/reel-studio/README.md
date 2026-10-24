@@ -56,3 +56,11 @@ REEL_VOICE_PROVIDER=offline python tools/reel-studio/studio.py --json tools/reel
 The free voice software has no per-video API fee. Hosted runner minutes and storage are separate resources and may incur charges outside their free allowances; this change does not enable billing. This is still the existing portal job-details-to-video flow. Arbitrary poster OCR/translation is not implemented by this change.
 
 Deployment must install `espeak-ng` on the runner and update the immutable renderer revision. Retain the existing OIDC verification and approved workflow SHA gate; do not bypass either. Local tests alone do not activate the new voice on the live portal.
+
+## Poster upload in the portal
+
+Admin → Hindi Reel Studio now includes a poster workflow. JPG/PNG recruitment posters up to 6 MB are read locally with pinned Tesseract.js 6.0.1 (English, Hindi + English, Gujarati + English). Language/engine downloads come from the configured public CDN; the poster itself is not uploaded for OCR. Chrome's built-in Translator API can translate English to Hindi on supported desktop devices, with no paid API key. Gujarati automatic translation and mobile/unsupported-browser translation are not provided: the source remains editable and the operator enters the final Hindi narration. Names, amounts and OCR can be wrong; no translation is automatically approved. Numeric changes detected during translation reject that draft.
+
+Before queueing, the Admin must review and confirm the complete final Hindi text. The poster is compressed as JPEG locally, then uploaded only as part of that reviewed media request. Queueing reuses `private.requirement_reels`, its current worker, bounded retries and private MP4 storage. It does not create a fake vacancy, update a canonical requirement, publish an ad or send WhatsApp. Idempotent request IDs prevent duplicate submissions; changing text invalidates the prior client review. Only Admin RPCs can queue/list/preview these media. Poster payloads are snapshotted and fingerprinted; job videos still require current canonical eligibility. The same daily submission cap bounds poster uploads.
+
+The upgrade migration is additive. Deploy it before the frontend; the renderer already supports poster covers. Production activation requires the repository's explicit deployment approval.
