@@ -104,3 +104,14 @@ body{background:#f3f5f9}
 .studio-tags span{font-size:10px}
 .reel-main{padding:16px 12px 36px}
 }
+
+/* Keep manually entered announcements and canonical portal jobs separate. */
+#reel-list{display:block}
+.reel-library-group{margin:0 0 30px;padding:22px;border:1px solid #dbe4ee;border-radius:16px;background:#edf2f8}
+.reel-library-group>h3{font-size:18px;margin:0;color:#183e70}
+.reel-library-group>p{font-size:13px;color:#63748c;margin:6px 0 18px}
+.reel-group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#reel-list h4{font-size:16px;line-height:1.5;margin:0 0 10px}
+.reel-library-group:first-child{border-top:3px solid #27746b}
+.reel-library-group:last-child{border-top:3px solid #183e70}
+@media(max-width:580px){.reel-group-grid{grid-template-columns:1fr}.reel-library-group{padding:14px}}
