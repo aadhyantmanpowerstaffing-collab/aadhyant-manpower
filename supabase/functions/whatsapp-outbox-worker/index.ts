@@ -7,7 +7,16 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const summaryJobBody="Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Review the summary below and share this opportunity with someone looking for work.\n\n*Job details*\n\u2022 Vacancy: {{1}}\n\u2022 Company: {{2}}\n\u2022 Role: {{3}}\n\u2022 Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n\u2022 CTC / Salary: {{6}}\n\u2022 Approx. take home: {{7}}\n\u2022 Overtime: {{8}}\n\u2022 Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP.";
 export const sameDayHindiBody="*रोकड़ी काम — उसी शाम भुगतान*\n*Aadhyant Manpower & Staffing*\n\n📍 *स्थान:* {{1}}\n🛠️ *काम:* {{2}}\n📅 *तारीख:* {{3}}\n🕗 *समय:* {{4}}\n👥 *ज़रूरत:* {{5}} लोग\n💵 *मेहनताना:* {{6}} प्रति व्यक्ति, पूरी शिफ्ट का\n✅ *भुगतान:* उसी दिन {{7}}\n\nकाम के लिए उपलब्ध हैं? नीचे बटन दबाकर आवेदन करें। कंपनी/ठेकेदार आपकी जगह की पुष्टि करेगा।\n\nअलर्ट बंद करने के लिए *Stop alerts* दबाएँ या *STOP* लिखें।";
 export const hindiSummaryJobBody="नमस्ते,\n*Aadhyant Manpower & Staffing* की ओर से नौकरी का नया अवसर है। नीचे विवरण देखें और काम ढूँढ रहे लोगों के साथ साझा करें।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nपूरी पात्रता, वेतन विवरण, कटौती, सुविधाएँ, शर्तें और आवेदन के लिए नीचे नौकरी देखें बटन दबाएँ।\n\nWhatsApp नौकरी अलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।";
-export function templatePayload(row:any){
+export const videoJobBody="Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Watch the video and review the details below.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\nFor more information or to apply, call 9586785800.\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP.";
+export function templatePayload(row:any,videoLink?:string){
+ if(row.template_name==='aadhyant_registered_job_video_en_v1'){
+  if(!videoLink||!/^https:\/\//.test(videoLink))throw Error('Verified private Reel required');
+  const p=templatePayload({...row,template_name:'aadhyant_registered_job_alert_v4'});
+  const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];
+  if(Array.from(videoJobBody.replace(/\{\{(\d+)\}\}/g,(_,n)=>row.template_variables[names[Number(n)-1]])).length>1024)throw Error('Video job body exceeds supported size');
+  p.template.name=row.template_name;
+  p.template.components.unshift({type:'header',parameters:[{type:'video',video:{link:videoLink}}]} as any);return p;
+ }
  const v=row.template_variables;
  if(row.template_name==='aadhyant_same_day_pay_hi_v1'){
   const names=['job_location','job_role','work_date','shift','headcount','pay','payment'];
@@ -78,7 +87,21 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
   const config=await rpc('console_sender_configuration',{});if(!config?.ready||!token||config.account_id!==env.get('WHATSAPP_BUSINESS_ACCOUNT_ID')||!/^\d{8,40}$/.test(config.phone_id))return reply(503,{error:'Verify sender connection before sending'});
   const worker='console:'+crypto.randomUUID();const rows=automatic?await rpc('console_claim_registered_alerts',{p_worker_id:worker}):await rpc('console_claim_campaign',{p_campaign_id:campaign,p_worker_id:worker});if(!Array.isArray(rows)||rows.length>10)throw Error('Invalid claim result');
   const outcomes=await Promise.all(rows.map(async(row:any)=>{
-   let payload;try{payload=templatePayload(row);}catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'unsupported_template',p_error_code:'payload_rejected',p_failure_kind:'permanent',p_retry_at:null});return 'failed';}
+   let payload;try{
+    let videoLink:string|undefined;
+    if(row.template_name==='aadhyant_registered_job_video_en_v1'){
+     const path=await rpc('console_claimed_reel_object',{p_message_id:row.message_id,p_worker_id:worker});
+     if(typeof path!=='string'||!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(path))throw Error('Current Reel required');
+     const media=await fetcher(base+'/storage/v1/object/authenticated/recruitment-reels/'+path,{method:'HEAD',headers:serverDatabaseHeaders(key),redirect:'error',signal:AbortSignal.timeout(10000)});
+     const size=Number(media.headers.get('content-length'));
+     if(!media.ok||!Number.isInteger(size)||size<100||size>16000000||media.headers.get('content-type')?.split(';')[0]!=='video/mp4')throw Error('Unsupported video size or type');
+     const signed=await fetcher(base+'/storage/v1/object/sign/recruitment-reels/'+path,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify({expiresIn:3600}),redirect:'error',signal:AbortSignal.timeout(10000)});
+     if(!signed.ok)throw Error('Reel unavailable');const data=await signed.json();
+     if(typeof data.signedURL!=='string'||!data.signedURL.startsWith('/object/sign/recruitment-reels/'+path+'?'))throw Error('Unexpected media URL');
+     videoLink=base+'/storage/v1'+data.signedURL;
+    }
+    payload=templatePayload(row,videoLink);
+   }catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'unsupported_template',p_error_code:'payload_rejected',p_failure_kind:'permanent',p_retry_at:null});return 'failed';}
    try{if(await rpc('console_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:config.phone_id,p_account_id:config.account_id})!==true)throw Error('Boundary rejected');}catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'eligibility_changed',p_error_code:'boundary_rejected',p_failure_kind:'permanent',p_retry_at:null});return 'failed';}
    // Once the provider boundary is committed, ambiguous outcomes are never retried automatically.
    try{const sent=await fetcher('https://graph.facebook.com/v25.0/'+config.phone_id+'/messages',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(15000)});const result=await sent.json();

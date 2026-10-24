@@ -26,3 +26,26 @@ test('Hindi registered job campaign sends ten ordered fields, correct language, 
  const r={...row,template_name:'aadhyant_registered_job_alert_hi_v1',template_language:'hi',template_variables:v};const p=templatePayload(r);assert.equal(p.template.language.code,'hi');assert.deepEqual(p.template.components[0].parameters.map(x=>x.text),keys.map(k=>v[k]));assert.equal(p.template.components[1].parameters[0].text,v.requirement_code);assert.equal(p.template.components[2].parameters[0].payload,'STOP');
  for(const change of [{template_language:'en'},{template_version:'2'},{template_variables:{...v,company:''}},{template_variables:{...v,salary:'x\ny'}},{template_variables:{...v,bank_account:'private'}},{template_variables:{...v,job_fingerprint:'invalid'}}])assert.throws(()=>templatePayload({...r,...change}));
 });
+test('video alert carries the same job details, one video header, application link and STOP',()=>{
+ const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64)};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'Value';
+ const r={...row,template_name:'aadhyant_registered_job_video_en_v1',template_variables:v};
+ assert.throws(()=>templatePayload(r));assert.throws(()=>templatePayload(r,'http://unsafe.invalid'));
+ const p=templatePayload(r,'https://fixture.invalid/private.mp4?token=fixture');assert.equal(p.template.name,r.template_name);assert.equal(p.template.components[0].type,'header');assert.deepEqual(p.template.components[0].parameters[0],{type:'video',video:{link:'https://fixture.invalid/private.mp4?token=fixture'}});
+ assert.equal(p.template.components[1].parameters.length,10);assert.equal(p.template.components[2].parameters[0].text,'JOB-1');assert.equal(p.template.components[3].parameters[0].payload,'STOP');
+});
+test('video worker signs only a leased canonical Reel, validates media limits, and keeps final boundary before send',async()=>{
+ const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64)};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'Value';const videoRow={...row,template_name:'aadhyant_registered_job_video_en_v1',template_variables:v};const path=campaign+'/'+campaign+'.mp4';
+ for(const size of [1200,17000000]){
+  const net=network();const calls:string[]=[];
+  const fetcher=async(input:any,init:any)=>{const u=String(input);calls.push(u);
+   if(u.endsWith('/console_claim_campaign'))return Response.json([videoRow]);
+   if(u.endsWith('/console_claimed_reel_object'))return Response.json(path);
+   if(init.method==='HEAD')return new Response(null,{headers:{'content-length':String(size),'content-type':'video/mp4'}});
+   if(u.includes('/object/sign/'))return Response.json({signedURL:'/object/sign/recruitment-reels/'+path+'?token=fixture'});
+   return net.fetcher(input,init);
+  };
+  const r=await handleWorker(req(),{get},fetcher as typeof fetch);const out=await r.json();assert.equal(out.sent,size===1200?1:0);
+  if(size===1200){assert.ok(calls.findIndex(u=>u.endsWith('/console_provider_boundary'))<calls.findIndex(u=>u.endsWith('/messages')));const p=net.payloads[net.calls.indexOf('messages')];assert.equal(p.template.components[0].parameters[0].type,'video');}
+  else assert.equal(calls.some(u=>u.endsWith('/messages')),false);
+ }
+});
