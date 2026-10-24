@@ -10,6 +10,7 @@
   }
   function usableLine(value){
     const s=cleanLine(value),letters=(s.match(/[\p{L}\p{N}\p{M}]/gu)||[]).length;
+    if(!/\p{L}/u.test(s)&&!/[\-/]/.test(s)&&numbers(s).join('').length<5)return false;
     return letters>=3 && letters/Math.max(s.length,1)>.55 && !/([=\\^])/.test(s);
   }
   function linesFrom(data){
@@ -42,7 +43,7 @@
     selected.sort((a,b)=>(a.bbox?.y0??0)-(b.bbox?.y0??0)||(a.bbox?.x0??0)-(b.bbox?.x0??0));
     const text=normalize(selected.map(x=>x.text).join('\n'));
     const confidence=selected.length?selected.reduce((sum,x)=>sum+x.confidence,0)/selected.length:0;
-    const conflicts=selected.filter(line=>!line.verified&&all.some(other=>other!==line&&overlap(other.bbox,line.bbox)>.65&&numbers(other.text).length&&numbers(line.text).length&&JSON.stringify(numbers(other.text))!==JSON.stringify(numbers(line.text)))).length;
+    const conflicts=selected.filter(line=>!line.verified&&all.some(other=>other!==line&&other.confidence>=55&&overlap(other.bbox,line.bbox)>.65&&numbers(other.text).length&&numbers(line.text).length&&JSON.stringify(numbers(other.text))!==JSON.stringify(numbers(line.text)))).length;
     return {text,confidence,uncertain,conflicts,reliable:selected.length>=3&&confidence>=65&&text.length>=30&&conflicts===0};
   }
   const sourceQuality=value=>{
@@ -140,7 +141,9 @@
               message.textContent='Rechecking individual amounts, dates and contact digits…';
               const b=line.bbox,left=Math.max(0,b.x0-10),top=Math.max(0,b.y0-10);
               const check=await worker.recognize(ocr,{rectangle:{left,top,width:Math.min(ocr.width,b.x1+10)-left,height:Math.min(ocr.height,b.y1+10)-top}},{blocks:true});
-              if(check.data.confidence>=50&&usableLine(check.data.text))passes.push({verified:true,blocks:[{paragraphs:[{lines:[{text:check.data.text,confidence:check.data.confidence,bbox:b}]}]}]});
+              const strong=passes.flatMap(linesFrom).filter(x=>x.bbox&&x.confidence>=90&&overlap(x.bbox,b)>.65&&numbers(x.text).length);
+              const disagrees=strong.some(x=>JSON.stringify(numbers(x.text))!==JSON.stringify(numbers(check.data.text)));
+              if(!disagrees&&check.data.confidence>=50&&usableLine(check.data.text))passes.push({verified:true,blocks:[{paragraphs:[{lines:[{text:check.data.text,confidence:check.data.confidence,bbox:b}]}]}]});
             }
             return extractPoster(passes);
           })();
