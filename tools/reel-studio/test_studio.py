@@ -3,6 +3,8 @@ import importlib.util
 import io
 import tempfile
 import unittest
+import asyncio
+from unittest.mock import AsyncMock, patch
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 spec = importlib.util.spec_from_file_location('studio', Path(__file__).with_name('studio.py'))
@@ -10,6 +12,25 @@ studio = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(studio)
 
 class StudioTests(unittest.TestCase):
+    def test_offline_mode_never_calls_online_service(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(studio.os.environ, {'REEL_VOICE_PROVIDER':'offline'}), patch.object(studio, 'synthesize_online', new_callable=AsyncMock) as online, patch.object(studio.shutil, 'which', return_value='/usr/bin/espeak-ng'), patch.object(studio.subprocess, 'run') as run:
+            self.assertEqual(asyncio.run(studio.synthesize('भर्ती का अवसर', Path(tmp)/'voice.mp3')), 'espeak-ng')
+            online.assert_not_called()
+            self.assertEqual(run.call_args_list[0].kwargs['input'], 'भर्ती का अवसर')
+    def test_online_failure_uses_offline_and_removes_partial_audio(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(studio.os.environ, {'REEL_VOICE_PROVIDER':'auto'}), patch.object(studio, 'synthesize_online', new_callable=AsyncMock, side_effect=TimeoutError), patch.object(studio.shutil, 'which', return_value='/usr/bin/espeak-ng'), patch.object(studio.subprocess, 'run'):
+            target=Path(tmp)/'voice.mp3'; target.write_bytes(b'partial')
+            self.assertEqual(asyncio.run(studio.synthesize('भर्ती का अवसर', target)), 'espeak-ng')
+            self.assertFalse(target.exists())
+    def test_missing_offline_dependency_gives_safe_actionable_error(self):
+        with patch.dict(studio.os.environ, {'REEL_VOICE_PROVIDER':'offline'}), patch.object(studio.shutil, 'which', return_value=None):
+            with self.assertRaisesRegex(RuntimeError, 'Install espeak-ng'):
+                asyncio.run(studio.synthesize('भर्ती का अवसर', Path('voice.mp3')))
+    def test_online_only_failure_does_not_silently_change_voice(self):
+        with patch.dict(studio.os.environ, {'REEL_VOICE_PROVIDER':'edge'}), patch.object(studio, 'synthesize_online', new_callable=AsyncMock, side_effect=TimeoutError), patch.object(studio.subprocess, 'run') as run:
+            with tempfile.TemporaryDirectory() as tmp, self.assertRaisesRegex(RuntimeError, 'Online voice is unavailable'):
+                asyncio.run(studio.synthesize('भर्ती का अवसर', Path(tmp)/'voice.mp3'))
+            run.assert_not_called()
     def data(self):
         return dict(text='साणंद में सुरक्षा गार्ड की भर्ती। योग्यता दसवीं पास।', phone='9586785800', name='Hitesh Gadhavi', title='भर्ती')
     def test_reject_invalid_and_short_data(self):

@@ -4,7 +4,7 @@ Working local renderer for a recruitment post: Hindi spoken narration, original 
 
 ## Start
 
-Requires Python 3.11+, FFmpeg/ffprobe on PATH and internet access for voice synthesis.
+Requires Python 3.11+ and FFmpeg/ffprobe on PATH. Install `espeak-ng` for offline Hindi speech (`sudo apt-get install espeak-ng` on Ubuntu). The default voice mode tries the existing online voice for up to 45 seconds and uses offline speech if unavailable. No OpenAI account or paid voice API is needed.
 
 ```sh
 python -m pip install -r tools/reel-studio/requirements.txt
@@ -31,7 +31,7 @@ The renderer synthesizes exactly the approved text and appends the name/contact.
 
 The private Storage bucket is never public. The browser obtains a five-minute signed preview only after the existing server-side Admin check and current vacancy fingerprint/eligibility check. Closing or changing a job invalidates the previous preview request. Source figures and terms are read from the existing canonical public job summary, not independently inferred from a poster. The final voice reads Hindi framing with the job's stored names and values; it does not translate every English free-text value. Admin must review pronunciation and facts before sharing.
 
-Voice uses the same `edge-tts` route used for the manually produced Reel. It is an unofficial client, requires no account key, and availability is best-effort. Failures are shown and retries are bounded; replace `synthesize()` with a contracted TTS provider if service guarantees are required. Only public recruitment facts and the intended public contact are sent for voice generation. No candidate information, credentials or internal notes are included. TLS verification remains enabled.
+The preferred online voice uses the same `edge-tts` route used for the manually produced Reel. It is an unofficial client, requires no account key, and availability is best-effort. Failures are shown and retries are bounded; replace `synthesize()` with a contracted TTS provider if service guarantees are required. Only public recruitment facts and the intended public contact are sent for voice generation. No candidate information, credentials or internal notes are included. TLS verification remains enabled.
 
 The local HTTP studio remains local-only: do not expose it publicly or remove its localhost restriction. Online operation uses the separately authenticated Edge/runner path, not this HTTP server.
 
@@ -44,3 +44,15 @@ python -m unittest discover -s tools/reel-studio -p 'test_*.py'
 ```
 
 The HTTP endpoint uses a random per-process same-origin request token, validates Host to prevent DNS rebinding, limits body/poster size and permits only one generation at once. Downloads accept only known random job IDs. The local HTTP endpoint does not perform database writes or publish content. The online integration has separate scoped RPCs; neither path sends WhatsApp messages or publishes Meta advertisements.
+
+## Free offline voice
+
+Set `REEL_VOICE_PROVIDER=offline` to keep narration entirely local. `auto` (default) prefers the existing online voice and falls back to eSpeak NG; `edge` explicitly requires the online voice. eSpeak NG Hindi is a basic synthetic voice, less natural than the online voice. The output JSON records `voice_provider` so operators can identify fallback videos. Network failures do not trigger any paid provider.
+
+```sh
+REEL_VOICE_PROVIDER=offline python tools/reel-studio/studio.py --json tools/reel-studio/example.json --output reel.mp4
+```
+
+The free voice software has no per-video API fee. Hosted runner minutes and storage are separate resources and may incur charges outside their free allowances; this change does not enable billing. This is still the existing portal job-details-to-video flow. Arbitrary poster OCR/translation is not implemented by this change.
+
+Deployment must install `espeak-ng` on the runner and update the immutable renderer revision. Retain the existing OIDC verification and approved workflow SHA gate; do not bypass either. Local tests alone do not activate the new voice on the live portal.
