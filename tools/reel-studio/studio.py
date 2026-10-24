@@ -131,7 +131,7 @@ def cards(data, work):
     return paths
 
 
-async def synthesize(text, target):
+async def synthesize_online(text, target):
     import edge_tts
     import edge_tts.communicate
     # Use system trust, including installed corporate CA roots. Never disable TLS.
@@ -139,6 +139,35 @@ async def synthesize(text, target):
     if Path(cafile).is_file():
         edge_tts.communicate._SSL_CTX = ssl.create_default_context(cafile=cafile)
     await edge_tts.Communicate(text, 'hi-IN-MadhurNeural', rate='+5%').save(str(target))
+
+
+async def synthesize(text, target):
+    """No paid API: prefer the existing voice, fall back to local Hindi speech."""
+    provider = os.environ.get('REEL_VOICE_PROVIDER', 'auto')
+    if provider not in {'auto', 'edge', 'offline'}:
+        raise ValueError('REEL_VOICE_PROVIDER must be auto, edge or offline.')
+    if provider != 'offline':
+        try:
+            await asyncio.wait_for(synthesize_online(text, target), timeout=45)
+            if not target.is_file() or target.stat().st_size < 100:
+                raise RuntimeError('Empty voice output.')
+            return 'edge'
+        except Exception:
+            target.unlink(missing_ok=True)
+            if provider == 'edge':
+                raise RuntimeError('Online voice is unavailable. Retry or select offline voice.') from None
+    executable = shutil.which('espeak-ng')
+    if not executable:
+        raise RuntimeError('Install espeak-ng for free offline Hindi voice.')
+    # Pass text through stdin, never a shell command or a remote service.
+    wav = target.with_suffix('.wav')
+    subprocess.run([executable, '-v', 'hi', '-s', '155', '-w', str(wav), '--stdin'],
+                   input=text, encoding='utf-8', check=True, timeout=60,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', str(wav), str(target)],
+                   check=True, timeout=60, stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
+    return 'espeak-ng'
 
 
 def render(data, target):
@@ -154,7 +183,7 @@ def render(data, target):
         spoken_digits = ' '.join({'0':'शून्य','1':'एक','2':'दो','3':'तीन','4':'चार','5':'पाँच','6':'छह','7':'सात','8':'आठ','9':'नौ'}[x] for x in data['phone'])
         script = f"{data['title']}। {data['text']}। संपर्क करें {data['name']}। व्हाट्सऐप नंबर है {spoken_digits}। अपना नाम और इलाका भेजें।"
         voice = work / 'voice.mp3'
-        asyncio.run(synthesize(script, voice))
+        voice_provider = asyncio.run(synthesize(script, voice))
         duration = float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', str(voice)])) + 1
         if duration > 180:
             raise ValueError('This narration exceeds 3 minutes. Shorten the post.')
@@ -184,7 +213,7 @@ def render(data, target):
             '-f','concat','-safe','0','-i',str(frames),'-i',str(voice),'-stream_loop','-1','-i',str(work / 'music.wav'),
             '-filter_complex','[0:v]fps=25,format=yuv420p[v];[1:a]apad[a1];[2:a]volume=0.5[a2];[a1][a2]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]',
             '-map','[v]','-map','[a]','-t',str(duration),'-c:v','libx264','-threads','2','-preset','fast','-crf','23','-c:a','aac','-b:a','128k','-movflags','+faststart',str(target)], check=True, timeout=360)
-        target.with_suffix('.json').write_text(json.dumps({**data,'poster':None,'narration':script,'duration':round(duration,2)}, ensure_ascii=False, indent=2), encoding='utf-8')
+        target.with_suffix('.json').write_text(json.dumps({**data,'poster':None,'narration':script,'voice_provider':voice_provider,'duration':round(duration,2)}, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 def run_job(identifier, data):
