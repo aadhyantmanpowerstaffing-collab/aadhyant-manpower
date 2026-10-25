@@ -1,0 +1,41 @@
+{
+  "name": "aadhyant_same_day_pay_hi_v2",
+  "language": "hi",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "*रोकड़ी काम — उसी शाम भुगतान*\n*Aadhyant Manpower & Staffing*\n\n📍 *स्थान:* {{1}}\n🛠️ *काम:* {{2}}\n📅 *तारीख:* {{3}}\n🕗 *समय:* {{4}}\n👥 *ज़रूरत:* {{5}} लोग\n💵 *मेहनताना:* {{6}} प्रति व्यक्ति, पूरी शिफ्ट का\n✅ *भुगतान:* उसी दिन {{7}}\n\nकाम के लिए उपलब्ध हैं? नीचे बटन दबाकर आवेदन करें। कंपनी/ठेकेदार आपकी जगह की पुष्टि करेगा।\n\nअधिक जानकारी या नौकरी के लिए आवेदन करने हेतु 9586785800 पर कॉल करें।\n\nअलर्ट बंद करने के लिए *Stop alerts* दबाएँ या *STOP* लिखें।",
+      "example": {
+        "body_text": [
+          [
+            "Sanand GIDC",
+            "Packing Helper",
+            "18 October 2026",
+            "सुबह 8 से दोपहर 12 — 4 घंटे",
+            "10",
+            "₹350",
+            "शाम 6 बजे, UPI से"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "URL",
+          "text": "View Details & Apply",
+          "url": "https://aadhyantmanpower.in/same-day-pay/?role=candidate&job={{1}}",
+          "example": [
+            "https://aadhyantmanpower.in/same-day-pay/?role=candidate&job=AAD-2026-000004"
+          ]
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}

@@ -58,3 +58,11 @@ test('contact-line Hindi template sends ten current job fields and Apply/STOP wi
  const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64)};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'जानकारी';
  const r={...row,template_name:'aadhyant_registered_job_alert_hi_v2',template_language:'hi',template_variables:v};const p=templatePayload(r);assert.equal(p.template.name,r.template_name);assert.equal(p.template.language.code,'hi');assert.deepEqual(p.template.components[0].parameters.map(x=>x.text),names.map(k=>v[k]));assert.equal(p.template.components[1].parameters[0].text,'JOB-1');assert.equal(p.template.components[2].parameters[0].payload,'STOP');assert.throws(()=>templatePayload({...r,template_language:'en'}));
 });
+test('English and Same-Day contact templates retain canonical parameters, language, Apply and STOP',()=>{
+ for(const sameDay of [false,true]){
+ const names=sameDay?['job_location','job_role','work_date','shift','headcount','pay','payment']:['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];
+ const v:any={template_contract:sameDay?'same_day_hi_v1':'registered_summary_v4',job_fingerprint:'a'.repeat(64),requirement_code:'JOB-1'};for(const k of names)if(k!=='requirement_code')v[k]='Value';
+ const r={...row,template_name:sameDay?'aadhyant_same_day_pay_hi_v2':'aadhyant_registered_job_alert_v5',template_language:sameDay?'hi':'en',template_variables:v};const p=templatePayload(r);assert.equal(p.template.name,r.template_name);assert.deepEqual(p.template.components[0].parameters.map(x=>x.text),names.map(k=>v[k]));assert.equal(p.template.components[1].parameters[0].text,'JOB-1');assert.equal(p.template.components[2].parameters[0].payload,'STOP');assert.throws(()=>templatePayload({...r,template_language:sameDay?'en':'hi'}));
+ for(const k of names)if(k!=='requirement_code')v[k]='x'.repeat(110);assert.throws(()=>templatePayload({...r,template_variables:v}),/size|payload/);
+ }
+});
