@@ -78,7 +78,10 @@ test('safe actionable registration and document errors do not render raw backend
 
 test('Step 1 maps Auth signup failures without Candidate-profile wording or raw Auth details',()=>{
   const signupError=mapper('signupError','function registrationError');
-  assert.equal(signupError({status:429,code:'over_email_send_rate_limit',message:'raw upstream rate limit detail'}),'Too many attempts. Please wait and try again.');
+  const emailUnavailable='We could not send your confirmation email because our email service is temporarily unavailable. Please contact Aadhyant for help; repeated attempts will not resolve this.';
+  assert.equal(signupError({status:429,code:'over_email_send_rate_limit',message:'raw upstream rate limit detail'}),emailUnavailable);
+  assert.equal(signupError({status:429,message:'email rate limit exceeded'}),emailUnavailable);
+  assert.equal(signupError({status:429,code:'over_request_rate_limit'}),'Too many attempts. Please wait and try again.');
   assert.equal(signupError({code:'email_address_invalid',message:'raw email validation detail'}),'Enter a valid email address.');
   assert.equal(signupError({code:'weak_password',message:'raw password policy detail'}),'Choose a stronger password of at least 10 characters.');
   assert.equal(signupError({message:'Failed to fetch internal endpoint'}),'We could not create your account securely. Please try again.');
