@@ -1,0 +1,44 @@
+{
+  "name": "aadhyant_registered_job_alert_v5",
+  "language": "en",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Review the summary below and share this opportunity with someone looking for work.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\n\nFor more information or to apply for a job, call 9586785800.\n\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP.",
+      "example": {
+        "body_text": [
+          [
+            "EXAMPLE-ONLY",
+            "Example Manufacturing",
+            "Associate",
+            "Sanand",
+            "10th / 12th / ITI",
+            "INR 17000 monthly",
+            "INR 15000 monthly",
+            "INR 121 per hour",
+            "8 hours; rotational shift",
+            "PF / ESIC listed; Free transport; Canteen charges apply"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "URL",
+          "text": "View Job & Apply",
+          "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}",
+          "example": [
+            "https://aadhyantmanpower.in/jobs/?requirement=AAD-2026-000003"
+          ]
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}
