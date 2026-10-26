@@ -174,8 +174,8 @@
   const renderReplyComposer=thread=>{
    if(!conversation)return;
    let draft=replyDrafts.get(conversation.contact_id);if(!draft){draft={body:'',operation:crypto.randomUUID(),messageId:null,result:null};replyDrafts.set(conversation.contact_id,draft);}
-   const composer=make('section','','wa-reply-composer');composer.setAttribute('aria-label','Reply to '+conversation.mobile_masked);
-   composer.append(make('h4','Reply to '+conversation.mobile_masked));
+   const composer=make('section','','wa-reply-composer');composer.setAttribute('aria-label','Reply to '+(conversation.mobile||conversation.mobile_masked));
+   composer.append(make('h4','Reply to '+(conversation.mobile||conversation.mobile_masked)));
    const expires=replyWindow?.expires_at?new Date(replyWindow.expires_at):null,open=replyWindow?.can_reply===true&&expires&&expires.getTime()>Date.now();
    composer.append(make('p',open?'Reply window open until '+expires.toLocaleString():replyWindow?.reason||'Reply window closed. Wait for a new incoming message or use an approved campaign template.','wa-help'));
    const text=make('textarea');text.rows=3;text.maxLength=2000;text.placeholder='Type a reply…';text.value=draft.body;text.disabled=!!draft.messageId;const count=make('small',Array.from(draft.body).length+' / 2000');
@@ -201,13 +201,13 @@
    toolbar.append(field('Find contact by last 4 digits',search),field('Filter',filter),button('Apply Filter',()=>run(async()=>{if(!/^[0-9]{0,4}$/.test(search.value))throw new Error('Enter up to four digits.');inboxSearch=search.value;inboxFilter=filter.value;offset=0;await loadInbox();})),button('Refresh Messages',()=>run(async()=>{await loadInbox();if(conversation){conversationRows=await call(client,'admin_console_conversation',{p_contact_id:conversation.contact_id,p_offset:conversationOffset});replyWindow=await call(client,'admin_console_reply_window',{p_contact_id:conversation.contact_id});}})));content.append(toolbar);
    const layout=make('div','','wa-inbox-layout'),list=make('section','','wa-conversation-list');list.setAttribute('aria-label',sent?'Outgoing conversations':'Incoming conversations');
    if(!conversations.length)list.append(make('p','No conversations match this filter.','wa-empty'));
-   conversations.forEach(row=>{const item=button('',()=>run(()=>openConversation(row)));item.className='wa-conversation';item.setAttribute('aria-label','Open conversation '+row.mobile_masked);item.setAttribute('aria-pressed',String(conversation?.contact_id===row.contact_id));
-    const top=make('div','','wa-conversation-top');top.append(make('strong',row.name_masked),make('span',row.unread_count?row.unread_count+' unread':'','wa-unread'));
-    item.append(top,make('span',row.mobile_masked,'wa-contact-number'),make('span',(row.latest_direction==='incoming'?'Received':'Outgoing')+' · '+row.latest_status,'wa-help'),make('time',new Date(row.latest_at).toLocaleString(),'wa-help'));if(row.attention)item.append(make('span','Needs attention','wa-attention'));list.append(item);});
+   conversations.forEach(row=>{const item=button('',()=>run(()=>openConversation(row)));item.className='wa-conversation';item.setAttribute('aria-label','Open conversation '+(row.mobile||row.mobile_masked));item.setAttribute('aria-pressed',String(conversation?.contact_id===row.contact_id));
+    const top=make('div','','wa-conversation-top');top.append(make('strong',(row.full_name||row.name_masked)),make('span',row.unread_count?row.unread_count+' unread':'','wa-unread'));
+    item.append(top,make('span',(row.mobile||row.mobile_masked),'wa-contact-number'),make('span',(row.latest_direction==='incoming'?'Received':'Outgoing')+' · '+row.latest_status,'wa-help'),make('time',new Date(row.latest_at).toLocaleString(),'wa-help'));if(row.attention)item.append(make('span','Needs attention','wa-attention'));list.append(item);});
    list.append(pages(50,conversations,loadInbox));const thread=make('section','','wa-thread');thread.setAttribute('aria-label','Conversation history');
    if(!conversation)thread.append(make('div','Select a contact to view their conversation.','wa-thread-empty'));
    else{
-    const head=make('header','','wa-thread-heading');head.append(make('h3',conversation.name_masked+' · '+conversation.mobile_masked),make('span','Alerts permission: '+conversation.consent,'wa-help'));thread.append(head);
+    const head=make('header','','wa-thread-heading');head.append(make('h3',(conversation.full_name||conversation.name_masked)+' · '+(conversation.mobile||conversation.mobile_masked)),make('span','Alerts permission: '+conversation.consent,'wa-help'));if(conversation.mobile){const number=conversation.mobile;head.append(button('Copy Number',async()=>{try{await navigator.clipboard.writeText(number);notice('Number copied.');}catch(error){notice('Could not copy. Select the displayed number and copy it manually.',true);}}));}thread.append(head);
     thread.append(make('p','Incoming and older messages use saved activity summaries. Replies written here show their saved text. Private registration links are hidden. “Read” on outgoing messages is the recipient delivery receipt.','wa-history-note'));
     const history=make('div','','wa-history');history.setAttribute('role','log');history.setAttribute('aria-label','Saved message history');
     conversationRows.forEach(row=>{const bubble=make('article','','wa-bubble wa-bubble-'+row.direction),meta=make('div','','wa-bubble-meta');meta.append(make('strong',row.direction==='incoming'?'Received':'Aadhyant'),make('span',row.status,'wa-status wa-status-'+row.status));bubble.append(meta,messageText(row.summary));

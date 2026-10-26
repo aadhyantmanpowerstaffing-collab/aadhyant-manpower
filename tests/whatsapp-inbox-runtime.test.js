@@ -38,3 +38,11 @@ test('Admin permission, bounded arguments and private table ACLs fail closed for
  for(const fn of ['public.admin_console_inbox(text,text,text,integer)','public.admin_console_conversation(uuid,integer)','public.admin_console_mark_inbox_read(uuid,uuid[])'])assert.equal((await value(f.db,"select has_function_privilege('anon',$1,'execute') ok",[fn])).ok,false);
  await f.db.exec("select set_config('test.admin','no',false)");await assert.rejects(list(f),/Admin access required/);await assert.rejects(thread(f),/Admin access required/);await assert.rejects(f.db.query('select public.admin_console_mark_inbox_read($1,$2)',[f.id,[f.inbound]]),/Admin access required/);
 });
+
+test('Admin Inbox/Sent exposes saved full identity, retains masking compatibility and rejects other roles',async t=>{
+ const f=await setup(t);await f.db.exec(fs.readFileSync('supabase/migrations/20261026064736_whatsapp_inbox_contact_identity.sql','utf8'));
+ await f.db.query("update public.whatsapp_contacts set imported_profile=jsonb_build_object('Name','Synthetic Full Name') where id=$1",[f.id]);
+ for(const folder of ['inbox','sent']){const row=(await list(f,folder))[0];assert.equal(row.mobile,'+919876543210');assert.equal(row.full_name,'Synthetic Full Name');assert.equal(row.mobile_masked,'+91XXXXXX3210');}
+ const grants=await value(f.db,"select has_function_privilege('anon','public.admin_console_inbox(text,text,text,integer)','execute') anon,has_function_privilege('service_role','public.admin_console_inbox(text,text,text,integer)','execute') service");assert.deepEqual(grants,{anon:false,service:false});
+ await f.db.exec("select set_config('test.admin','no',false)");await assert.rejects(list(f),/Admin access required/);
+});
