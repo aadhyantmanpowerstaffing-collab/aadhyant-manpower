@@ -26,7 +26,7 @@
   const openConversation=async row=>{const [rows,windowState]=await Promise.all([call(client,'admin_console_conversation',{p_contact_id:row.contact_id,p_offset:0}),call(client,'admin_console_reply_window',{p_contact_id:row.contact_id})]);conversation=row;conversationRows=rows;replyWindow=windowState;conversationOffset=0;if(windowState?.pending&&!replyDrafts.has(row.contact_id)){const pending=windowState.pending;replyDrafts.set(row.contact_id,{body:pending.body,operation:crypto.randomUUID(),messageId:pending.id,result:pending});}};
   const notice=(text,error=false)=>{status.textContent=text;status.classList.toggle('is-error',error);};
   const button=(text,fn,primary=false)=>{const n=make('button',text,'admin-button '+(primary?'admin-button-primary':'admin-button-secondary'));n.type='button';n.addEventListener('click',()=>fn(n));return n;};
-  const run=async(fn)=>{if(busy)return;busy=true;content.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);try{await fn();notice('');}catch(error){notice(error.message||'Action not confirmed. Refresh before retrying.',true);}finally{busy=false;render();}};
+  const run=async(fn)=>{if(busy)return;busy=true;content.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);try{notice('');await fn();}catch(error){notice(error.message||'Action not confirmed. Refresh before retrying.',true);}finally{busy=false;render();}};
   const field=(text,input)=>{const n=make('label',text);n.append(input);return n;};
   const input=(placeholder='')=>{const n=make('input');n.placeholder=placeholder;return n;};
   const table=(headers,rows)=>{const wrap=make('div','','table-wrap'),t=make('table'),head=make('thead'),tr=make('tr');headers.forEach(h=>tr.append(make('th',h)));head.append(tr);const body=make('tbody');rows.forEach(row=>{const r=make('tr');row.forEach(v=>{const td=make('td');if(v&&typeof v==='object')td.append(v);else td.textContent=String(v??'—');r.append(td);});body.append(r);});t.append(head,body);wrap.append(t);return wrap;};
@@ -47,9 +47,22 @@
   const renderContacts=()=>{
    const toolbar=make('div','','wa-grid'),list=input('For example: ITI Leads'),tag=input('For example: Sanand');list.value=filterList;tag.value=filterTag;
    toolbar.append(field('Contact List',list),field('Tag',tag),button('Filter Contacts',()=>run(async()=>{filterList=list.value.trim();filterTag=tag.value.trim();offset=0;contactSelection.clear();await loadContacts();})));
-   content.append(make('h3','Contacts'),toolbar);if(!contacts.length)content.append(make('p','No contacts yet. Import an Excel or CSV file below.','wa-empty'));
+   const selectionBar=make('div','','wa-actions'),selectionCount=make('span');selectionCount.setAttribute('role','status');
+   const clearSelection=button('Clear Selection',()=>{contactSelection.clear();render();});
+   const deleteSelected=button('Delete Selected',()=>{
+    const ids=[...contactSelection];if(!ids.length)return;
+    const dialog=make('dialog','','wa-dialog');dialog.append(make('h3','Delete '+ids.length+' selected contacts?'),make('p','This permanently deletes unused imported contacts. Registered contacts, permission records and contacts with message or campaign history are kept.'));
+    const close=()=>{dialog.close();dialog.remove();};
+    dialog.append(button('Cancel',close),button('Confirm Delete',()=>{close();run(async()=>{
+     const result=await call(client,'admin_console_delete_contacts',{p_ids:ids});contactSelection.clear();offset=0;await loadContacts();notice(result.deleted+' deleted · '+result.kept+' protected contacts kept.');
+    });},true));main.append(dialog);dialog.showModal();
+   });
+   const updateSelection=()=>{selectionCount.textContent=contactSelection.size+' selected (up to 500)';clearSelection.disabled=!contactSelection.size;deleteSelected.disabled=!contactSelection.size;};
+   const selectPage=button('Select All on This Page',()=>{const ids=new Set([...contactSelection,...contacts.map(r=>r.contact_id)]);if(ids.size>500){notice('Select up to 500 contacts. Clear Selection to start again.',true);return;}ids.forEach(id=>contactSelection.add(id));render();});selectPage.disabled=!contacts.length;
+   selectionBar.append(selectPage,clearSelection,deleteSelected,selectionCount);updateSelection();
+   content.append(make('h3','Contacts'),toolbar,selectionBar);if(!contacts.length)content.append(make('p','No contacts yet. Import an Excel or CSV file below.','wa-empty'));
    else content.append(table(['Select','Name','WhatsApp','Permission','Lists','Tags','Action'],contacts.map(row=>{
-    const check=make('input');check.type='checkbox';check.checked=contactSelection.has(row.contact_id);check.setAttribute('aria-label','Select '+row.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(contactSelection.size>=500){check.checked=false;notice('Select up to 500 contacts.',true);return;}contactSelection.add(row.contact_id);}else contactSelection.delete(row.contact_id);});
+    const check=make('input');check.type='checkbox';check.checked=contactSelection.has(row.contact_id);check.setAttribute('aria-label','Select '+row.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(contactSelection.size>=500){check.checked=false;notice('Select up to 500 contacts.',true);return;}contactSelection.add(row.contact_id);}else contactSelection.delete(row.contact_id);updateSelection();});
     const action=row.consent==='unknown'&&['resolved','unresolved'].includes(row.resolution_status)?button('Record Permission',()=>showConsent(row)):make('span',row.consent==='opted_out'?'Unsubscribed':row.consent==='opted_in'?'Subscribed':'Needs review');
     return[check,row.name_masked,row.mobile_masked,row.consent,(row.lists||[]).join(', '),(row.tags||[]).join(', '),action];
    })));
