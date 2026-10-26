@@ -26,7 +26,7 @@ begin
   end;
  end loop;
  insert into public.audit_logs(actor_user_id,actor_type,action,entity_type,source,metadata)
- values(auth.uid(),'staff','whatsapp.console_contacts_deleted','whatsapp_contact','admin_console',jsonb_build_object('deleted',n,'kept',kept));
+ values(auth.uid(),'staff','whatsapp.console_contacts_deleted','whatsapp_contact','admin',jsonb_build_object('deleted',n,'kept',kept));
  return jsonb_build_object('deleted',n,'kept',kept);
 end; $$;
 revoke all on function public.admin_console_delete_contacts(uuid[]) from public,anon,authenticated,service_role;

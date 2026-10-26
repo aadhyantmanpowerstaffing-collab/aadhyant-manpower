@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {setup,value,importOne,subscribe}=require('./fixtures/whatsapp-console-runtime-helpers.js');
 const migration=fs.readFileSync('supabase/migrations/20261026040538_whatsapp_contact_bulk_actions.sql','utf8');
-async function prepare(){const db=await setup();await db.exec(migration);return db;}
+async function prepare(){const db=await setup();await db.exec("alter table public.audit_logs add constraint bulk_actor_check check(actor_type in ('staff','company','contractor','candidate','anonymous','system','service','migration')),add constraint bulk_source_check check(source in ('admin','company','contractor','candidate','public','whatsapp','automation','migration','system'))");await db.exec(migration);return db;}
 test('deletes only selected unused imports, deduplicates IDs, audits counts and allows idempotent retries',async t=>{
  const db=await prepare();t.after(()=>db.close());const id=await importOne(db);
  await db.query('select public.admin_console_import_numbers($1::jsonb)',['["9876543211"]']);
