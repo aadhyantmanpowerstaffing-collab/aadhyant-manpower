@@ -44,6 +44,26 @@
    form.append(button('Save Permission',()=>run(async()=>{if(!confirmed.checked||!date.value)throw new Error('Confirm the permission and its received date.');await call(client,'admin_console_record_consent',{p_contact_id:row.contact_id,p_source:source.value,p_received_at:new Date(date.value).toISOString()});dialog.close();dialog.remove();await loadContacts();}),true),button('Close',()=>{dialog.close();dialog.remove();}));
    dialog.append(form);main.append(dialog);dialog.showModal();
   };
+  const showBulkConsent=()=>{
+   const ids=[...contactSelection];if(!ids.length)return;
+   const dialog=make('dialog','','wa-dialog'),source=make('select');['phone_call','written_permission','in_person'].forEach(v=>source.append(new Option(v.replaceAll('_',' '),v)));
+   const date=input();date.type='datetime-local';const confirmed=make('input');confirmed.type='checkbox';
+   const close=()=>{dialog.close();dialog.remove();};
+   dialog.append(make('h3','Record permission for '+ids.length+' selected contacts'),make('p','Use one batch only for contacts who gave permission through the same method at the same date and time. STOP and blocked contacts cannot be re-enrolled here.'),field('Permission received through',source),field('Date and time received',date),field('Every selected person actually agreed to receive Aadhyant job messages.',confirmed));
+   const save=button('Save Bulk Permission',async()=>{
+    if(busy||save.disabled)return;
+    if(!confirmed.checked||!date.value){notice('Confirm permission for every selected person and its received date.',true);return;}
+    const received=new Date(date.value),now=Date.now();if(!Number.isFinite(received.getTime())||received.getTime()>now||received.getTime()<now-365*86400000){notice('Use the actual permission date within the past 365 days.',true);return;}
+    const method=source.value;save.disabled=true;source.disabled=true;date.disabled=true;confirmed.disabled=true;cancel.disabled=true;
+    await run(async()=>{
+     let saved=0,failed=0;
+     for(const id of ids){try{await call(client,'admin_console_record_consent',{p_contact_id:id,p_source:method,p_received_at:received.toISOString()});saved++;contactSelection.delete(id);}catch(error){failed++;}notice(saved+' recorded · '+failed+' not recorded · '+(ids.length-saved-failed)+' remaining.');}
+     close();try{await loadContacts();}catch(error){notice(saved+' permissions recorded · '+failed+' not recorded. Refresh contacts before retrying.',true);return;}
+     notice(saved+' permissions recorded · '+failed+' not recorded. Unsuccessful contacts remain selected for review.',failed>0);
+    });
+   },true),cancel=button('Cancel',close);
+   dialog.append(save,cancel);main.append(dialog);dialog.showModal();
+  };
   const renderContacts=()=>{
    const toolbar=make('div','','wa-grid'),list=input('For example: ITI Leads'),tag=input('For example: Sanand');list.value=filterList;tag.value=filterTag;
    toolbar.append(field('Contact List',list),field('Tag',tag),button('Filter Contacts',()=>run(async()=>{filterList=list.value.trim();filterTag=tag.value.trim();offset=0;contactSelection.clear();await loadContacts();})));
@@ -57,9 +77,10 @@
      const result=await call(client,'admin_console_delete_contacts',{p_ids:ids});contactSelection.clear();offset=0;await loadContacts();notice(result.deleted+' deleted · '+result.kept+' protected contacts kept.');
     });},true));main.append(dialog);dialog.showModal();
    });
-   const updateSelection=()=>{selectionCount.textContent=contactSelection.size+' selected (up to 500)';clearSelection.disabled=!contactSelection.size;deleteSelected.disabled=!contactSelection.size;};
+   const bulkConsent=button('Bulk Record Permission',showBulkConsent);
+   const updateSelection=()=>{bulkConsent.disabled=!contactSelection.size;selectionCount.textContent=contactSelection.size+' selected (up to 500)';clearSelection.disabled=!contactSelection.size;deleteSelected.disabled=!contactSelection.size;};
    const selectPage=button('Select All on This Page',()=>{const ids=new Set([...contactSelection,...contacts.map(r=>r.contact_id)]);if(ids.size>500){notice('Select up to 500 contacts. Clear Selection to start again.',true);return;}ids.forEach(id=>contactSelection.add(id));render();});selectPage.disabled=!contacts.length;
-   selectionBar.append(selectPage,clearSelection,deleteSelected,selectionCount);updateSelection();
+   selectionBar.append(selectPage,clearSelection,bulkConsent,deleteSelected,selectionCount);updateSelection();
    content.append(make('h3','Contacts'),toolbar,selectionBar);if(!contacts.length)content.append(make('p','No contacts yet. Import an Excel or CSV file below.','wa-empty'));
    else content.append(table(['Select','Name','WhatsApp','Permission','Lists','Tags','Action'],contacts.map(row=>{
     const check=make('input');check.type='checkbox';check.checked=contactSelection.has(row.contact_id);check.setAttribute('aria-label','Select '+row.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(contactSelection.size>=500){check.checked=false;notice('Select up to 500 contacts.',true);return;}contactSelection.add(row.contact_id);}else contactSelection.delete(row.contact_id);updateSelection();});
