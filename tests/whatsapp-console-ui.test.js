@@ -12,3 +12,9 @@ test('new Hindi campaigns select the contact-line template and preview its exact
 const fresh=new Date().toISOString();assert.equal(ui.availableTemplate({name:'aadhyant_registered_job_alert_hi_v2',status:'APPROVED',compatible:true,synced_at:fresh}),true);assert.equal(ui.availableTemplate({name:'aadhyant_registered_job_alert_hi_v1',status:'APPROVED',compatible:true,synced_at:fresh}),false);
 const src=fs.readFileSync('admin/whatsapp-console.js','utf8');assert.match(src,/admin_console_preview_hindi_contact_alert/);
 });
+
+test('manual video preview uses canonical server values and requires a ready reel',()=>{
+  const source=fs.readFileSync('admin/whatsapp-console.js','utf8');
+  assert.match(source,/admin_console_preview_manual_video/);
+  assert.match(source,/if\(!preview\.reel_ready\)/);
+});
