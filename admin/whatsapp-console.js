@@ -72,10 +72,10 @@
    const clearSelection=button('Clear Selection',()=>{contactSelection.clear();render();});
    const deleteSelected=button('Delete Selected',()=>{
     const ids=[...contactSelection];if(!ids.length)return;
-    const dialog=make('dialog','','wa-dialog');dialog.append(make('h3','Delete '+ids.length+' selected contacts?'),make('p','This permanently deletes unused imported contacts. Registered contacts, permission records and contacts with message or campaign history are kept.'));
+    const dialog=make('dialog','','wa-dialog');dialog.append(make('h3','Delete '+ids.length+' selected contacts?'),make('p','Remove these contacts from Contacts and future manual bulk campaign selection. Their registration, permission and message history will be preserved. Existing campaigns and automatic subscriptions are unchanged.'));
     const close=()=>{dialog.close();dialog.remove();};
     dialog.append(button('Cancel',close),button('Confirm Delete',()=>{close();run(async()=>{
-     const result=await call(client,'admin_console_delete_contacts',{p_ids:ids});contactSelection.clear();offset=0;await loadContacts();notice(result.deleted+' deleted · '+result.kept+' protected contacts kept.');
+     const result=await call(client,'admin_console_archive_contacts',{p_ids:ids});contactSelection.clear();offset=0;await loadContacts();notice(result.archived+' contacts removed from Contacts and manual bulk selection. History preserved.');status.scrollIntoView({block:'center'});
     });},true));main.append(dialog);dialog.showModal();
    });
    const bulkConsent=button('Bulk Record Permission',showBulkConsent);
