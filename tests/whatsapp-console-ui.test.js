@@ -18,3 +18,11 @@ test('manual video preview uses canonical server values and requires a ready ree
   assert.match(source,/admin_console_preview_manual_video/);
   assert.match(source,/if\(!preview\.reel_ready\)/);
 });
+
+test('delivery labels never call Sent delivered or leave a finished dispatch marked Queued',()=>{
+ assert.equal(ui.deliveryLabel({campaign_status:'queued',delivery:{total:383,delivered:150,awaiting:67,failed:166,pending:0,review:0,not_sent:0}}),'Awaiting delivery');
+ assert.equal(ui.deliveryLabel({campaign_status:'queued',delivery:{total:1,delivered:1,awaiting:0,failed:0,pending:0,review:0,not_sent:0}}),'Delivered');
+ assert.equal(ui.deliveryLabel({campaign_status:'queued',delivery:{total:1,delivered:0,awaiting:0,failed:1,pending:0,review:0,not_sent:0}}),'Finished with issues');
+ assert.equal(ui.failureReason({failure_code:'131048'}),'Meta spam/quality sending limit (131048)');
+ assert.match(ui.failureReason({send_phase:'reconciliation_required'}),/review before retrying/);
+});

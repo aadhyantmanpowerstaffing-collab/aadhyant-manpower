@@ -73,7 +73,7 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});if(req.method!=='POST')return reply(405,{error:'POST required'});
  const base=env.get('SUPABASE_URL'),key=runtimeServerKey(env.get),token=env.get('WHATSAPP_ACCESS_TOKEN');
  const rpc=async(name:string,data:any)=>{const r=await fetcher(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify(data),redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('Database operation not confirmed');return r.json();};
- let campaign:null|string=null,automatic=false;
+ let campaign:null|string=null,automatic=false,claimPending=false;
  try{
   const authorization=req.headers.get('authorization');const schedulerKey=env.get('WHATSAPP_WORKER_SECRET');const scheduler=Boolean(schedulerKey&&schedulerKey.length>=32&&constantTimeEqual(req.headers.get('x-whatsapp-worker-key')||'',schedulerKey));
   let databaseWake=false;
@@ -103,7 +103,7 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
    await rpc('console_sync_templates',{p_rows:templates});await rpc('console_sender_connection',{p_phone_id:phone,p_account_id:account});await rpc('console_automatic_worker_heartbeat',{});
   }
   const config=await rpc('console_sender_configuration',{});if(!config?.ready||!token||config.account_id!==env.get('WHATSAPP_BUSINESS_ACCOUNT_ID')||!/^\d{8,40}$/.test(config.phone_id))return reply(503,{error:'Verify sender connection before sending'});
-  const worker='console:'+crypto.randomUUID();const rows=automatic?await rpc('console_claim_registered_alerts',{p_worker_id:worker}):await rpc('console_claim_campaign',{p_campaign_id:campaign,p_worker_id:worker});if(!Array.isArray(rows)||rows.length>10)throw Error('Invalid claim result');
+  const worker='console:'+crypto.randomUUID();claimPending=true;const rows=automatic?await rpc('console_claim_registered_alerts',{p_worker_id:worker}):await rpc('console_claim_campaign',{p_campaign_id:campaign,p_worker_id:worker});if(!Array.isArray(rows)||rows.length>10)throw Error('Invalid claim result');claimPending=false;
   const outcomes=await Promise.all(rows.map(async(row:any)=>{
    let payload;try{
     let videoLink:string|undefined;
@@ -129,7 +129,7 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
    }catch{try{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'ambiguous_provider_outcome',p_error_code:'reconcile_before_retry',p_failure_kind:'ambiguous',p_retry_at:null});}catch{}return 'reconciliation_required';}
   }));
   return reply(200,{processed:outcomes.length,sent:outcomes.filter(x=>x==='sent').length,failed:outcomes.filter(x=>x==='failed').length,reconciliation_required:outcomes.filter(x=>x==='reconciliation_required').length});
- }catch{return reply(502,{error:'Worker result not confirmed. Check reports before retrying.'});}
+ }catch{if(claimPending)return reply(503,{error:'Sending paused while preparing the next batch. Open the report for current results. Do not create another campaign.',category:'claim_unconfirmed'});return reply(502,{error:'Worker result not confirmed. Check reports before retrying.'});}
 }
 const handler={fetch:(req:Request)=>handleWorker(req,{get:(key:string)=>(globalThis as any).Deno?.env.get(key)||''})};
 
