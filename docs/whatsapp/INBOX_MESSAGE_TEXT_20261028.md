@@ -1,6 +1,12 @@
 # Readable incoming WhatsApp messages — prepared fix
 
-Status: prepared locally; not deployed. This change requires the database migration, webhook deployment and Admin Pages release together. Production approval is still required by AGENTS.md.
+Status: production release explicitly approved by the user on 28 October 2026. GitHub PR #18 merged as `e2ff7a999b561e4b6fe35cbf81df84dc20a4b455` (tree `6eead0e168c525fc5845cdc112eb348e2c6e2b96`). Production project identity verified as `wsuctjhbqiedttfnwjvf` / Aadhyant Manpower.
+
+Database migration installed as `20261028035856 / whatsapp_inbox_message_text`. Matching webhook version 28 is ACTIVE, preserves signature authentication / verify_jwt=false, and downloaded deployed files match the reviewed sources exactly. SQL verification preserves Gujarati, omits sensitive identifiers, confirms the 4096-character bound, guarded Admin history grants, service-only recorder and RLS. Existing inbound/outbound counts remained 14/498 during this check. No real message was sent and no candidate record was modified.
+
+Production Pages run `40629885294` completed successfully against that exact merged commit with deploy_production=true. Build/validation job `122623556461` and deployment job `122624245188` both succeeded. Published Admin JavaScript returned HTTP 200 and matches the reviewed source byte-for-byte: SHA256 `034950f34d2397ccd4677ca0d4a1df1f125a09e1fe1d5bec66486b0c53a68226`. Migration source SHA256: `bb107a61eb17f18f33c9c9b429eccddbc25a7bd1249aa5882b4775ffcb5c6ea9`.
+
+Release URL: https://aadhyantmanpower.in/admin/ . Workflow proof: https://github.com/aadhyantmanpowerstaffing-collab/aadhyant-manpower/actions/runs/40629885294 .
 
 The Inbox rendered summaries because the webhook passed `p_safe_text: null`, the canonical recorder discarded its text argument, and the Admin history RPC never projected it. This patch corrects all three stages. Incoming text and button/list labels are bounded to 4096 characters and stored in the existing `whatsapp_inbound_messages.safe_text`. The Admin RPC projects readable text into its existing `summary` field, so the existing text-node renderer preserves Gujarati and line breaks without evaluating HTML.
 
@@ -24,4 +30,8 @@ If the webhook deploy precedes the migration, text continues to be discarded by 
 
 Local focused SQL and DOM coverage checks Gujarati round-trip, 4096-character text, canonical duplicate replay, missing old text, registration and Flow exclusions, sensitive identifiers, recorder grants, Admin denial, safe DOM rendering and readable history when reply availability fails. The existing operator reply suites cover reply-window, STOP, sender, author, reconciliation and duplicate-click behavior. Full regression and production artifact checks are recorded in the final change report.
 
-Final local results: complete regression 718/718 passed, zero failures/skips; final webhook/SQL focused run 27/27 passed; SQL recheck after self-review 2/2 passed; JS syntax, production artifact build, digest verification and `git diff --check` passed. Live authenticated browser/provider verification remains pending deployment approval. Remote code upload was blocked by automatic approval review for lack of explicit external upload authorization; no code payload was published.
+Final local results: complete regression 718/718 passed, zero failures/skips; final webhook/SQL focused run 27/27 passed; SQL recheck after self-review 2/2 passed; JS syntax, production artifact build, digest verification and `git diff --check` passed. Live authenticated browser/provider verification remains pending deployment approval. The initial remote upload pause was resolved by the user’s explicit GitHub upload and live deployment approval; the reviewed payload was then published through PR #18.
+
+Security advisors after the migration match the pre-release categories/counts: private RLS/no-policy 37; extension-in-public 1; intentional anonymous definer APIs 8; authenticated definer APIs 202; leaked-password protection disabled 1. This patch adds no findings. Existing remediation references: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy and https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable . Unrelated advisories were not modified.
+
+The cloud browser has no Aadhyant Admin session, so signed-in visual verification and a real new WhatsApp message round-trip remain unperformed. No credentials were requested or simulated for this release.
