@@ -1,0 +1,29 @@
+{
+  "name": "aadhyant_registration_video_hi_v1",
+  "language": "hi",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "HEADER",
+      "format": "VIDEO"
+    },
+    {
+      "type": "BODY",
+      "text": "*Aadhyant Manpower & Staffing*\n\nसाणंद GIDC और आसपास नौकरी ढूंढ रहे हैं?\nउपलब्ध नौकरियों के WhatsApp Job Alerts पाने के लिए आज ही रजिस्टर करें।\n\nरजिस्ट्रेशन निःशुल्क है। नौकरी के लिए उम्मीदवारों से कोई फीस नहीं ली जाती।\n\nनीचे Register Now बटन दबाएँ या https://aadhyantmanpower.in/ खोलें।\nजानकारी के लिए कॉल करें: 9586785800\n\nअलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।"
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "URL",
+          "text": "Register Now",
+          "url": "https://aadhyantmanpower.in/"
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}

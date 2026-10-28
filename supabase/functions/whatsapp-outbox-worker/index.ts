@@ -13,6 +13,12 @@ export const hindiContactJobBody="नमस्ते,\n*Aadhyant Manpower & Staf
 export const englishContactJobBody="Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Review the summary below and share this opportunity with someone looking for work.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\n\nFor more information or to apply for a job, call 9586785800.\n\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP.";
 export const sameDayContactBody="*रोकड़ी काम — उसी शाम भुगतान*\n*Aadhyant Manpower & Staffing*\n\n📍 *स्थान:* {{1}}\n🛠️ *काम:* {{2}}\n📅 *तारीख:* {{3}}\n🕗 *समय:* {{4}}\n👥 *ज़रूरत:* {{5}} लोग\n💵 *मेहनताना:* {{6}} प्रति व्यक्ति, पूरी शिफ्ट का\n✅ *भुगतान:* उसी दिन {{7}}\n\nकाम के लिए उपलब्ध हैं? नीचे बटन दबाकर आवेदन करें। कंपनी/ठेकेदार आपकी जगह की पुष्टि करेगा।\n\nअधिक जानकारी या नौकरी के लिए आवेदन करने हेतु 9586785800 पर कॉल करें।\n\nअलर्ट बंद करने के लिए *Stop alerts* दबाएँ या *STOP* लिखें।";
 export function templatePayload(row:any,videoLink?:string){
+ if(row.template_name==='aadhyant_registration_video_hi_v1'){
+  const v=row.template_variables;
+  if(row.template_language!=='hi'||row.template_version!=='1'||row.purpose!=='vacancy_campaign'||row.consent_class!=='marketing'||!/^\+?91[6-9]\d{9}$/.test(row.destination)||!uuid.test(row.correlation_id)||!v||Object.keys(v).length!==3||v.template_contract!=='registration_promotion_v1'||!uuid.test(v.campaign_id)||v.recipient_id!==row.correlation_id||!videoLink||!/^https:\/\//.test(videoLink))throw Error('Verified registration video contract required');
+  return {messaging_product:'whatsapp',to:row.destination.replace(/^\+/,''),type:'template',template:{name:row.template_name,language:{code:'hi'},components:[{type:'header',parameters:[{type:'video',video:{link:videoLink}}]},{type:'button',sub_type:'quick_reply',index:'1',parameters:[{type:'payload',payload:'STOP'}]}]}};
+ }
+
  if(['aadhyant_registered_job_alert_v5','aadhyant_same_day_pay_hi_v2'].includes(row.template_name)){
   const sameDay=row.template_name==='aadhyant_same_day_pay_hi_v2';
   const p=templatePayload({...row,template_name:sameDay?'aadhyant_same_day_pay_hi_v1':'aadhyant_registered_job_alert_v4'});
@@ -107,15 +113,16 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
   const outcomes=await Promise.all(rows.map(async(row:any)=>{
    let payload;try{
     let videoLink:string|undefined;
-    if(['aadhyant_registered_job_video_en_v1','aadhyant_registered_job_video_hi_v1'].includes(row.template_name)){
+    if(['aadhyant_registered_job_video_en_v1','aadhyant_registered_job_video_hi_v1','aadhyant_registration_video_hi_v1'].includes(row.template_name)){
+     const bucket=row.template_name==='aadhyant_registration_video_hi_v1'?'whatsapp-campaign-media':'recruitment-reels';
      const path=await rpc('console_claimed_reel_object',{p_message_id:row.message_id,p_worker_id:worker});
      if(typeof path!=='string'||!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(path))throw Error('Current Reel required');
-     const media=await fetcher(base+'/storage/v1/object/authenticated/recruitment-reels/'+path,{method:'HEAD',headers:serverDatabaseHeaders(key),redirect:'error',signal:AbortSignal.timeout(10000)});
+     const media=await fetcher(base+'/storage/v1/object/authenticated/'+bucket+'/'+path,{method:'HEAD',headers:serverDatabaseHeaders(key),redirect:'error',signal:AbortSignal.timeout(10000)});
      const size=Number(media.headers.get('content-length'));
      if(!media.ok||!Number.isInteger(size)||size<100||size>16000000||media.headers.get('content-type')?.split(';')[0]!=='video/mp4')throw Error('Unsupported video size or type');
-     const signed=await fetcher(base+'/storage/v1/object/sign/recruitment-reels/'+path,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify({expiresIn:3600}),redirect:'error',signal:AbortSignal.timeout(10000)});
+     const signed=await fetcher(base+'/storage/v1/object/sign/'+bucket+'/'+path,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify({expiresIn:3600}),redirect:'error',signal:AbortSignal.timeout(10000)});
      if(!signed.ok)throw Error('Reel unavailable');const data=await signed.json();
-     if(typeof data.signedURL!=='string'||!data.signedURL.startsWith('/object/sign/recruitment-reels/'+path+'?'))throw Error('Unexpected media URL');
+     if(typeof data.signedURL!=='string'||!data.signedURL.startsWith('/object/sign/'+bucket+'/'+path+'?'))throw Error('Unexpected media URL');
      videoLink=base+'/storage/v1'+data.signedURL;
     }
     payload=templatePayload(row,videoLink);
