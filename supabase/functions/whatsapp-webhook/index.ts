@@ -196,7 +196,9 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         p_provider_message_id: event.providerMessageId,
         p_provider_timestamp: event.providerTimestamp ?? null,
         p_message_type: event.messageType,
-        p_safe_text: null,
+        // Only the canonical private store receives bounded text. The event ledger
+        // remains summary-only; the database excludes registration/sensitive data.
+        p_safe_text: ['text','button','list'].includes(event.messageType) ? event.safeText ?? null : null,
         p_action_id: postJob ? "POST_JOB" : sharingPreferences ? "SUBSCRIBE_JOB_UPDATES" : event.actionId ?? null,
         p_correlation_key: event.correlationKey ?? null,
         p_redacted_response: event.redactedResponse ?? null,

@@ -115,7 +115,7 @@ test("valid POST durably submits normalized event summaries and duplicates retai
   assert.equal(accepted[0].payload_sha256.length, 64);
 });
 
-test("verified text accepts first, upserts contact and records no raw text", async () => {
+test("verified text persists only in the canonical inbound store, never the event ledger", async () => {
   const payload = envelope({ messages: [{ id: "wamid.orchestrated.text", from: "919876543210", timestamp: "1720000000", type: "text", text: { body: "Must not reach persistence" } }] });
   const calls: Array<{ rpc: string; body: Record<string, unknown> }> = [];
   const fetcher = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -133,8 +133,8 @@ test("verified text accepts first, upserts contact and records no raw text", asy
   assert.deepEqual(calls.map((call) => call.rpc), ["accept_whatsapp_webhook_event", "upsert_whatsapp_inbound_contact", "record_whatsapp_inbound_message"]);
   assert.equal(calls[1].body.p_phone, "919876543210");
   assert.equal(calls[2].body.p_message_type, "text");
-  assert.equal(calls[2].body.p_safe_text, null);
-  assert.equal(JSON.stringify(calls).includes("Must not reach persistence"), false);
+  assert.equal(calls[2].body.p_safe_text, "Must not reach persistence");
+  assert.equal(JSON.stringify(calls[0]).includes("Must not reach persistence"), false);
 });
 
 test("button, list and Flow events use the normalized inbound persistence stage", async () => {
@@ -363,4 +363,11 @@ test('invalid Flow submission becomes durable review attention instead of infini
  if(name==='console_registration_flow_failure')return Response.json(true);
  return Response.json('00000000-0000-0000-0000-000000000001');};
  const p=createSupabaseWebhookPersistence(environment,fetcher);assert.equal((await handleWhatsAppWebhook(await signedRequest(payload),environment,p.acceptEvent,p.processEvent)).status,200);assert.equal(calls.at(-1),'console_registration_flow_failure');assert.equal(calls.includes('messages'),false);
+});
+
+// A normal WhatsApp text can exceed the previous 2000-character summary bound.
+test("parser preserves a full 4096-character incoming message for the Inbox", () => {
+  const body = "અ".repeat(4096);
+  const events = parseWhatsAppWebhook(envelope({ messages: [{ id: "wamid.long-text", from: "919876543210", type: "text", text: { body } }] }));
+  assert.equal(events[0].safeText, body);
 });
