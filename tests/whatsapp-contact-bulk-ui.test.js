@@ -51,14 +51,14 @@ const fieldInput=(main,label)=>walk(main).find(n=>n.tag==='label'&&n.textContent
 test('saved Lists/Tags populate contact filters and organization pickers; saved changes reload dropdowns',async()=>{
  const f=await setup();
  assert.deepEqual(fieldInput(f.main,'Contact List').children.map(n=>n.textContent),['All contact lists','Batch A']);
- assert.deepEqual(fieldInput(f.main,'Saved Tags').children.map(n=>n.textContent),['Choose a saved tag','Sanand']);
+ assert.deepEqual(fieldInput(f.main,'Saved Tags').children.map(n=>n.textContent),['Choose a saved tag','Sanand']);fieldInput(f.main,'Contact List').value='Batch A';await f.click('Filter Contacts');
  const saved=fieldInput(f.main,'Saved Lists');saved.value='Batch A';saved.handlers.change();assert.equal(fieldInput(f.main,'Lists').value,'Batch A');
  fieldInput(f.main,'Lists').value='New Batch';fieldInput(f.main,'Tags').value='ITI';
  await f.click('Select All on This Page');
  fieldInput(f.main,'Lists').value='New Batch';fieldInput(f.main,'Tags').value='ITI';
  await f.click('Save Lists and Tags');
  assert.deepEqual(fieldInput(f.main,'Contact List').children.map(n=>n.textContent),['All contact lists','New Batch']);
- assert.ok(walk(f.main).some(n=>n.textContent.startsWith('Lists and tags saved.')));
+ assert.ok(walk(f.main).some(n=>n.textContent.startsWith('Lists and tags saved.')));assert.equal(f.calls.filter(([name])=>name==='admin_console_contacts').at(-1)[1].p_list,null);
 });
 test('import resets prior list/tag filters and selection, reloads contacts and reports restored count',async()=>{
  const f=await setup();fieldInput(f.main,'Contact List').value='Batch A';fieldInput(f.main,'Tag').value='Sanand';await f.click('Filter Contacts');
