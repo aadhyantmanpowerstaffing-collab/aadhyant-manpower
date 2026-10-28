@@ -31,7 +31,7 @@ for(const failure of ['none','boundary','timeout','rejection','receipt'])test('c
  if(['timeout','receipt'].includes(failure))assert.equal(bodies.at(-1).p_failure_kind,'ambiguous');if(failure==='none')assert.equal(calls.at(-1),'mark_whatsapp_outbound_sent');assert.equal(JSON.stringify(bodies).includes('private'),false);
 });
 function signed(body:string){return calculateMetaSignature(new TextEncoder().encode(body),'fixture-secret').then(signature=>new Request('https://fixture.invalid',{method:'POST',headers:{'content-type':'application/json','x-hub-signature-256':signature},body}));}
-for(const scenario of ['interested','answer','STOP'])test('signed ingress persists first then routes '+scenario+' to private chat processing without raw-text retention',async()=>{
+for(const scenario of ['interested','answer','STOP'])test('signed ingress persists first then routes '+scenario+' to private chat processing; database controls transcript retention',async()=>{
  const calls:string[]=[],bodies:any[]=[];const environment={appSecret:'fixture-secret',verifyToken:'fixture',supabaseUrl:'https://fixture.invalid',supabaseSecretKey:'fixture-key',accessToken:'fixture-meta',businessAccountId:'1234567890',phoneNumberId:'1234567891'};
  const fetcher:typeof fetch=async(input,init)=>{
   const name=String(input).split('/').at(-1)!;calls.push(name);const args=JSON.parse(String(init?.body||'{}'));bodies.push(args);
@@ -43,7 +43,7 @@ for(const scenario of ['interested','answer','STOP'])test('signed ingress persis
  const body=JSON.stringify({object:'whatsapp_business_account',entry:[{id:environment.businessAccountId,changes:[{value:{metadata:{phone_number_id:environment.phoneNumberId},messages:[message]}}]}]});
  const persistence=createSupabaseWebhookPersistence(environment,fetcher);
  assert.equal((await handleWhatsAppWebhook(await signed(body),environment,persistence.acceptEvent,persistence.processEvent)).status,200);
- assert.equal(bodies[calls.indexOf('record_whatsapp_inbound_message')].p_safe_text,null);
+ assert.equal(bodies[calls.indexOf('record_whatsapp_inbound_message')].p_safe_text,scenario==='interested'?'Interested':scenario==='STOP'?'STOP':'Synthetic Name');
  if(scenario==='STOP'){assert.equal(calls.at(-1),'console_cancel_registration_chat');assert.equal(calls.includes('messages'),false);}
  else {assert.ok(calls.indexOf('record_whatsapp_inbound_message')<calls.indexOf('console_process_registration_chat'));assert.equal(calls.includes('console_claim_registration_reply'),false);assert.equal(calls.filter(x=>x==='messages').length,1);}
  const before=calls.length;assert.equal((await handleWhatsAppWebhook(new Request('https://fixture.invalid',{method:'POST',headers:{'content-type':'application/json'},body}),environment,persistence.acceptEvent,persistence.processEvent)).status,403);assert.equal(calls.length,before);

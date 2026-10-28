@@ -1,6 +1,6 @@
 import type { NormalizedWebhookEvent, WhatsAppEventCategory } from "./types.ts";
 
-const MAX_SAFE_TEXT = 2_000;
+const MAX_SAFE_TEXT = 4_096;
 const MAX_ACTION_ID = 200;
 const MAX_CORRELATION = 240;
 
