@@ -66,3 +66,8 @@ test('English and Same-Day contact templates retain canonical parameters, langua
  for(const k of names)if(k!=='requirement_code')v[k]='x'.repeat(110);assert.throws(()=>templatePayload({...r,template_variables:v}),/size|payload/);
  }
 });
+
+test('database claim timeout is a specific preparation pause and never retries or calls Meta',async()=>{
+ const net=network();let claims=0;const fetcher=async(input:any,init:any)=>{if(String(input).endsWith('/console_claim_campaign')){claims++;return new Response('{}',{status:500});}return net.fetcher(input,init);};
+ const result=await handleWorker(req(),{get},fetcher as typeof fetch);assert.equal(result.status,503);const body=await result.json();assert.equal(body.category,'claim_unconfirmed');assert.match(body.error,/preparing the next batch/);assert.equal(claims,1);assert.equal(net.calls.includes('messages'),false);
+});
