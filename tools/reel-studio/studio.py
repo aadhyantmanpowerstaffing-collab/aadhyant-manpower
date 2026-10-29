@@ -33,7 +33,7 @@ def validate(data):
     text = str(data.get('text', '')).strip()
     if not 10 <= len(text) <= 1800:
         raise ValueError('Post text must contain 10–1800 characters.')
-    contact = re.sub(r'\D', '', str(data.get('phone', '9586785800')))
+    contact = re.sub(r'\D', '', str(data.get('phone', '8128254272')))
     if not re.fullmatch(r'[6-9]\d{9}', contact):
         raise ValueError('Enter a valid 10-digit contact number.')
     name = str(data.get('name', 'Hitesh Gadhavi')).strip()

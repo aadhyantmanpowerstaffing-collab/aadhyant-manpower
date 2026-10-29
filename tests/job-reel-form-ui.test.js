@@ -78,7 +78,7 @@ test('bad covers do not queue and changing a cover revokes final review',async()
 test('published form removes the old OCR/translation flow and keeps existing Admin-only video integration',()=>{
   const html=fs.readFileSync('admin/reels.html','utf8'),reels=fs.readFileSync('admin/reels.js','utf8'),builder=fs.readFileSync('scripts/build-production-artifact.js','utf8');
   assert.doesNotMatch(html+code,/Tesseract|\.Translator|Read poster|poster-raw|wasm-unsafe-eval|tessdata|innerHTML|getUserMedia/);
-  assert.ok(html.includes('Other details / conditions'));assert.ok(html.includes('Long announcements are split'));assert.ok(html.includes('9586785800'));
+  assert.ok(html.includes('Other details / conditions'));assert.ok(html.includes('Long announcements are split'));assert.ok(html.includes('8128254272'));
   assert.ok(reels.indexOf('requireAccess()')<reels.indexOf('aadhyantJobReelForm?.init'));assert.match(builder,/admin\/job-reel-form\.js/);assert.doesNotMatch(builder,/admin\/poster-reel\.js/);
   assert.match(code,/admin_queue_poster_reel/);assert.doesNotMatch(code,/client\.from\(|\.schema\(|api\.openai|fetch\(/);
 });
