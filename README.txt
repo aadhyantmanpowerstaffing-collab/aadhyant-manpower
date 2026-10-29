@@ -11,7 +11,7 @@ How to preview:
 Business details included:
 - Aadhyant Manpower & Staffing
 - GSTIN: 24ACNFA4445J1Z9
-- Phone: +91 95867 85800
+- Phone: +91 81282 54272
 - Email: aadhyantmanpowerstaffing@gmail.com
 - Registered office: Kadi, Mahesana, Gujarat 384440
 

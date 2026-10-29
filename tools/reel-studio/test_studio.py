@@ -32,7 +32,7 @@ class StudioTests(unittest.TestCase):
                 asyncio.run(studio.synthesize('भर्ती का अवसर', Path(tmp)/'voice.mp3'))
             run.assert_not_called()
     def data(self):
-        return dict(text='साणंद में सुरक्षा गार्ड की भर्ती। योग्यता दसवीं पास।', phone='9586785800', name='Hitesh Gadhavi', title='भर्ती')
+        return dict(text='साणंद में सुरक्षा गार्ड की भर्ती। योग्यता दसवीं पास।', phone='8128254272', name='Hitesh Gadhavi', title='भर्ती')
     def test_reject_invalid_and_short_data(self):
         for item in [None, {}, {**self.data(),'phone':'123'}, {**self.data(),'text':'x'*1801}]:
             with self.assertRaises(ValueError): studio.validate(item)

@@ -9,6 +9,6 @@
     if(scope==='filtered'&&!locations.length&&!trades.length){status.textContent='Choose a location or trade.';return;}
     if(locations.length>20||trades.length>20||[...locations,...trades].some(v=>v.length>160)){status.textContent='Choose at most 20 names per filter, each under 160 characters.';return;}
     const command='SUBSCRIBE JOB UPDATES '+JSON.stringify({scope,locations,trades});if(command.length>1900){status.textContent='Shorten your selected preferences.';return;}
-    location.href='https://wa.me/919586785800?text='+encodeURIComponent(command);
+    location.href='https://wa.me/918128254272?text='+encodeURIComponent(command);
   });
 })();

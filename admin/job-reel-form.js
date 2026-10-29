@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   const normalize=value=>String(value??'').replace(/\r\n?/g,'\n').trim();
-  const CONTACT='9586785800',PART_LIMIT=1800,MAX_TEXT=12000;
+  const CONTACT='8128254272',PART_LIMIT=1800,MAX_TEXT=12000;
   const ROLE_OPTIONS=[['helper','Helper','हेल्पर'],['operator','Machine Operator','मशीन ऑपरेटर'],['cnc','CNC Operator','सीएनसी ऑपरेटर'],['hpdc','HPDC Operator','एचपीडीसी ऑपरेटर'],['quality','Quality Department','क्वालिटी विभाग'],['ppc','PPC','पीपीसी'],['fitter','ITI Fitter / Tool Room','आईटीआई फिटर / टूल रूम'],['guard','Security Guard','सिक्योरिटी गार्ड'],['supervisor','Security Supervisor','सिक्योरिटी सुपरवाइज़र'],['custom','Other / custom role','']];
   const QUALIFICATIONS=[['','Not specified',''],['5','5th pass','पाँचवीं पास'],['10','10th pass','दसवीं पास'],['12','12th pass','बारहवीं पास'],['iti','ITI','आईटीआई'],['diploma','Diploma','डिप्लोमा'],['degree','B.E. / B.Tech','बीई / बीटेक'],['10-12-iti','10th / 12th / ITI','दसवीं, बारहवीं या आईटीआई'],['any','Any qualification','किसी भी शैक्षणिक योग्यता वाले उम्मीदवार'],['custom','Other / custom qualification','']];
   const PERIODS={month:'प्रति माह',day:'प्रतिदिन',shift:'प्रति शिफ्ट',hour:'प्रति घंटा'};
