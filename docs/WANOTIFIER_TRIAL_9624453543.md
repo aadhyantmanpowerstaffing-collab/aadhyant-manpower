@@ -291,3 +291,73 @@ secret list, and each displayed SHA256 digest matched its exact saved provider
 endpoint. Values were not printed, logged, committed, or placed on a clipboard.
 No provider request, message send, deployment, scheduler or feature activation
 occurred. The private URL runtime variables were cleared after verification.
+
+## Backend installed with sending paused — 31 October 2026
+
+User requested completion of all work currently possible. Installed the two
+reviewed migrations in the verified Aadhyant production project:
+
+- Source 20261031103303_interview_whatsapp_notifications.sql, SHA256
+  a601bd9dd8babb6cb86292ced94a72d5feb2ecc5e7127dc4a38e6452eadad882;
+  remote migration version 20261031121152, interview_whatsapp_notifications.
+- Source 20261031104743_interview_notification_send_boundary.sql, SHA256
+  905291e863f2bc5db9db02e8e6f57eb08424c537617c04d209d27703925d262a;
+  remote migration version 20261031121220, interview_notification_send_boundary.
+
+Deployed wanotifier-outbox-worker v1, ACTIVE, verify_jwt=false with its own worker
+credential check. All five downloaded source files match the reviewed files.
+Unauthenticated deployed GET returns 405; unauthenticated POST returns 401.
+Deployed wanotifier-webhook v12, ACTIVE, verify_jwt=false with raw-body HMAC.
+All seven runtime source files match exactly; the type-only types.ts dependency
+is omitted by the bundler. Unsigned deployed POST returns 401. Existing incoming
+configuration was preserved. WANOTIFIER_INTERESTED_ENABLED was verified absent
+before deployment, so registration sending was not activated.
+
+Post-install read-only checks: interview_notifications_enabled=false,
+sender_ready=false, scheduler_ready=false, zero queued/sending outbox rows and
+zero interview notifications. Both triggers and all four preparation/check/claim/
+boundary functions exist with empty search_path on privileged functions. Anonymous
+and authenticated roles cannot execute either new service RPC; service_role can.
+Advisor categories, finding metadata and counts match the pre-install baseline
+(after ignoring observation timestamps); no new findings were introduced.
+
+An attempted validation query containing console_claim_interview_notifications
+was rejected by automatic approval review because it could update expired leases.
+It was not retried or bypassed. Validation used SELECT-only catalog/config/count
+checks instead; production claim execution was not tested. Local pre-deployment
+SQL/worker/webhook/scheduler tests passed 52/52.
+
+No messages were sent, no candidates contacted, and no scheduler or sending flag
+was activated. Keep the existing Manager and historical data. To pause any future
+rollout, turn off the new worker/Interested flags and keep the canonical sender,
+interview and scheduler readiness flags false; do not delete outbox history or
+undo installed migrations. Current installed state is already paused.
+
+Before activation still verify the provider's promised wamid response contract,
+newer template approval and exact saved job Notification endpoints, sender/template
+freshness, scheduler installation/approved-source settings and separately approved
+controlled real tests. Do not claim automatic interview or job alerts are live.
+
+## Schedule revision correction installed
+
+Self-review found that content-only idempotency could reuse the cancelled first
+notification when a future interview changed A -> B -> A. Added an upgrade-safe
+migration, 20261031122054_interview_notification_schedule_revision.sql (SHA256
+10aaac5e8921f17ae9dace1351720c44a2e674a5ded44712db681d4c0b8db87d), installed
+as remote version 20261031122309. A server-maintained bigint revision increments
+only when status, schedule, mode, location or application changes. Internal-note
+edits and attempts to supply a revision cannot advance it. Each revision has a
+stable separate outbox idempotency key; retries within a revision reuse its row.
+
+The full regression checkpoint passed 843/843 before this final correction. The
+corrected interview runtime suite passed 27/27, including A -> B -> A and cancel/
+restore coverage. The full suite was not repeated after this isolated correction.
+Post-install SELECT-only checks confirm the column, enabled trigger and revised
+key function, all readiness switches false, zero sendable rows and zero interview
+notifications. Advisor category counts remain identical to the pre-install baseline.
+
+Provider API changes promised for 2 November, pending newer job templates, exact
+job Notification endpoints, freshness/scheduler setup and authorized real-message
+validation still gate activation. The provider continues to display Trial ends
+in 1 day; no subscription purchase was made. Incoming remains configured while
+automated outbound sending stays paused. The website Manager was not removed.

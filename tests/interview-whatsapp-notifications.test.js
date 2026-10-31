@@ -21,6 +21,7 @@ async function setup(){const db=new PGlite();await db.exec(`create schema auth;c
  await db.exec(`alter table private.whatsapp_console_config add column sender_ready boolean default false,add column verified_at timestamptz,add column phone_number_id text,add column business_account_id text;`);
  await db.exec(source.slice(source.indexOf('create function public.mark_whatsapp_provider_call_started'),source.indexOf('create function public.mark_whatsapp_outbound_sent')));
  await db.exec(fs.readFileSync('supabase/migrations/20261031104743_interview_notification_send_boundary.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/20261031122054_interview_notification_schedule_revision.sql','utf8'));
  const one=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
  const c=await one('insert into public.candidates default values returning id');const r=await one("insert into public.employer_requirements(requirement_code,job_role) values('AAD-2026-000023','Operator') returning id");
  const a=await one('insert into public.candidate_applications(candidate_id,requirement_id) values($1,$2) returning id',[c.id,r.id]);
@@ -81,4 +82,26 @@ test('application reassignment blocks old notification but still permits closing
  await assert.rejects(()=>boundary(f));
  await f.db.exec("update public.whatsapp_outbound_messages set state='failed',send_phase='terminal',failed_at=clock_timestamp(),lease_owner=null,lease_expires_at=null");
  assert.equal((await f.one('select state from public.whatsapp_outbound_messages')).state,'failed');
+});
+
+test('A to B to A reschedule queues the latest A once, with distinct stable revision identity',async t=>{
+ const f=await setup();t.after(()=>f.db.close());await f.enable();const i=await f.schedule();
+ await f.db.query("update public.interviews set location='Alternate gate' where id=$1",[i.id]);
+ await f.db.query("update public.interviews set location='Factory gate' where id=$1",[i.id]);
+ const rows=(await f.db.query('select * from public.whatsapp_outbound_messages')).rows;
+ assert.equal(rows.length,3);assert.equal(rows.filter(r=>r.state==='queued').length,1);
+ assert.equal(rows.find(r=>r.state==='queued').template_variables.interview_location,'Factory gate');
+ assert.equal(new Set(rows.map(r=>r.idempotency_key)).size,3);
+ const current=await f.one('select private.prepare_interview_whatsapp_notification($1) id',[i.id]);
+ assert.equal(current.id,rows.find(r=>r.state==='queued').id);assert.equal((await f.one('select count(*)::int n from public.whatsapp_outbound_messages')).n,3);
+});
+test('cancel then restore the same future schedule creates a new notification; private-note edits do not',async t=>{
+ const f=await setup();t.after(()=>f.db.close());await f.enable();const i=await f.schedule();
+ await f.db.query("update public.interviews set status='cancelled' where id=$1",[i.id]);
+ await f.db.query("update public.interviews set status='scheduled' where id=$1",[i.id]);
+ assert.equal((await f.one("select count(*)::int n from public.whatsapp_outbound_messages where state='queued'")).n,1);
+ assert.equal((await f.one('select count(*)::int n from public.whatsapp_outbound_messages')).n,2);
+ await f.db.query("update public.interviews set internal_notes='Private revision note',whatsapp_notification_revision=9999 where id=$1",[i.id]);
+ assert.equal((await f.one('select whatsapp_notification_revision from public.interviews where id=$1',[i.id])).whatsapp_notification_revision,2);
+ assert.equal((await f.one('select count(*)::int n from public.whatsapp_outbound_messages')).n,2);
 });
