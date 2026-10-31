@@ -236,3 +236,20 @@ cannot cause a retry or a fabricated Sent/Delivered status in canonical storage.
 Validation for this source increment: full npm test passed 835/835, focused
 WANotifier transport/worker/ingress/dispatch checks passed 37/37, and
 git diff --check passed. All tests were local, without real sends.
+
+## Interview API Notifications saved — 31 October 2026
+
+After explicit user approval, saved exactly two Transactional / Integration / API
+Notifications, using API request to a Webhook URL and the approved templates:
+
+- English: Aadhyant website — Interview schedule (English), ID 6545012,
+  template aadhyant_interview_schedule_en_v1 (en).
+- Hindi: Aadhyant website — Interview schedule (Hindi), ID 6545059,
+  template aadhyant_interview_schedule_hi_v1 (hi).
+
+Both show ON-GOING in the provider list, with Total/Sent/Delivered/Read/Skipped/
+Failed all zero. ON-GOING means the saved API endpoint can be triggered; it does
+not mean website interview automation is active. No endpoint was triggered, no
+private URL/key was printed or committed, no secret was copied to Supabase, and
+no new backend deployment or flag activation occurred. The obsolete unsaved
+English draft tab was closed after verifying the saved list to avoid duplicates.
