@@ -44,8 +44,8 @@ Do not change the website's public contact phone as part of this integration.
    event `message.received`, with the matching signing secret. This sends inbound
    message content/contact numbers to the existing Aadhyant database.
 6. Do not enable WANOTIFIER_OPERATOR_REPLIES_ENABLED until its verified sender IDs
-   match WHATSAPP_PHONE_NUMBER_ID/WHATSAPP_BUSINESS_ACCOUNT_ID and the canonical
-   sender configuration. Keep other Meta senders/auto-reply paths isolated.
+   match the canonical sender configuration. The selected provider uses its own
+   identity settings; old Meta credentials need not be overwritten. Keep other Meta senders/auto-reply paths isolated.
 7. Obtain the user's chosen test recipient, then test one inbound message,
    canonical Inbox persistence, STOP suppression, one outbox reply and webhook
    retry without duplicate rows. Do not run a real campaign as a test.
@@ -85,17 +85,32 @@ All provider tests use injected synthetic transports: no real WhatsApp sends.
 - Meta UI verified sender +919624453543, Phone Number ID 1415347881659158,
   WABA 1386833723249335.
 - Production wanotifier-webhook deployed as version 3 with HMAC authentication.
-- Six new WANOTIFIER_* settings saved in Supabase. No existing settings replaced.
-- WANotifier webhook ID 28 created with the matching signing secret and
-  message.received event; deliberately paused pending canonical sender transition.
-- Supabase canonical sender still points to old WABA 2151053372139655.
-- Queued/sending outbound count was zero during inspection.
-- Automatic approval review rejected replacing WHATSAPP_AUTOMATIC_ALERTS_ENABLED
-  with false at Supabase's overwrite confirmation. Its existing true value was
-  preserved. User confirmation for that exact replacement is the current blocker.
-- Before enabling webhook 28, pause the old automatic worker with that approved
-  flag change, verify no newly queued/sending rows, bind the verified new IDs,
-  and retain outbound readiness false until sending/receipts are separately proven.
+- Six WANOTIFIER_* settings saved in Supabase; operator replies remain disabled.
+- User explicitly approved disabling old automatic alerts. Supabase secret
+  WHATSAPP_AUTOMATIC_ALERTS_ENABLED=false was verified by its SHA256 digest.
+- A guarded transaction confirmed no queued/sending outbound messages and bound
+  the canonical sender to the verified new IDs, retaining sender_ready=false.
+- WANotifier webhook ID 28 is enabled for message.received with the matching
+  signing secret. Enabled state persisted after reload and reauthentication.
+- Unsigned endpoint POST was rejected with HTTP 401.
+- User sent a real test message. WANotifier delivery log showed message.received,
+  SUCCESS, HTTP 200, one attempt at 2026-10-31 14:35:01 IST. Canonical persistence
+  confirmed one text message at 09:05:10 UTC, normalized, with contact linkage
+  and last_inbound_at recorded. Admin UI rendering and outbound are separate checks.
+- Outbound queue remains empty. No real message was sent by this integration.
+- Reply transport remains blocked on a genuine provider message receipt contract,
+  a securely configured API key, and an authorized test recipient. The official
+  Messaging API example still returns error:false without a WhatsApp message ID.
 - Incoming HMAC authentication and sender-ID matching do not depend on outbound
-  ready/verified_at TTL: incoming messages must remain receivable while sends
-  are paused or their approval expires.
+  ready/verified_at TTL: incoming messages remain receivable while sends are
+  paused or their approval expires.
+- Source integration is on draft PR #28; direct webhook deployment does not imply
+  the PR has been merged or the operator reply function deployed.
+
+## Reply routing correction
+
+WANotifier operator replies validate the dedicated WANOTIFIER phone/WABA IDs
+against the canonical sender, independently of legacy Meta settings. Six
+integrated regression cases verify routing, missing credentials, sender mismatch,
+outbound pause, and acknowledgement-without-receipt reconciliation. This source
+change does not enable live sending or overwrite legacy Meta secrets.

@@ -25,14 +25,16 @@ export async function handleOperatorReply(req:Request,get:(name:string)=>string,
   if(status?.id!==body.message_id||!['queued','sending','sent','delivered','read','failed'].includes(status?.state))return reply(403,{error:'Reply unavailable'});
   if(['sent','delivered','read','failed'].includes(status?.state))return reply(200,status);
   const useWANotifier=get('WANOTIFIER_OPERATOR_REPLIES_ENABLED')==='true';
-  if(useWANotifier&&(get('WANOTIFIER_SENDER_NUMBER')!=='+919624453543'||!get('WANOTIFIER_API_KEY')||get('WANOTIFIER_PHONE_NUMBER_ID')!==get('WHATSAPP_PHONE_NUMBER_ID')||get('WANOTIFIER_BUSINESS_ACCOUNT_ID')!==get('WHATSAPP_BUSINESS_ACCOUNT_ID')))return reply(503,{error:'Verify WANotifier sender binding before sending'});
+  const phoneId=get(useWANotifier?'WANOTIFIER_PHONE_NUMBER_ID':'WHATSAPP_PHONE_NUMBER_ID');
+  const accountId=get(useWANotifier?'WANOTIFIER_BUSINESS_ACCOUNT_ID':'WHATSAPP_BUSINESS_ACCOUNT_ID');
+  if(useWANotifier&&(get('WANOTIFIER_SENDER_NUMBER')!=='+919624453543'||!get('WANOTIFIER_API_KEY')||!/^\d{8,40}$/.test(phoneId)||!/^\d{8,40}$/.test(accountId)))return reply(503,{error:'Verify WANotifier sender binding before sending'});
   const key=runtimeServerKey(get),token=useWANotifier?get('WANOTIFIER_API_KEY'):get('WHATSAPP_ACCESS_TOKEN');
   const rpc=async(name:string,args:any)=>{
    if(name==='admin_console_operator_reply_boundary')return userRpc(name,args);
    const r=await fetcher(base+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify(args),redirect:'error',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('Reply operation not confirmed');return r.json();
   };
   const config=await rpc('console_sender_configuration',{});
-  if(!config?.ready||!token||config.phone_id!==get('WHATSAPP_PHONE_NUMBER_ID')||config.account_id!==get('WHATSAPP_BUSINESS_ACCOUNT_ID'))return reply(503,{error:'Verify the configured sender before sending'});
+  if(!config?.ready||!token||config.phone_id!==phoneId||config.account_id!==accountId)return reply(503,{error:'Verify the configured sender before sending'});
   const transport=useWANotifier?wanotifierSessionTransport(token,config.phone_id,fetcher):fetcher;
   const providerFetch:typeof fetch=async(input,init)=>{const r=await transport(input,init);if(r.status>=500)throw Error('Ambiguous provider outcome');return r;};
   await sendSessionOutbox(body.message_id,rpc,config,token,providerFetch,'console_claim_operator_reply','p_message_id','admin_console_operator_reply_boundary',operatorReplyPayload);
