@@ -139,3 +139,21 @@ change does not enable live sending or overwrite legacy Meta secrets.
   receipt reconciliation is implemented. Incoming remains active; old automatic
   alerts remain disabled. Live sending works, but automatic site delivery tracking
   is not complete. No campaigns or other recipients were contacted.
+
+## Notification contract preparation
+
+- Support agent Niki acknowledged the tracking question and will check with the
+  team. No supported receipt/lookup/status contract has been supplied yet.
+- Current WANotifier template inventory: 20 templates, 13 Approved and 7 Pending.
+  Do not recreate existing approved templates. Website API Notifications list was
+  empty. An unsaved API-only draft selects aadhyant_vacancy_alert_v1 (en).
+- Provider-generated JSON for that draft has data.body_variables in vacancy/role
+  order and recipients as an array. Optional recipient fields include names,
+  attributes, lists, tags and replace. The pure payload helper sends only one
+  whatsapp_number and the two template variables; it does not overwrite contact
+  metadata or infer consent. This minimal request has not been live-tested.
+- No Notification was saved or triggered. No endpoint URL is stored in source.
+  Pure mapping tests pass, but campaign worker integration remains disabled.
+- Interested processing requires a matching original provider message ID. Do not
+  fabricate an ID or bypass that canonical vacancy/contact correlation gate.
+- The portal currently displays Trial ends in 1 day; no purchase was made.
