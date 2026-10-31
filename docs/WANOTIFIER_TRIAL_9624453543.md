@@ -281,3 +281,13 @@ WANOTIFIER_INTERVIEW_HI_URL were prepared with empty values, without saving.
 Private endpoint transfer to Supabase awaits explicit credential-transmission
 approval. Sender/template freshness and final provider-contract validation remain
 rollout requirements; no readiness timestamps were refreshed without proof.
+
+## Interview endpoints saved in Supabase — 31 October 2026
+
+Following explicit user approval to transmit the two saved private Notification
+URLs to Aadhyant Supabase, saved WANOTIFIER_INTERVIEW_EN_URL and
+WANOTIFIER_INTERVIEW_HI_URL in project wsuctjhbqiedttfnwjvf. Both appeared in the
+secret list, and each displayed SHA256 digest matched its exact saved provider
+endpoint. Values were not printed, logged, committed, or placed on a clipboard.
+No provider request, message send, deployment, scheduler or feature activation
+occurred. The private URL runtime variables were cleared after verification.
