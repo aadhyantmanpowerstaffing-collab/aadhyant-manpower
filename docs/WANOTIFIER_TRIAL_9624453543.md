@@ -157,3 +157,26 @@ change does not enable live sending or overwrite legacy Meta secrets.
 - Interested processing requires a matching original provider message ID. Do not
   fabricate an ID or bypass that canonical vacancy/contact correlation gate.
 - The portal currently displays Trial ends in 1 day; no purchase was made.
+
+## Interview and vacancy automation preparation
+
+User requested interview-scheduled notifications and newly published vacancy alerts.
+Existing vacancy publication automation already reuses canonical campaigns and
+outbox, with recorded marketing consent and late suppression checks. Its provider
+dispatch still targets legacy Meta and must not be enabled for this WANotifier
+account until the notification receipt/status contract is implemented.
+
+The new interview migration is source-only, not installed in production. It adds
+a disabled-by-default notification flag and queues a canonical single-attempt
+outbox row for a future scheduled interview only after fresh template verification,
+active application/candidate linkage, unique resolved contact and transactional
+permission. STOP prevents queueing. Internal notes are never included. Updates
+cancel only pending/pre-provider attempts; an attempt already started is left for
+reconciliation. Schedule changes have a distinct idempotency key. Private helpers
+are revoked from browser and service roles. There is no dispatcher in this migration.
+
+The English/Hindi interview payload mapper preserves the seven approved template
+variables in provider order. This is pure mapping, not a network send. To go live,
+finish dedicated claiming/final freshness checks, configure API-only Notifications,
+obtain provider receipt/status support and validate a separately approved real test.
+Do not enable the queue flag or treat registration alone as interview scheduling.
