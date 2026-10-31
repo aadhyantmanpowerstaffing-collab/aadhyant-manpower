@@ -7,7 +7,7 @@
   const client = window.aadhyantSupabase?.client;
   // Fragment capabilities never go to the static host, referrers or analytics.
   const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
-  let busy = false;
+  let busy = false, ready = false, leaving = false;
   const message = (text, error = false) => { status.textContent = text; status.className = error ? 'status error' : 'status'; };
   const call = async (name, args) => {
     const {data, error} = await client.rpc(name, args);
@@ -28,6 +28,7 @@
     }
     try {
       const context = await call('get_whatsapp_registration_form', {p_token:token});
+      if (leaving) return;
       if (!context || !['ready','completed'].includes(context.status)) throw new Error('unavailable');
       document.querySelector('[data-job-code]').textContent = context.requirement_code;
       document.querySelector('[data-job-role]').textContent = context.job_role;
@@ -37,14 +38,15 @@
         message('This registration has already been submitted. You do not need to fill it again.'); return;
       }
       options.setupCandidateForm(form); options.setupStateDistrict(form);
-      form.hidden = false; message('');
+      ready = true; form.hidden = false; message('');
     } catch (_) {
+      if (leaving) return;
       message('This private link is unavailable, expired or needs staff review. Return to WhatsApp and contact Aadhyant. No details have been submitted.', true);
     }
   }
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (busy || !form.reportValidity()) return;
+    if (!ready || leaving || busy || !form.reportValidity()) return;
     const d = new FormData(form), get = name => String(d.get(name) || '').trim();
     if (!['yes','no'].includes(get('job_alert_consent')) || !['yes','no'].includes(get('same_day_alert_consent'))) { message('Choose Yes or No for both WhatsApp alert types.', true); return; }
     const state = get('state'), district = get('district');
@@ -66,13 +68,32 @@
     message('Submitting your registration…');
     try {
       const result = await call('submit_whatsapp_registration_form',{p_token:token,p_profile,p_optional});
+      if (leaving) return;
       if (result?.status !== 'registered' || typeof result.job_alerts_selected !== 'boolean') throw new Error('receipt');
+      ready = false;
       submitted(result.job_alerts_selected, result.same_day_alerts_selected);
     } catch (_) {
+      if (leaving) return;
       // Keep entered details only in this form; never store them in browser storage or logs.
       message('Submission could not be confirmed. Your details remain in this form. Try Submit again; the same private link cannot create a duplicate application. If it continues, contact Aadhyant for review.', true);
     } finally { busy = false; button.disabled = false; }
   });
-  addEventListener('pagehide', () => form.reset());
+  // A second WhatsApp link may reuse this tab with a different fragment without
+  // loading the document again. Never keep the old job/token/form in that case.
+  addEventListener('hashchange', () => {
+    const nextToken = new URLSearchParams(location.hash.slice(1)).get('token') || '';
+    if (nextToken === token || leaving) return;
+    leaving = true; ready = false;
+    form.reset(); form.hidden = true; receipt.hidden = true;
+    document.querySelector('[data-job-code]').textContent = 'Checking your private link…';
+    document.querySelector('[data-job-role]').textContent = '';
+    document.querySelector('[data-job-location]').textContent = '';
+    document.querySelector('[data-bound-phone]').value = '';
+    message('Opening the selected registration link…');
+    location.reload();
+  });
+  addEventListener('pagehide', () => { ready = false; form.reset(); });
+  // Back/forward cache can restore a cleared form without running start().
+  addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
   start();
 }());
