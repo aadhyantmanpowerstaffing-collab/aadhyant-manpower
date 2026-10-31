@@ -59,7 +59,7 @@ test('runtime-injected shared footer uses the published email as its visible mai
   const footerTemplate = navigation.match(/footer\.innerHTML = '([\s\S]*?)';/)[1];
   assert.equal((footerTemplate.match(/href="mailto:aadhyantmanpowerstaffing@gmail\.com">aadhyantmanpowerstaffing@gmail\.com<\/a>/g) || []).length, 1);
   assert.doesNotMatch(footerTemplate, />Email Aadhyant<\/a>/);
-  assert.match(footerTemplate, /href="tel:\+918128254272">\+91 81282 54272<\/a>/);
+  assert.match(footerTemplate, /href="tel:\+919586785800">9586785800<\/a>/);
 });
 
 test('homepage preserves one primary candidate CTA and distinct employer and partner routes', () => {
@@ -223,7 +223,7 @@ test('core public pages have unique metadata and canonical URLs', () => {
 test('organization structured data uses only published business information', () => {
   assert.match(pages.home, /"@type":"Organization"/);
   assert.match(pages.home, /aadhyantmanpowerstaffing@gmail\.com/);
-  assert.match(pages.home, /\+91-81282-54272/);
+  assert.match(pages.home, /\+91-9586785800/);
   assert.doesNotMatch(pages.home, /"@type":"JobPosting"/);
 });
 
