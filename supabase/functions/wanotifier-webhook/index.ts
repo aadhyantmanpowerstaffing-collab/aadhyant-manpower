@@ -2,14 +2,17 @@ import {calculateMetaSignature, constantTimeEqual, sha256Hex} from '../_shared/w
 import {parseWhatsAppWebhook, summarizeEvent} from '../_shared/whatsapp/parser.ts';
 import {normalizeIndianWhatsAppPhone} from '../_shared/whatsapp/phone.ts';
 import {runtimeServerKey, serverDatabaseHeaders} from '../_shared/whatsapp/server-headers.ts';
+import {sendSessionOutbox,registrationPayload} from '../_shared/whatsapp/registration-reply.ts';
+import {wanotifierSessionTransport} from '../_shared/whatsapp/wanotifier.ts';
 
 type Get = (name:string)=>string;
 type Rpc = (name:string, args:Record<string,unknown>)=>Promise<any>;
 const sender = '+919624453543';
 const reply=(status:number)=>new Response(status===200?'EVENT_RECEIVED':'Webhook not accepted',{status,headers:{'content-type':'text/plain','cache-control':'no-store'}});
 
-// Ingress only: no Graph calls, sending, subscription opt-ins, or chatbot execution.
-export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc):Promise<Response>{
+// Ingress is always available independently of outbound readiness. Interested
+// automation is separately gated and uses the existing canonical correlation.
+export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc,fetcher:typeof fetch=fetch):Promise<Response>{
  if(req.method!=='POST')return reply(405);
  if(get('WANOTIFIER_INGRESS_ENABLED')!=='true'||get('WANOTIFIER_SENDER_NUMBER')!==sender||get('WANOTIFIER_WEBHOOK_SECRET').length<32||!/^\d{8,40}$/.test(get('WANOTIFIER_PHONE_NUMBER_ID'))||!/^\d{8,40}$/.test(get('WANOTIFIER_BUSINESS_ACCOUNT_ID')))return reply(503);
  if(req.headers.get('content-type')?.split(';')[0].trim()!=='application/json')return reply(415);
@@ -54,6 +57,19 @@ export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc):Promi
   if(typeof inboundId!=='string'||!inboundId)return reply(500);
   const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((event.actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE'].includes((event.safeText||'').trim().toUpperCase()));
   if(stop&&await rpc('set_whatsapp_contact_suppression',{p_contact_id:contactId,p_suppressed:true,p_source:'whatsapp_inbound',p_reason_category:'user_stop'})!==true)return reply(500);
+  if(!stop&&get('WANOTIFIER_INTERESTED_ENABLED')==='true'&&event.actionId?.trim().toUpperCase()==='INTERESTED'
+   &&typeof event.correlationKey==='string'&&/^wamid\.[A-Za-z0-9._=+\/-]{1,230}$/.test(event.correlationKey)){
+   // A generic Interested without its exact original message is never guessed.
+   const interested=await rpc('console_process_interested',{p_inbound_message_id:inboundId});
+   if(interested?.status==='registration_required'&&config.ready===true&&get('WANOTIFIER_API_KEY')){
+    await sendSessionOutbox(inboundId,rpc,config,get('WANOTIFIER_API_KEY'),wanotifierSessionTransport(get('WANOTIFIER_API_KEY'),config.phone_id,fetcher),
+     'console_claim_registration_reply','p_inbound_message_id','console_registration_boundary',row=>{
+      // Only the direct, phone/job-bound private form is supported in this route.
+      if(!row.web_token||row.flow_id||row.flow_token)throw Error('Private web registration required');
+      return registrationPayload(row);
+     });
+   }
+  }
   return reply(200);
  }catch{return reply(500);}
 }

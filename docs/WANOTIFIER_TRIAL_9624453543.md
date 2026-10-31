@@ -195,3 +195,44 @@ and records a genuine wamid. Missing IDs, numeric UI IDs, network uncertainty an
 unconfirmed receipt persistence are never treated as delivery or retried. No
 transport, HTTP entrypoint, scheduler, production migration or Notification endpoint
 has been activated. Wiring the verified provider contract remains required.
+
+## WANotifier-primary direction and provider response — 31 October 2026
+
+The user now wants WANotifier to own Inbox, replies, templates and delivery
+reports. The website retains recruitment data and event triggers. Do not remove
+the site's current Manager until the replacement flows have been verified.
+Replicating delivery reports in the website is no longer a rollout requirement.
+Exact original-message correlation for Interested remains required; removing the
+old Manager does not make guessing a job from the most recent message acceptable.
+
+Support agent Ram confirmed an existing provider-specific message ID and an
+Advanced-plan `/conversations` lookup capability, but has not supplied its exact
+request/response contract. He offered to add wamid and confirmed implementation
+can be done on Monday, 2 November 2026. No call was booked and no timing guarantee
+was inferred. The public Postman collection currently exposes Contacts requests.
+
+Prepared source now includes a separately gated `wanotifier-outbox-worker` HTTP
+entrypoint for interview and registered alerts, using the canonical claims and
+final boundaries. It accepts only the existing worker secret, pinned account and
+number, fixed notification kinds and validated private Notification endpoints.
+It never falls back to Meta. The approved English v4 job-alert Notification form
+was verified to use ten body variables and one button variable; the interview
+form uses seven body variables. Endpoints were not saved or triggered.
+
+Interested ingress is separately gated by WANOTIFIER_INTERESTED_ENABLED and uses
+the existing exact-correlation RPC. Nonregistered candidates can receive only
+the bound private web form, through the canonical reply lease. Missing context
+is never inferred, and paused outbound readiness never blocks incoming storage.
+
+This increment remains source-only. No production migrations, worker deployment,
+Notification save, feature activation, scheduler or real messages were performed.
+Current publication selection targets newer v5/hi_v2 templates that are still
+pending in WANotifier; the v4 mapping is not an automatic template downgrade.
+Sender/template freshness, canonical publication selection and scheduler setup
+must be reviewed with the final provider routing before activation. A success
+acknowledgement without a genuine wamid remains reconciliation-required and
+cannot cause a retry or a fabricated Sent/Delivered status in canonical storage.
+
+Validation for this source increment: full npm test passed 835/835, focused
+WANotifier transport/worker/ingress/dispatch checks passed 37/37, and
+git diff --check passed. All tests were local, without real sends.
