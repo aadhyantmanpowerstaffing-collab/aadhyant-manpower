@@ -114,3 +114,28 @@ against the canonical sender, independently of legacy Meta settings. Six
 integrated regression cases verify routing, missing credentials, sender mismatch,
 outbound pause, and acknowledgement-without-receipt reconciliation. This source
 change does not enable live sending or overwrite legacy Meta secrets.
+
+## Live reply verification (2026-10-31)
+
+- Existing WANotifier API key is stored only as a Supabase secret. The initial
+  clipboard transfer contained stale setup text; that incorrect API key value was
+  replaced with the actual key. No key is recorded in source or this document.
+- The exposed old webhook signing secret was replaced by the user in both
+  services. Matching SHA256 was verified without displaying the new secret.
+  Incoming was re-enabled; unsigned POST returned 401, signed invalid event 400.
+  A fresh real inbound persisted at 09:34:48 UTC after rotation.
+- User explicitly approved deploying operator replies and one text test from
+  9624453543 to business contact 9586785800. Function version 11 is ACTIVE with
+  verify_jwt=true; shared server headers/outbox source is unchanged.
+- WANOTIFIER_OPERATOR_REPLIES_ENABLED=true. Canonical sender readiness was enabled
+  transactionally with zero pending queue, solely for the approved single test.
+- The real Admin UI prepared/sent one reply through canonical authorization and
+  outbox boundaries. Outbox 9d1d37b3-0053-4d36-9648-d041846874bb has attempt_count=1,
+  failed/reconciliation_required with no provider message ID. No resend occurred.
+- WANotifier Inbox showed that exact API-authored text as Delivered, message UI
+  identifier 173912015 at 15:14 IST. This identifier is not a WhatsApp wamid and
+  must not be fabricated into the canonical provider receipt.
+- Canonical sender_ready is false again to prevent further sends until supported
+  receipt reconciliation is implemented. Incoming remains active; old automatic
+  alerts remain disabled. Live sending works, but automatic site delivery tracking
+  is not complete. No campaigns or other recipients were contacted.
