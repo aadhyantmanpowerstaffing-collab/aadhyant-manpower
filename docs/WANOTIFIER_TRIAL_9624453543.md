@@ -177,6 +177,21 @@ are revoked from browser and service roles. There is no dispatcher in this migra
 
 The English/Hindi interview payload mapper preserves the seven approved template
 variables in provider order. This is pure mapping, not a network send. To go live,
-finish dedicated claiming/final freshness checks, configure API-only Notifications,
+configure API-only Notifications,
 obtain provider receipt/status support and validate a separately approved real test.
 Do not enable the queue flag or treat registration alone as interview scheduling.
+
+Dedicated interview claiming and final freshness checks are now prepared in a
+second, unapplied migration. Claims reuse the canonical outbox and require fresh
+sender readiness. The final boundary locks the schedule and related records,
+checks current consent/contact linkage, candidate/application state, exact current
+template variables, verified sender identity and the unexpired single-attempt
+lease. Expired pre-provider claims terminate; expired provider attempts require
+reconciliation and cannot be reclaimed. All exposed RPCs are service-role-only.
+
+The shared interview dispatcher is also source-only. It validates the mapped
+payload, crosses that final boundary, invokes a supplied provider transport once,
+and records a genuine wamid. Missing IDs, numeric UI IDs, network uncertainty and
+unconfirmed receipt persistence are never treated as delivery or retried. No
+transport, HTTP entrypoint, scheduler, production migration or Notification endpoint
+has been activated. Wiring the verified provider contract remains required.

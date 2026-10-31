@@ -18,6 +18,9 @@ async function setup(){const db=new PGlite();await db.exec(`create schema auth;c
  await db.exec(source.slice(source.indexOf('create function private.whatsapp_contact_allows_purpose'),source.indexOf('create function public.accept_whatsapp_webhook_event')));
  await db.exec(corrected.slice(corrected.indexOf('create or replace function public.enqueue_whatsapp_outbound_message'),corrected.indexOf('create or replace function public.claim_whatsapp_outbound_batch')));
  await db.exec(migration);
+ await db.exec(`alter table private.whatsapp_console_config add column sender_ready boolean default false,add column verified_at timestamptz,add column phone_number_id text,add column business_account_id text;`);
+ await db.exec(source.slice(source.indexOf('create function public.mark_whatsapp_provider_call_started'),source.indexOf('create function public.mark_whatsapp_outbound_sent')));
+ await db.exec(fs.readFileSync('supabase/migrations/20261031104743_interview_notification_send_boundary.sql','utf8'));
  const one=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
  const c=await one('insert into public.candidates default values returning id');const r=await one("insert into public.employer_requirements(requirement_code,job_role) values('AAD-2026-000023','Operator') returning id");
  const a=await one('insert into public.candidate_applications(candidate_id,requirement_id) values($1,$2) returning id',[c.id,r.id]);
@@ -30,3 +33,52 @@ test('reschedule replaces only unattempted notification and cancellation prevent
 for(const reason of ['stop','transactional-unknown','ambiguous','expired-approval','inactive-candidate','closed-application'])test('interview notification fails closed: '+reason,async t=>{const f=await setup();t.after(()=>f.db.close());await f.enable();if(reason==='stop')await f.db.exec("update public.whatsapp_contacts set marketing_consent_status='opted_out',opted_out_at=clock_timestamp(),opt_out_source='synthetic_test'");if(reason==='transactional-unknown')await f.db.exec("update public.whatsapp_contacts set transactional_contact_status='unknown'");if(reason==='ambiguous')await f.db.exec("update public.whatsapp_contacts set candidate_id=null,resolution_status='ambiguous'");if(reason==='inactive-candidate')await f.db.exec("update public.candidates set status='inactive'");if(reason==='closed-application')await f.db.exec("update public.candidate_applications set application_status='withdrawn'");if(reason==='expired-approval')await f.db.exec("update private.whatsapp_console_config set interview_template_verified_at=clock_timestamp()-interval '25 hours'");await f.schedule();assert.equal((await f.one('select count(*)::int n from public.whatsapp_outbound_messages')).n,0);});
 
 test('cancellation never rewrites a provider attempt already started; private helpers are not client-callable',async t=>{const f=await setup();t.after(()=>f.db.close());await f.enable();const i=await f.schedule();await f.db.exec("update public.whatsapp_outbound_messages set state='sending',send_phase='provider_call_started',attempt_count=1,lease_owner='synthetic',lease_expires_at=clock_timestamp()+interval '1 minute'");await f.db.query("update public.interviews set status='cancelled' where id=$1",[i.id]);const o=await f.one('select state,send_phase from public.whatsapp_outbound_messages');assert.equal(o.state,'sending');assert.equal(o.send_phase,'provider_call_started');assert.equal((await f.one("select has_function_privilege('anon','private.prepare_interview_whatsapp_notification(uuid)','execute') allowed")).allowed,false);});
+
+async function claimFixture(t){const f=await setup();t.after(()=>f.db.close());await f.enable();await f.schedule();
+ await f.db.exec("update private.whatsapp_console_config set sender_ready=true,verified_at=clock_timestamp(),phone_number_id='1415347881659158',business_account_id='1386833723249335'");
+ const rows=(await f.db.query("select * from public.console_claim_interview_notifications('test-worker')")).rows;
+ assert.equal(rows.length,1);return {...f,o:rows[0]};}
+const boundary=f=>f.one("select public.console_interview_provider_boundary($1,'test-worker','1415347881659158','1386833723249335') ok",[f.o.message_id]);
+test('interview claim is isolated, at most once, and requires fresh sender readiness',async t=>{
+ const f=await setup();t.after(()=>f.db.close());await f.enable();await f.schedule();
+ assert.equal((await f.db.query("select * from public.console_claim_interview_notifications('test-worker')")).rows.length,0);
+ await f.db.exec("update private.whatsapp_console_config set sender_ready=true,verified_at=clock_timestamp()");
+ assert.equal((await f.db.query("select * from public.console_claim_interview_notifications('test-worker')")).rows.length,1);
+ assert.equal((await f.db.query("select * from public.console_claim_interview_notifications('other-worker')")).rows.length,0);
+ for(const role of ['anon','authenticated'])assert.equal((await f.one("select has_function_privilege($1,'public.console_claim_interview_notifications(text)','execute') ok",[role])).ok,false);
+});
+test('fresh interview crosses provider boundary once with matching lease and sender',async t=>{const f=await claimFixture(t);
+ assert.equal((await boundary(f)).ok,true);await assert.rejects(()=>boundary(f));
+ assert.equal((await f.one('select send_phase from public.whatsapp_outbound_messages')).send_phase,'provider_call_started');
+});
+for(const change of ['stop-after-claim','inactive-after-claim','application-closed','job-changed','contact-reassigned','template-expired','sender-paused','wrong-sender','wrong-worker','expired-lease'])
+test('final interview boundary blocks '+change,async t=>{const f=await claimFixture(t);
+ if(change==='stop-after-claim')await f.db.exec("update public.whatsapp_contacts set transactional_contact_status='suppressed'");
+ if(change==='inactive-after-claim')await f.db.exec("update public.candidates set status='inactive'");
+ if(change==='application-closed')await f.db.exec("update public.candidate_applications set application_status='withdrawn'");
+ if(change==='job-changed')await f.db.exec("update public.employer_requirements set job_role='Different role'");
+ if(change==='contact-reassigned')await f.db.exec("update public.whatsapp_contacts set candidate_id=null,resolution_status='unresolved'");
+ if(change==='template-expired')await f.db.exec("update private.whatsapp_console_config set interview_template_verified_at=clock_timestamp()-interval '25 hours'");
+ if(change==='sender-paused')await f.db.exec("update private.whatsapp_console_config set sender_ready=false");
+ if(change==='expired-lease')await f.db.exec("update public.whatsapp_outbound_messages set lease_expires_at=clock_timestamp()-interval '1 second'");
+ const invoke=change==='wrong-sender'?()=>f.one("select public.console_interview_provider_boundary($1,'test-worker','9999999999999999','1386833723249335')",[f.o.message_id]):change==='wrong-worker'?()=>f.one("select public.console_interview_provider_boundary($1,'another-worker','1415347881659158','1386833723249335')",[f.o.message_id]):()=>boundary(f);
+ await assert.rejects(invoke);assert.equal((await f.one('select send_phase from public.whatsapp_outbound_messages')).send_phase,'claimed');
+});
+for(const phase of ['claimed','provider_call_started'])test('expired interview '+phase+' is never reclaimed or resent',async t=>{
+ const f=await claimFixture(t);if(phase==='provider_call_started')await boundary(f);
+ await f.db.exec("update public.whatsapp_outbound_messages set lease_expires_at=clock_timestamp()-interval '1 second'");
+ assert.equal((await f.db.query("select * from public.console_claim_interview_notifications('new-worker')")).rows.length,0);
+ const o=await f.one('select state,send_phase,attempt_count from public.whatsapp_outbound_messages');
+ assert.equal(o.state,'failed');assert.equal(o.send_phase,phase==='claimed'?'terminal':'reconciliation_required');assert.equal(o.attempt_count,1);
+});
+test('cancelling a claimed interview blocks the final provider boundary',async t=>{const f=await claimFixture(t);
+ await f.db.exec("update public.interviews set status='cancelled'");await assert.rejects(()=>boundary(f));
+ assert.equal((await f.one('select send_phase from public.whatsapp_outbound_messages')).send_phase,'terminal');
+});
+test('application reassignment blocks old notification but still permits closing its lease',async t=>{const f=await claimFixture(t);
+ const other=await f.one('insert into public.candidates default values returning id');
+ await f.db.query('update public.candidate_applications set candidate_id=$1',[other.id]);
+ await assert.rejects(()=>boundary(f));
+ await f.db.exec("update public.whatsapp_outbound_messages set state='failed',send_phase='terminal',failed_at=clock_timestamp(),lease_owner=null,lease_expires_at=null");
+ assert.equal((await f.one('select state from public.whatsapp_outbound_messages')).state,'failed');
+});
