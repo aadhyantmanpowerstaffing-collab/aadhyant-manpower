@@ -1,5 +1,5 @@
 import {dispatchWANotifierNotifications} from '../_shared/whatsapp/interview-dispatch.ts';
-import {wanotifierNotificationTransport} from '../_shared/whatsapp/wanotifier-notification.ts';
+import {wanotifierNotificationTransport,registeredNotificationLanguages} from '../_shared/whatsapp/wanotifier-notification.ts';
 import {constantTimeEqual} from '../_shared/whatsapp/signature.ts';
 import {runtimeServerKey,serverDatabaseHeaders} from '../_shared/whatsapp/server-headers.ts';
 
@@ -22,7 +22,10 @@ export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof 
  try{
   const interviewEn=kind==='interviews'?wanotifierNotificationTransport(get('WANOTIFIER_INTERVIEW_EN_URL'),fetcher):null;
   const interviewHi=kind==='interviews'?wanotifierNotificationTransport(get('WANOTIFIER_INTERVIEW_HI_URL'),fetcher):null;
-  const registered=kind==='registered_alerts'?wanotifierNotificationTransport(get('WANOTIFIER_REGISTERED_JOB_EN_URL'),fetcher):null;
+  const registeredTemplate=get('WANOTIFIER_REGISTERED_TEMPLATE_NAME');
+  if(kind==='registered_alerts'&&!Object.hasOwn(registeredNotificationLanguages,registeredTemplate))throw Error('Registered template route required');
+  const registeredLanguage=registeredNotificationLanguages[registeredTemplate];
+  const registered=kind==='registered_alerts'?wanotifierNotificationTransport(get(registeredLanguage==='hi'?'WANOTIFIER_REGISTERED_JOB_HI_URL':'WANOTIFIER_REGISTERED_JOB_EN_URL'),fetcher):null;
   const rpc=async(name:string,args:Record<string,unknown>)=>{
    const r=await fetcher(get('SUPABASE_URL')+'/rest/v1/rpc/'+name,{method:'POST',headers:{...serverDatabaseHeaders(runtimeServerKey(get)),'content-type':'application/json'},body:JSON.stringify(args),redirect:'error',signal:AbortSignal.timeout(10000)});
    if(!r.ok)throw Error('Canonical operation unconfirmed');return r.json();
@@ -30,7 +33,9 @@ export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof 
   const config=await rpc('console_sender_configuration',{});
   if(config?.ready!==true||config.phone_id!==get('WANOTIFIER_PHONE_NUMBER_ID')||config.account_id!==get('WANOTIFIER_BUSINESS_ACCOUNT_ID'))return reply(503,{error:'Verified sender required'});
   claimStarted=true;
-  const result=await dispatchWANotifierNotifications(kind,'wanotifier:'+crypto.randomUUID(),config.phone_id,config.account_id,{rpc,send:async(language,payload)=>{
+  const result=await dispatchWANotifierNotifications(kind,'wanotifier:'+crypto.randomUUID(),config.phone_id,config.account_id,{rpc,validateRoute:row=>{
+   if(kind==='registered_alerts'&&((row as any).template_name!==registeredTemplate||row.template_language!==registeredLanguage))throw Error('Registered template route mismatch');
+  },send:async(language,payload)=>{
    const transport=kind==='registered_alerts'?registered:language==='en'?interviewEn:language==='hi'?interviewHi:null;
    if(!transport)throw Error('Unsupported notification route');return transport(payload);
   }});

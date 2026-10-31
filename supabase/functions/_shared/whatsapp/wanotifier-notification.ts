@@ -17,11 +17,15 @@ export function wanotifierInterviewNotificationPayload(input:{destination:string
  return {data:{body_variables:body},recipients:[{whatsapp_number:input.destination}]};
 }
 
-// Verified against the provider-generated approved v4 English Notification form.
+// Ten body variables plus one job URL suffix. v5/hi_v2 retain this schema,
+// but their own approved and saved Notification endpoints are required.
+export const registeredNotificationLanguages:Record<string,'en'|'hi'>={
+ aadhyant_registered_job_alert_v4:'en',aadhyant_registered_job_alert_v5:'en',aadhyant_registered_job_alert_hi_v2:'hi'
+};
 export function wanotifierRegisteredNotificationPayload(row:any){
  const fields=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];
  const v=row.template_variables;
- if(row.template_name!=='aadhyant_registered_job_alert_v4'||row.template_language!=='en'||row.template_version!=='1'
+ if(!Object.hasOwn(registeredNotificationLanguages,row.template_name)||row.template_language!==registeredNotificationLanguages[row.template_name]||row.template_version!=='1'
  ||row.purpose!=='vacancy_campaign'||row.consent_class!=='marketing'||v?.template_contract!=='registered_summary_v4'
  ||!/^\+91[6-9]\d{9}$/.test(row.destination)||!/^[A-Za-z0-9_-]{1,160}$/.test(v?.requirement_code||'')
  ||!/^[a-f0-9]{64}$/.test(v?.job_fingerprint||'')

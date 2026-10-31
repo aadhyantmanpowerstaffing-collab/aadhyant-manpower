@@ -3,6 +3,7 @@ import {wanotifierInterviewNotificationPayload,wanotifierRegisteredNotificationP
 type Claim={message_id:string;destination:string;template_language:'en'|'hi';template_variables:Record<string,string>};
 type Dependencies={
  rpc:(name:string,args:Record<string,unknown>)=>Promise<unknown>;
+ validateRoute?:(row:Claim)=>void;
  // Provider transport is supplied only after its receipt contract is verified.
  send:(language:'en'|'hi',payload:ReturnType<typeof wanotifierInterviewNotificationPayload>)=>Promise<unknown>;
 };
@@ -17,6 +18,7 @@ export async function dispatchWANotifierNotifications(kind:'interviews'|'registe
  const outcomes=await Promise.allSettled((claimed as Claim[]).map(async row=>{
   let payload:ReturnType<typeof wanotifierInterviewNotificationPayload>;
   try{
+   deps.validateRoute?.(row);
    payload=kind==='interviews'?wanotifierInterviewNotificationPayload({destination:row.destination,language:row.template_language,variables:row.template_variables}):wanotifierRegisteredNotificationPayload(row);
    const permitted=await deps.rpc(kind==='interviews'?'console_interview_provider_boundary':'console_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:phoneId,p_account_id:accountId});
    if(permitted!==true)throw Error('Boundary denied');

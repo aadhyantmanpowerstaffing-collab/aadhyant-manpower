@@ -3,7 +3,7 @@ import {handleWANotifierWorker as handle} from '../supabase/functions/wanotifier
 import {wanotifierNotificationTransport,wanotifierRegisteredNotificationPayload} from '../supabase/functions/_shared/whatsapp/wanotifier-notification.ts';
 const workerKey='synthetic-worker-key-over-32-characters';
 const endpoint='https://app.wanotifier.com/api/v1/notifications/synthetic1?key=synthetic-private-key';
-const env:any={WHATSAPP_WORKER_SECRET:workerKey,WANOTIFIER_AUTOMATION_ENABLED:'true',WANOTIFIER_INTERVIEWS_ENABLED:'true',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'true',WANOTIFIER_SENDER_NUMBER:'+919624453543',WANOTIFIER_PHONE_NUMBER_ID:'1415347881659158',WANOTIFIER_BUSINESS_ACCOUNT_ID:'1386833723249335',WANOTIFIER_INTERVIEW_EN_URL:endpoint,WANOTIFIER_INTERVIEW_HI_URL:endpoint,WANOTIFIER_REGISTERED_JOB_EN_URL:endpoint,SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-server-key'};
+const env:any={WHATSAPP_WORKER_SECRET:workerKey,WANOTIFIER_AUTOMATION_ENABLED:'true',WANOTIFIER_INTERVIEWS_ENABLED:'true',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'true',WANOTIFIER_REGISTERED_TEMPLATE_NAME:'aadhyant_registered_job_alert_v4',WANOTIFIER_SENDER_NUMBER:'+919624453543',WANOTIFIER_PHONE_NUMBER_ID:'1415347881659158',WANOTIFIER_BUSINESS_ACCOUNT_ID:'1386833723249335',WANOTIFIER_INTERVIEW_EN_URL:endpoint,WANOTIFIER_INTERVIEW_HI_URL:endpoint,WANOTIFIER_REGISTERED_JOB_EN_URL:endpoint,SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-server-key'};
 const variables={requirement_code:'AAD-2026-000023',job_role:'Operator',interview_date:'02 Jan 2099',interview_time:'10:30 AM',interview_mode:'onsite',interview_location:'Factory gate',candidate_instructions:'Review Candidate portal.'};
 const row={message_id:'synthetic-message',destination:'+919876543210',template_language:'en',template_variables:variables};
 const registered={...row,template_name:'aadhyant_registered_job_alert_v4',template_version:'1',purpose:'vacancy_campaign',consent_class:'marketing',template_variables:{requirement_code:'AAD-2026-000023',company:'Factory',job_role:'Operator',job_location:'Sanand',qualification:'ITI',salary:'17000',take_home:'15000',overtime:'As applicable',duty:'8 hours',benefits:'PF',template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64),private_notes:'PRIVATE'}};
@@ -52,4 +52,18 @@ test('Notification transport pins HTTPS origin, exact route and a single recipie
  const transport=wanotifierNotificationTransport(endpoint,async()=>{throw Error(endpoint);});
  await assert.rejects(()=>transport(wanotifierRegisteredNotificationPayload(registered)),e=>!String(e).includes('synthetic-private-key'));
  await assert.rejects(()=>transport({data:{},recipients:[{whatsapp_number:'+919876543210'},{whatsapp_number:'+919876543211'}]}));
+});
+
+
+for(const [name,language] of [['aadhyant_registered_job_alert_v5','en'],['aadhyant_registered_job_alert_hi_v2','hi']])test('registered route pins its configured current template: '+name,async()=>{
+ const current={...registered,template_name:name,template_language:language};const f=fixture({rows:[current] as any});
+ const r=await handle(request('registered_alerts'),k=>({...env,WANOTIFIER_REGISTERED_TEMPLATE_NAME:name,WANOTIFIER_REGISTERED_JOB_HI_URL:endpoint})[k]||'',f.fetcher);
+ assert.equal(r.status,200);assert.equal((await r.json()).sent,1);assert.equal(f.sends,1);
+});
+test('a queued newer job template cannot silently use the old v4 Notification endpoint',async()=>{
+ const f=fixture({rows:[{...registered,template_name:'aadhyant_registered_job_alert_v5'}] as any});
+ const r=await handle(request('registered_alerts'),k=>env[k]||'',f.fetcher);assert.equal((await r.json()).blocked,1);assert.equal(f.sends,0);assert.ok(!f.calls.some(c=>c.name==='console_provider_boundary'));
+});
+test('registered mode requires an explicit supported template route before claiming',async()=>{
+ for(const template of ['', 'toString', 'aadhyant_registration_video_hi_v1']){const f=fixture();const r=await handle(request('registered_alerts'),k=>k==='WANOTIFIER_REGISTERED_TEMPLATE_NAME'?template:env[k]||'',f.fetcher);assert.equal(r.status,503);assert.equal(f.calls.length,0);}
 });

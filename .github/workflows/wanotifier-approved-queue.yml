@@ -1,0 +1,41 @@
+name: WANotifier recruitment notifications
+on:
+  schedule:
+    - cron: '4-59/5 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: wanotifier-approved-production-queue
+  cancel-in-progress: false
+jobs:
+  bounded-worker:
+    # Installation lock. Remove only after the provider contract and real tests pass.
+    if: >-
+      false &&
+      github.repository == 'aadhyantmanpowerstaffing-collab/aadhyant-manpower' &&
+      github.ref == 'refs/heads/main' && github.event_name == 'schedule' &&
+      vars.WANOTIFIER_SCHEDULER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    environment: whatsapp-production
+    steps:
+      - name: Require reviewed immutable source
+        env:
+          APPROVED_SHA: ${{ vars.WANOTIFIER_SCHEDULER_APPROVED_SHA }}
+        run: |
+          [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+      - name: Check out reviewed WANotifier source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ vars.WANOTIFIER_SCHEDULER_APPROVED_SHA }}
+          persist-credentials: false
+      - name: Record checked-out source
+        run: echo "CHECKED_OUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Process enabled canonical notifications
+        env:
+          WHATSAPP_WORKER_SECRET: ${{ secrets.WHATSAPP_WORKER_SECRET }}
+          WANOTIFIER_SCHEDULER_ENABLED: ${{ vars.WANOTIFIER_SCHEDULER_ENABLED }}
+          WANOTIFIER_SCHEDULER_APPROVED_SHA: ${{ vars.WANOTIFIER_SCHEDULER_APPROVED_SHA }}
+          WANOTIFIER_INTERVIEWS_ENABLED: ${{ vars.WANOTIFIER_INTERVIEWS_ENABLED }}
+          WANOTIFIER_REGISTERED_ALERTS_ENABLED: ${{ vars.WANOTIFIER_REGISTERED_ALERTS_ENABLED }}
+        run: node scripts/whatsapp/run-wanotifier-alerts.cjs

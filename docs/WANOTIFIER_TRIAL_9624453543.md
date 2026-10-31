@@ -253,3 +253,31 @@ not mean website interview automation is active. No endpoint was triggered, no
 private URL/key was printed or committed, no secret was copied to Supabase, and
 no new backend deployment or flag activation occurred. The obsolete unsaved
 English draft tab was closed after verifying the saved list to avoid duplicates.
+
+## Exact template routing and scheduler preparation
+
+Refreshed provider template statuses again on 31 October. The new v5 English,
+hi_v2 Hindi and related video/image/Same-Day templates still show PENDING.
+Approved interview templates and the two saved API Notifications remain intact.
+
+The source worker now requires WANOTIFIER_REGISTERED_TEMPLATE_NAME and validates
+each claimed row against that exact name/language before the provider boundary.
+It supports the ten-body/one-button contract for v4 English, v5 English and hi_v2
+Hindi, but never sends a newer template through an older Notification endpoint.
+Hindi requires its own WANOTIFIER_REGISTERED_JOB_HI_URL. These are prepared routes,
+not claims that pending templates or missing Notifications are ready.
+
+Added a separately installation-locked WANotifier scheduler and bounded runner.
+It pins the production worker, repository, default branch, scheduled event and
+reviewed immutable commit; accepts only configured notification kinds; sends no
+recipient overrides; logs safe counts only; and never retries an uncertain call.
+The old scheduler installation lock and old sending pause remain unchanged.
+The new workflow is not activated, merged to the default branch or deployed.
+
+Focused route/worker/ingress/scheduler tests passed 38/38; the previous full-source
+checkpoint passed 835/835. This increment does not change schema or production
+flags. Server form rows for WANOTIFIER_INTERVIEW_EN_URL and
+WANOTIFIER_INTERVIEW_HI_URL were prepared with empty values, without saving.
+Private endpoint transfer to Supabase awaits explicit credential-transmission
+approval. Sender/template freshness and final provider-contract validation remain
+rollout requirements; no readiness timestamps were refreshed without proof.
