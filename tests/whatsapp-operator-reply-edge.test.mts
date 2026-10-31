@@ -23,3 +23,31 @@ for(const outcome of ['sent','replay','denied','boundary','timeout','server-erro
  if(['timeout','server-error','malformed-receipt','receipt-save-failed'].includes(outcome))assert.equal(data.reconciliation_required,true);assert.ok(!JSON.stringify(data).includes('secret'));if(outcome==='denied')assert.equal(response.status,403);
 });
 test('invalid origin/body cannot invoke a database or provider',async()=>{let calls=0;const fetcher:typeof fetch=async()=>{calls++;throw Error('not reached');};for(const req of [request({},'https://evil.invalid'),request({message_id:[id]}),request({message_id:id,text:'override'}),request({message_id:'bad'})])assert.ok((await handleOperatorReply(req,k=>env[k]||'',fetcher)).status>=400);assert.equal(calls,0);});
+
+for(const scenario of ['receipt','ack-without-id','wrong-binding','paused','missing-key','wrong-number'])test('WANotifier identity remains isolated from old Meta settings: '+scenario,async()=>{
+ const settings:any={...env,WANOTIFIER_OPERATOR_REPLIES_ENABLED:'true',WANOTIFIER_SENDER_NUMBER:'+919624453543',WANOTIFIER_API_KEY:'synthetic-wanotifier',WANOTIFIER_PHONE_NUMBER_ID:'1415347881659158',WANOTIFIER_BUSINESS_ACCOUNT_ID:'1386833723249335'};
+ if(scenario==='missing-key')delete settings.WANOTIFIER_API_KEY;
+ if(scenario==='wrong-number')settings.WANOTIFIER_SENDER_NUMBER='+919999999999';
+ let state='queued',phase='ready',providerCalls=0,claims=0;
+ const fetcher:typeof fetch=async(input,init)=>{
+  const url=new URL(String(input)),name=url.pathname.split('/').at(-1),args=JSON.parse(String(init?.body||'{}'));
+  if(url.origin==='https://graph.facebook.com')throw Error('Old Meta transport must not be used');
+  if(url.origin==='https://app.wanotifier.com'){
+   providerCalls++;assert.equal(url.pathname,'/api/v1/messages');assert.equal(url.searchParams.get('key'),'synthetic-wanotifier');assert.equal((init?.headers as any).authorization,undefined);
+   assert.equal(args.message.text.body,row.operator_reply_body);
+   return Response.json(scenario==='ack-without-id'?{error:false,message:'Message sent successfully.'}:{messages:[{id:'wamid.synthetic'}]});
+  }
+  if(name==='admin_console_reply_status')return Response.json({id,state,phase,reconciliation_required:phase==='reconciliation_required'});
+  if(name==='console_sender_configuration')return Response.json({ready:scenario!=='paused',phone_id:scenario==='wrong-binding'?env.WHATSAPP_PHONE_NUMBER_ID:settings.WANOTIFIER_PHONE_NUMBER_ID,account_id:settings.WANOTIFIER_BUSINESS_ACCOUNT_ID});
+  if(name==='console_claim_operator_reply'){claims++;state='sending';return Response.json([row]);}
+  if(name==='admin_console_operator_reply_boundary'){assert.equal(args.p_phone_id,settings.WANOTIFIER_PHONE_NUMBER_ID);assert.equal(args.p_account_id,settings.WANOTIFIER_BUSINESS_ACCOUNT_ID);return Response.json(true);}
+  if(name==='mark_whatsapp_outbound_sent'){state='sent';return Response.json(true);}
+  if(name==='mark_whatsapp_outbound_failure'){assert.equal(args.p_failure_kind,'ambiguous');state='failed';phase='reconciliation_required';return Response.json(true);}
+  throw Error('Unexpected RPC');
+ };
+ const response=await handleOperatorReply(request(),k=>settings[k]||'',fetcher),data=await response.json();
+ const allowed=['receipt','ack-without-id'].includes(scenario);assert.equal(providerCalls,allowed?1:0);assert.equal(claims,allowed?1:0);
+ if(!allowed)assert.equal(response.status,503);
+ if(scenario==='receipt')assert.equal(data.state,'sent');
+ if(scenario==='ack-without-id')assert.equal(data.reconciliation_required,true);
+});
