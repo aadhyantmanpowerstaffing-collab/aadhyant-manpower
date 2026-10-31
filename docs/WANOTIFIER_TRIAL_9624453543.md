@@ -71,7 +71,7 @@ pending those verified notification contracts and receipt/status handling.
 ## Validation
 
 Run `node --test tests/wanotifier-webhook.test.mts tests/wanotifier-session.test.mts
- tests/whatsapp-operator-reply-edge.test.mts` (25 checks), plus `npm test`.
+ tests/whatsapp-operator-reply-edge.test.mts` (26 checks), plus `npm test`.
 All provider tests use injected synthetic transports: no real WhatsApp sends.
 
 ## References
@@ -79,3 +79,23 @@ All provider tests use injected synthetic transports: no real WhatsApp sends.
 - https://help.wanotifier.com/en/article/webhooks-receive-real-time-event-notifications-on-your-external-url-tappcv/
 - https://help.wanotifier.com/en/article/messaging-api-send-messages-during-active-conversation-window-1qcv1mf/
 - https://help.wanotifier.com/en/article/notification-api-send-message-templates-using-rest-api-1dl21gn/
+
+## Activation checkpoint (2026-10-31)
+
+- Meta UI verified sender +919624453543, Phone Number ID 1415347881659158,
+  WABA 1386833723249335.
+- Production wanotifier-webhook deployed as version 3 with HMAC authentication.
+- Six new WANOTIFIER_* settings saved in Supabase. No existing settings replaced.
+- WANotifier webhook ID 28 created with the matching signing secret and
+  message.received event; deliberately paused pending canonical sender transition.
+- Supabase canonical sender still points to old WABA 2151053372139655.
+- Queued/sending outbound count was zero during inspection.
+- Automatic approval review rejected replacing WHATSAPP_AUTOMATIC_ALERTS_ENABLED
+  with false at Supabase's overwrite confirmation. Its existing true value was
+  preserved. User confirmation for that exact replacement is the current blocker.
+- Before enabling webhook 28, pause the old automatic worker with that approved
+  flag change, verify no newly queued/sending rows, bind the verified new IDs,
+  and retain outbound readiness false until sending/receipts are separately proven.
+- Incoming HMAC authentication and sender-ID matching do not depend on outbound
+  ready/verified_at TTL: incoming messages must remain receivable while sends
+  are paused or their approval expires.

@@ -41,7 +41,8 @@ export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc):Promi
  }catch{return reply(400);}
  try{
   const config=await rpc('console_sender_configuration',{});
-  if(!config?.ready||config.phone_id!==get('WANOTIFIER_PHONE_NUMBER_ID')||config.account_id!==get('WANOTIFIER_BUSINESS_ACCOUNT_ID'))return reply(503);
+  // Receiving remains available while sending is paused or its approval TTL expires.
+  if(config?.phone_id!==get('WANOTIFIER_PHONE_NUMBER_ID')||config.account_id!==get('WANOTIFIER_BUSINESS_ACCOUNT_ID'))return reply(503);
   // Identical message identity is shared with canonical Meta ingress. Hash the
   // normalized event, excluding contact metadata and delivery-attempt identity.
   const hash=await sha256Hex(new TextEncoder().encode(JSON.stringify(event)));
