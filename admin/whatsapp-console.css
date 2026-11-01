@@ -38,3 +38,7 @@
 .wa-reply-composer{padding:10px;gap:6px}.wa-reply-composer label{gap:4px;font-size:12px}.wa-reply-composer textarea{min-height:62px;max-height:110px}.wa-reply-composer .wa-help{font-size:11px;line-height:1.4}.wa-reply-composer>small{font-size:11px}.wa-reply-composer .admin-button{min-height:36px;padding:8px 14px}
 @media(min-width:761px){.wa-inbox-layout{height:clamp(560px,calc(100dvh - 330px),780px);min-height:0}.wa-conversation-list{max-height:none;min-height:0}.wa-thread{display:flex;flex-direction:column;min-height:0;gap:8px;overflow:auto}.wa-thread>*{flex-shrink:0}.wa-history{flex:1 1 140px;min-height:100px;max-height:none;overflow:auto}.wa-thread .wa-bubble{padding:10px;gap:5px}.wa-thread-empty{min-height:0;flex:1}.wa-reply-composer{margin-top:auto}.wa-console[data-focus=true] .wa-inbox-layout{height:clamp(560px,calc(100dvh - 250px),900px)}.wa-console[data-focus=true] .wa-conversation-list,.wa-console[data-focus=true] .wa-history{max-height:none}}
 @media(max-width:760px){.wa-console-content{padding:10px}.wa-conversation-list{max-height:220px}.wa-history{max-height:300px}.wa-console>.panel-heading h2{font-size:21px}}
+.wa-job-message-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr);gap:24px;align-items:start}
+.wa-job-message-preview{position:sticky;top:20px;display:grid;gap:12px}
+.wa-job-message-layout .wa-grid{align-items:start}
+@media(max-width:1000px){.wa-job-message-layout{grid-template-columns:minmax(0,1fr)}.wa-job-message-preview{position:static}}
