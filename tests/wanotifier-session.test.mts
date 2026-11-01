@@ -15,3 +15,7 @@ for(const outcome of ['ack-without-id','timeout','server-error','rejected','rece
  assert.equal(calls,1);const sent=effects.find(x=>x[0]==='mark_whatsapp_outbound_sent');assert.equal(Boolean(sent),outcome==='receipt');if(outcome!=='receipt')assert.equal(effects.at(-1)[1].p_failure_kind,outcome==='rejected'?'permanent':'ambiguous');
 });
 test('unexpected URL or payload is rejected before provider call',async()=>{let calls=0;const send=wanotifierSessionTransport('synthetic',phone,async()=>{calls++;return Response.json({});});for(const url of ['https://evil.invalid/messages','https://graph.facebook.com/v25.0/9999999999999/messages'])await assert.rejects(send(url,{method:'POST',body:JSON.stringify(payload)}));await assert.rejects(send('https://graph.facebook.com/v25.0/'+phone+'/messages',{method:'POST',body:JSON.stringify({...payload,type:'template'})}));assert.equal(calls,0);});
+test('registration reply accepts WANotifier deployed top-level wamid without another attempt',async()=>{
+ let sends=0;const transport=wanotifierSessionTransport('synthetic',phone,async()=>{sends++;return Response.json({error:false,wamid:'wamid.form-reply'});});
+ const result=await transport('https://graph.facebook.com/v25.0/'+phone+'/messages',{method:'POST',body:JSON.stringify(payload)});assert.equal((await result.json()).messages[0].id,'wamid.form-reply');assert.equal(sends,1);
+});

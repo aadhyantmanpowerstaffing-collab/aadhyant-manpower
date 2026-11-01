@@ -1,3 +1,4 @@
+import {wanotifierMessageId} from './job-message.ts';
 // Transport adapter only. Durable claim, Admin authorization, 24-hour window,
 // consent/suppression and provider boundary remain in the canonical caller.
 export function wanotifierSessionTransport(apiKey:string,phoneId:string,fetcher:typeof fetch=fetch):typeof fetch{
@@ -14,8 +15,7 @@ export function wanotifierSessionTransport(apiKey:string,phoneId:string,fetcher:
   if(!result.ok||data?.error===true)return Response.json({error:{code:'wanotifier_rejected'}},{status:400});
   // The documented error:false acknowledgement has no message ID. It must
   // never become Sent, nor cause fallback to Meta or automatic retransmission.
-  const id=data?.messages?.[0]?.id;
-  if(typeof id!=='string'||!/^wamid\.[A-Za-z0-9._=+\/-]{1,230}$/.test(id))throw Error('Provider receipt requires reconciliation');
+  const id=wanotifierMessageId(data);
   return Response.json({messages:[{id}]});
  };
 }

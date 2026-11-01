@@ -1,0 +1,20 @@
+{
+  "name": "aadhyant_job_salary_details_hi_v2",
+  "language": "hi",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "नमस्ते,\n\nAadhyant Manpower & Staffing में नौकरी के नए अवसर उपलब्ध हैं।\n\n*योग्यता:*\n{{1}}\n\n*वेतन विवरण*\n\n*{{2}}*\n• CTC: {{3}}\n• हाथ में वेतन: {{4}}\n• ओवरटाइम: {{5}}\n\n*{{6}}*\n• CTC: {{7}}\n• हाथ में वेतन: {{8}}\n• ओवरटाइम: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nइच्छुक हैं? नीचे Interested बटन दबाएँ।\nहमें कॉल करें: 96244 53543\n\nनौकरी के अलर्ट बंद करने के लिए STOP लिखें।"
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "QUICK_REPLY",
+          "text": "Interested"
+        }
+      ]
+    }
+  ]
+}

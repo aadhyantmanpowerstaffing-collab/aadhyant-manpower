@@ -1,0 +1,20 @@
+{
+  "name": "aadhyant_job_salary_details_en_v2",
+  "language": "en",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hello,\n\nAadhyant Manpower & Staffing has new job openings.\n\n*Qualification:*\n{{1}}\n\n*Salary Details*\n\n*{{2}}*\n• CTC: {{3}}\n• Take Home: {{4}}\n• OT: {{5}}\n\n*{{6}}*\n• CTC: {{7}}\n• Take Home: {{8}}\n• OT: {{9}}\n\n*Benefits*\n{{10}}\n\nInterested? Tap the Interested button below.\nCall us: 96244 53543\n\nReply STOP to stop job alerts."
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "QUICK_REPLY",
+          "text": "Interested"
+        }
+      ]
+    }
+  ]
+}
