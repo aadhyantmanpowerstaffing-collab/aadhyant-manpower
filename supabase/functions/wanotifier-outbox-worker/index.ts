@@ -9,7 +9,7 @@ export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof 
  if(req.method!=='POST')return reply(405,{error:'POST required'});
  const secret=get('WHATSAPP_WORKER_SECRET');
  if(secret.length<32||!constantTimeEqual(req.headers.get('x-whatsapp-worker-key')||'',secret))return reply(401,{error:'Worker authentication required'});
- if(get('WANOTIFIER_AUTOMATION_ENABLED')!=='true'||get('WANOTIFIER_SENDER_NUMBER')!=='+919624453543'
+ if(get('WANOTIFIER_AUTOMATION_ENABLED')!=='true'||get('WANOTIFIER_NOTIFICATION_RECEIPTS_VERIFIED')!=='true'||get('WANOTIFIER_SENDER_NUMBER')!=='+919624453543'
  ||get('WANOTIFIER_PHONE_NUMBER_ID')!=='1415347881659158'||get('WANOTIFIER_BUSINESS_ACCOUNT_ID')!=='1386833723249335')return reply(503,{error:'WANotifier automation is not enabled'});
  if(req.headers.get('content-type')?.split(';')[0].trim()!=='application/json')return reply(415,{error:'JSON required'});
  // Bound body bytes even if a caller omits or falsifies Content-Length.

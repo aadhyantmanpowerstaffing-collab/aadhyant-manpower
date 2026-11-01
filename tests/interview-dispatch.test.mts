@@ -15,3 +15,6 @@ for(const scenario of ['ack-only','numeric-id','network-error','persistence-erro
  assert.equal((await run(f))[0].outcome,'reconciliation_required');assert.equal(f.sends,1);assert.equal(f.calls.at(-1).name,'mark_whatsapp_outbound_failure');assert.equal(f.calls.at(-1).args.p_failure_kind,'ambiguous');
  if(scenario!=='persistence-error')assert.equal(f.calls.filter(c=>c.name==='mark_whatsapp_outbound_sent').length,0);
 });
+
+for(const receipt of [{wamid:'wamid.top'}, {wamid:'wamid.top',messages:[{id:'wamid.top'}]}])test('interview persists a verified top-level provider wamid',async()=>{const f=fixture({receipt:receipt as any});assert.equal((await run(f))[0].outcome,'sent');assert.equal(f.calls.at(-1).args.p_provider_message_id,'wamid.top');assert.equal(f.sends,1);});
+test('conflicting interview receipts require reconciliation without retry',async()=>{const f=fixture({receipt:{wamid:'wamid.top',messages:[{id:'wamid.other'}]} as any});assert.equal((await run(f))[0].outcome,'reconciliation_required');assert.equal(f.sends,1);assert.ok(!f.calls.some(c=>c.name==='mark_whatsapp_outbound_sent'));});

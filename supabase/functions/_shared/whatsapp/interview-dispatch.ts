@@ -1,3 +1,4 @@
+import {wanotifierMessageId} from './job-message.ts';
 import {wanotifierInterviewNotificationPayload,wanotifierRegisteredNotificationPayload} from './wanotifier-notification.ts';
 
 type Claim={message_id:string;destination:string;template_language:'en'|'hi';template_variables:Record<string,string>};
@@ -30,8 +31,7 @@ export async function dispatchWANotifierNotifications(kind:'interviews'|'registe
   // acknowledgements without a genuine provider ID all require reconciliation.
   try{
    const receipt:any=await deps.send(row.template_language,payload);
-   const id=receipt?.messages?.[0]?.id;
-   if(typeof id!=='string'||!/^wamid\.[A-Za-z0-9._=+\/-]{1,230}$/.test(id))throw Error('Unconfirmed provider receipt');
+   const id=wanotifierMessageId(receipt);
    const recorded=await deps.rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id});
    if(recorded!==true)throw Error('Receipt persistence unconfirmed');
    return {message_id:row.message_id,outcome:'sent' as const};
