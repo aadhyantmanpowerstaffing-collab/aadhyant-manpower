@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {setup:full}=require('./fixtures/full-job-runtime-setup');
 const {value,importOne,subscribe,requirement}=require('./fixtures/whatsapp-console-runtime-helpers');
-const api=require('../admin/job-message');
+const api=require('./fixtures/job-message');
 const migration=fs.readFileSync('supabase/migrations/20261101032123_wanotifier_job_message_composer.sql','utf8');
 const fields={qualification:'10th / 12th / ITI',group_1:'10th / 12th',ctc_1:'₹17,174/month',take_home_1:'₹15,326/month',ot_1:'₹121/hour',group_2:'ITI',ctc_2:'₹17,495/month',take_home_2:'₹15,602/month',ot_2:'₹122/hour',benefits:'PF & ESIC; bus; canteen; 8 hours duty'};
 const spec=l=>({...JSON.parse(fs.readFileSync('docs/whatsapp/job-salary-details-'+l+'-v2.json','utf8')),id:l==='en'?'1234567801':'1234567802',status:'APPROVED'});
