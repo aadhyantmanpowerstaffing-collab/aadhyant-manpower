@@ -42,3 +42,9 @@ test('paused sender can record exact interest but never sends a registration mes
  const p:any=payload();p.data.message.message_type='button';p.data.message.message={text:'Interested',payload:'INTERESTED'};p.data.message.context='wamid.original';const calls:string[]=[];
  const r=await handleWANotifierWebhook(await request(p),k=>({...env,WANOTIFIER_INTERESTED_ENABLED:'true',WANOTIFIER_API_KEY:'synthetic-api-key'})[k]||'',async n=>{calls.push(n);if(n==='console_sender_configuration')return {ready:false,phone_id:env.WANOTIFIER_PHONE_NUMBER_ID,account_id:env.WANOTIFIER_BUSINESS_ACCOUNT_ID};return n==='console_process_interested'?{status:'registration_required'}:'id';},async()=>{throw Error('No send expected');});assert.equal(r.status,200);assert.ok(calls.includes('console_process_interested'));assert.ok(!calls.includes('console_claim_registration_reply'));
 });
+
+test('WANotifier fixed Stop alerts button suppresses before registration and never opts in',async()=>{
+ const p:any=payload();p.data.message.message_type='button';p.data.message.message={text:'Stop alerts',payload:'Stop alerts'};p.data.message.context='wamid.original';const calls:any[]=[];
+ const r=await handleWANotifierWebhook(await request(p),k=>({...env,WANOTIFIER_INTERESTED_ENABLED:'true'})[k]||'',async(n,a)=>{calls.push([n,a]);if(n==='console_sender_configuration')return {ready:false,phone_id:env.WANOTIFIER_PHONE_NUMBER_ID,account_id:env.WANOTIFIER_BUSINESS_ACCOUNT_ID};return n==='set_whatsapp_contact_suppression'?true:'id';});
+ assert.equal(r.status,200);assert.equal(calls.find(c=>c[0]==='record_whatsapp_inbound_message')[1].p_action_id,'STOP');assert.equal(calls.at(-1)[0],'set_whatsapp_contact_suppression');assert.ok(!calls.some(c=>c[0]==='console_process_interested'));
+});

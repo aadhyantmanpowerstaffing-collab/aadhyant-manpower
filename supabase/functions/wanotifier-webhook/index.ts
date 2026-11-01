@@ -56,12 +56,13 @@ export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc,fetche
   // WANotifier's fixed template quick reply may return its display text as the
   // payload. Canonical processing expects INTERESTED. Never infer this from text
   // messages or an unrelated button, and preserve the original signed ledger hash.
-  const actionId=event.messageType==='button'&&event.actionId?.trim().toUpperCase()==='INTERESTED'?'INTERESTED':event.actionId??null;
+  const buttonAction=event.messageType==='button'?event.actionId?.trim().toUpperCase():null;
+  const actionId=buttonAction==='INTERESTED'?'INTERESTED':['STOP ALERTS','STOP_ALERTS','STOP'].includes(buttonAction||'')?'STOP':event.actionId??null;
   const inboundId=await rpc('record_whatsapp_inbound_message',{p_webhook_event_id:webhookId,p_contact_id:contactId,p_provider_message_id:event.providerMessageId,p_provider_timestamp:event.providerTimestamp??null,p_message_type:event.messageType,p_safe_text:['text','button','list'].includes(event.messageType)?event.safeText??null:null,p_action_id:actionId,p_correlation_key:event.correlationKey??null,p_redacted_response:null});
   if(typeof inboundId!=='string'||!inboundId)return reply(500);
-  const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((event.actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE'].includes((event.safeText||'').trim().toUpperCase()));
+  const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE'].includes((event.safeText||'').trim().toUpperCase()));
   if(stop&&await rpc('set_whatsapp_contact_suppression',{p_contact_id:contactId,p_suppressed:true,p_source:'whatsapp_inbound',p_reason_category:'user_stop'})!==true)return reply(500);
-  if(!stop&&get('WANOTIFIER_INTERESTED_ENABLED')==='true'&&event.actionId?.trim().toUpperCase()==='INTERESTED'
+  if(!stop&&get('WANOTIFIER_INTERESTED_ENABLED')==='true'&&actionId==='INTERESTED'
    &&typeof event.correlationKey==='string'&&/^wamid\.[A-Za-z0-9._=+\/-]{1,230}$/.test(event.correlationKey)){
    // A generic Interested without its exact original message is never guessed.
    const interested=await rpc('console_process_interested',{p_inbound_message_id:inboundId});
