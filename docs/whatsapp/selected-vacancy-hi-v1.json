@@ -1,0 +1,40 @@
+{
+  "name": "aadhyant_selected_vacancy_hi_v1",
+  "language": "hi",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "नमस्ते,\n*Aadhyant Manpower & Staffing* में नौकरी का नया अवसर है।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nइस नौकरी का रजिस्ट्रेशन फॉर्म पाने के लिए Interested दबाएँ।\nकॉल करें: 96244 53543\nअलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।",
+      "example": {
+        "body_text": [
+          [
+            "AAD-2026-000023",
+            "Example Manufacturing",
+            "Operator",
+            "Sanand",
+            "10th / 12th / ITI",
+            "INR 17000 monthly",
+            "INR 15000 monthly",
+            "INR 121 per hour",
+            "8 hours",
+            "PF / ESIC; bus; canteen"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "QUICK_REPLY",
+          "text": "Interested"
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}

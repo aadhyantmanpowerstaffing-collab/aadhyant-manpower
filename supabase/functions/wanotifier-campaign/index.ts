@@ -3,6 +3,8 @@ import {wanotifierNotificationTransport} from '../_shared/whatsapp/wanotifier-no
 import {wanotifierMessageId} from '../_shared/whatsapp/job-message.ts';
 import {wanotifierRegisteredNotificationPayload} from '../_shared/whatsapp/wanotifier-notification.ts';
 export const selectedVacancyRoutes:Record<string,{language:string;secret:string}>={
+ aadhyant_selected_vacancy_en_v1:{language:'en',secret:'WANOTIFIER_SELECTED_INTERESTED_EN_URL'},
+ aadhyant_selected_vacancy_hi_v1:{language:'hi',secret:'WANOTIFIER_SELECTED_INTERESTED_HI_URL'},
  aadhyant_registered_job_alert_v4:{language:'en',secret:'WANOTIFIER_SELECTED_VACANCY_EN_V4_URL'},
  aadhyant_registered_job_alert_hi_v1:{language:'hi',secret:'WANOTIFIER_SELECTED_VACANCY_HI_V1_URL'},
  aadhyant_registered_job_alert_v5:{language:'en',secret:'WANOTIFIER_SELECTED_VACANCY_EN_V5_URL'},
@@ -10,7 +12,10 @@ export const selectedVacancyRoutes:Record<string,{language:string;secret:string}
 };
 export function selectedVacancyPayload(row:any){
  const route=Object.hasOwn(selectedVacancyRoutes,row.template_name)?selectedVacancyRoutes[row.template_name]:null;if(!route||route.language!==row.template_language)throw Error('Unsupported selected vacancy');
- return wanotifierRegisteredNotificationPayload({...row,template_name:row.template_name==='aadhyant_registered_job_alert_hi_v1'?'aadhyant_registered_job_alert_hi_v2':row.template_name});
+ const interested=row.template_name.startsWith('aadhyant_selected_vacancy_');
+ const payload=wanotifierRegisteredNotificationPayload({...row,template_name:interested?(route.language==='hi'?'aadhyant_registered_job_alert_hi_v2':'aadhyant_registered_job_alert_v4'):row.template_name==='aadhyant_registered_job_alert_hi_v1'?'aadhyant_registered_job_alert_hi_v2':row.template_name});
+ if(interested)return {data:{body_variables:payload.data.body_variables},recipients:payload.recipients};
+ return payload;
 }
 type Get=(name:string)=>string;
 const origin='https://aadhyantmanpower.in';

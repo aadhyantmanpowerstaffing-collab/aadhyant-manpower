@@ -1,0 +1,40 @@
+{
+  "name": "aadhyant_selected_vacancy_en_v1",
+  "language": "en",
+  "category": "MARKETING",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nInterested? Tap Interested to receive the registration form for this job.\nCall: 96244 53543\nTo stop job alerts, tap Stop alerts or reply STOP.",
+      "example": {
+        "body_text": [
+          [
+            "AAD-2026-000023",
+            "Example Manufacturing",
+            "Operator",
+            "Sanand",
+            "10th / 12th / ITI",
+            "INR 17000 monthly",
+            "INR 15000 monthly",
+            "INR 121 per hour",
+            "8 hours",
+            "PF / ESIC; bus; canteen"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "QUICK_REPLY",
+          "text": "Interested"
+        },
+        {
+          "type": "QUICK_REPLY",
+          "text": "Stop alerts"
+        }
+      ]
+    }
+  ]
+}

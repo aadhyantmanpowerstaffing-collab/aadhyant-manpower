@@ -13,7 +13,17 @@ company, role, location, qualification, salary, take-home, overtime, duty and
 benefits. A URL button uses the same vacancy reference. This route does not
 accept editable message fields, recipient lists, contact attributes or consent.
 
+The two `aadhyant_selected_vacancy_en_v1` / `aadhyant_selected_vacancy_hi_v1`
+templates contain the same ten canonical vacancy fields and fixed Interested /
+Stop alerts buttons. The existing Campaigns wizard previews these fields from
+the selected published vacancy; it does not accept manual salary/message input.
+The immutable snapshot is checked again on approval, queueing and the provider
+boundary. No URL-button variables are sent for these quick-reply templates.
+
 Supported server-side endpoint names:
+
+- `WANOTIFIER_SELECTED_INTERESTED_EN_URL`: selected-vacancy English v1.
+- `WANOTIFIER_SELECTED_INTERESTED_HI_URL`: selected-vacancy Hindi v1.
 
 - `WANOTIFIER_SELECTED_VACANCY_EN_V4_URL`: registered job alert v4.
 - `WANOTIFIER_SELECTED_VACANCY_HI_V1_URL`: Hindi registered alert v1.
