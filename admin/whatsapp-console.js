@@ -5,7 +5,7 @@
  const messageText=text=>{const p=make('p');String(text||'').split('\n').forEach((line,i)=>{if(i)p.append(document.createTextNode('\n'));if(/^\*[^*\n]+\*$/.test(line))p.append(make('strong',line.slice(1,-1)));else p.append(document.createTextNode(line));});return p;};
  const call=async(client,name,args={})=>{const r=await client.rpc(name,args);if(r.error)throw r.error;return r.data;};
  const labels=value=>[...new Set(value.split(',').map(x=>x.trim()).filter(Boolean))];
- const renderMessage=(template,job)=>String(template.body||'').replaceAll('{{1}}',job.requirement_code).replaceAll('{{2}}',job.job_role);
+ const renderMessage=(template,job)=>{const body=String(template.body||'');return /\{\{(?:[3-9]|[1-9]\d+)\}\}/.test(body)?body:body.replaceAll('{{1}}',job.requirement_code).replaceAll('{{2}}',job.job_role);};
  const selectedIds=rows=>[...rows.values()].filter(r=>r.eligible).map(r=>r.contact_id);
  const dueTime=(mode,value)=>{if(mode==='now')return null;const d=new Date(value);if(!value||!Number.isFinite(d.getTime())||d.getTime()<=Date.now())throw new Error('Choose a future date and time.');return d.toISOString();};
  const availableTemplate=t=>!['aadhyant_registration_video_hi_v1','aadhyant_vacancy_alert_v1','aadhyant_same_day_pay_hi_v1','aadhyant_registered_job_alert_v1','aadhyant_registered_job_alert_v2','aadhyant_registered_job_alert_v3','aadhyant_registered_job_alert_v4'].includes(t.name)&&t.status==='APPROVED'&&t.compatible&&Date.now()-new Date(t.synced_at).getTime()<86400000;

@@ -1,3 +1,4 @@
+import vm from 'node:vm';
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
 import {handleSelectedVacancy as handle,selectedVacancyPayload} from '../supabase/functions/wanotifier-campaign/index.ts';
 const campaign='00000000-0000-0000-0000-000000000081';
@@ -27,3 +28,5 @@ test('browser delivery uses WANotifier without the removed composer or legacy Me
 for(const lang of ['en','hi'])test(lang+' selected vacancy Interested templates send ten canonical fields and no URL-button variables',()=>{const p=selectedVacancyPayload({...row,template_name:'aadhyant_selected_vacancy_'+lang+'_v1',template_language:lang});assert.equal(p.data.body_variables.length,10);assert.deepEqual(Object.keys(p.data),['body_variables']);assert.equal(p.data.body_variables[0],fields.requirement_code);assert.equal(p.data.body_variables[2],fields.job_role);});
 
 for(const lang of ['en','hi'])test(lang+' Interested route completes the same canonical boundary with no URL variables',async()=>{const name='aadhyant_selected_vacancy_'+lang+'_v1';const f=fixture({template:name,row:{...row,template_name:name,template_language:lang}});const config={...settings,WANOTIFIER_SELECTED_INTERESTED_EN_URL:settings.WANOTIFIER_SELECTED_VACANCY_EN_V4_URL,WANOTIFIER_SELECTED_INTERESTED_HI_URL:settings.WANOTIFIER_SELECTED_VACANCY_EN_V4_URL};const r=await handle(request(),k=>config[k]||'',f.fetcher);assert.equal((await r.json()).sent,1);assert.equal(f.state.sends,1);const payload=f.calls.find(c=>c[0]==='synthetic1')[1];assert.deepEqual(Object.keys(payload.data),['body_variables']);});
+
+test('rich template placeholders never label the selected role as the company before canonical preview',()=>{const window:any={};vm.runInNewContext(fs.readFileSync('admin/whatsapp-console.js','utf8'),{window,Date});const job={requirement_code:'JOB123',job_role:'Operator'};assert.equal(window.AadhyantWhatsAppConsole.renderMessage({body:'Company {{2}} Role {{3}}'},job),'Company {{2}} Role {{3}}');assert.equal(window.AadhyantWhatsAppConsole.renderMessage({body:'Vacancy {{1}} Role {{2}}'},job),'Vacancy JOB123 Role Operator');});
