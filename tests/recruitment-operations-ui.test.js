@@ -12,11 +12,11 @@ const window = {};
 vm.runInNewContext(source, { window, document: {}, crypto: { randomUUID: () => 'correlation' }, Date, String, Array, Object });
 const moduleApi = window.aadhyantRecruitmentOperations;
 
-test('W3 navigation exposes the six approved recruitment modules', () => {
+test('Recruitment navigation includes the canonical follow-up workspace', () => {
   assert.deepEqual(Array.from(moduleApi.definitions, (item) => Array.from(item).slice(0, 2)), [
     ['recruitmentDashboard','Dashboard'],['recruitmentRequirements','Job Leads'],['candidateLeads','Candidate Leads'],
     ['recruitmentCandidates','Candidates'],['recruitmentApplications','Applications'],
-    ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joinings']
+    ['recruitmentInterviews','Interviews'],['recruitmentJoinings','Joinings'],['recruitmentFollowups','Follow-ups']
   ]);
 });
 

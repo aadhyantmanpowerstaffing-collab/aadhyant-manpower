@@ -67,3 +67,4 @@ test('a queued newer job template cannot silently use the old v4 Notification en
 test('registered mode requires an explicit supported template route before claiming',async()=>{
  for(const template of ['', 'toString', 'aadhyant_registration_video_hi_v1']){const f=fixture();const r=await handle(request('registered_alerts'),k=>k==='WANOTIFIER_REGISTERED_TEMPLATE_NAME'?template:env[k]||'',f.fetcher);assert.equal(r.status,503);assert.equal(f.calls.length,0);}
 });
+test('recruitment kind remains explicitly disabled before any claim',async()=>{const f=fixture();const r=await handle(request('recruitment_updates'),k=>env[k]||'',f.fetcher);assert.equal(r.status,503);assert.equal(f.calls.length,0);});

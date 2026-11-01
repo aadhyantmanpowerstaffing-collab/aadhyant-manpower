@@ -1,0 +1,18 @@
+{
+  "name": "aadhyant_interview_reminder_en_v1",
+  "language": "en",
+  "category": "UTILITY",
+  "body": "Interview reminder\nAadhyant Manpower & Staffing\n\nVacancy: {{1}}\nRole: {{2}}\nDate: {{3}}\nReporting time: {{4}}\nVenue / meeting details: {{5}}\nInstructions: {{6}}\n\nPlease confirm whether you can attend. Review the latest schedule: https://aadhyantmanpower.in/candidate/portal/interviews.html\nContact: 96244 53543\nReply STOP to stop WhatsApp updates.",
+  "body_fields": [
+    "requirement_code",
+    "job_role",
+    "event_date",
+    "event_time",
+    "venue",
+    "instructions"
+  ],
+  "quick_replies": [
+    "Will attend",
+    "Cannot attend"
+  ]
+}

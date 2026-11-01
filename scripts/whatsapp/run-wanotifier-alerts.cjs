@@ -5,7 +5,7 @@ async function run(env=process.env,fetcher=fetch){
  ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_EVENT_NAME!=='schedule')throw Error('WANotifier scheduler is not authorized');
  if(!/^[a-f0-9]{40}$/.test(env.WANOTIFIER_SCHEDULER_APPROVED_SHA||'')||env.CHECKED_OUT_SHA!==env.WANOTIFIER_SCHEDULER_APPROVED_SHA)throw Error('Reviewed scheduler source required');
  if(!/^[a-f0-9]{64}$/.test(env.WHATSAPP_WORKER_SECRET||''))throw Error('Worker credential is missing');
- const kinds=['interviews','registered_alerts'].filter(kind=>env[kind==='interviews'?'WANOTIFIER_INTERVIEWS_ENABLED':'WANOTIFIER_REGISTERED_ALERTS_ENABLED']==='true');
+ const kinds=['interviews','registered_alerts','recruitment_updates'].filter(kind=>env[kind==='recruitment_updates'?'WANOTIFIER_RECRUITMENT_UPDATES_ENABLED':kind==='interviews'?'WANOTIFIER_INTERVIEWS_ENABLED':'WANOTIFIER_REGISTERED_ALERTS_ENABLED']==='true');
  if(!kinds.length)throw Error('No WANotifier notification kind enabled');
  const results={};
  for(const kind of kinds){

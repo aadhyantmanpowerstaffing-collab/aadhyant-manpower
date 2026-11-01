@@ -62,6 +62,7 @@ export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc,fetche
   if(typeof inboundId!=='string'||!inboundId)return reply(500);
   const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE'].includes((event.safeText||'').trim().toUpperCase()));
   if(stop&&await rpc('set_whatsapp_contact_suppression',{p_contact_id:contactId,p_suppressed:true,p_source:'whatsapp_inbound',p_reason_category:'user_stop'})!==true)return reply(500);
+  if(!stop&&get('WANOTIFIER_INTERVIEW_RESPONSES_ENABLED')==='true'&&['WILL ATTEND','CANNOT ATTEND'].includes((actionId||'').trim().toUpperCase()))await rpc('process_interview_whatsapp_response',{p_inbound_id:inboundId});
   if(!stop&&get('WANOTIFIER_INTERESTED_ENABLED')==='true'&&actionId==='INTERESTED'
    &&typeof event.correlationKey==='string'&&/^wamid\.[A-Za-z0-9._=+\/-]{1,230}$/.test(event.correlationKey)){
    // A generic Interested without its exact original message is never guessed.

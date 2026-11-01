@@ -1,3 +1,4 @@
+import {dispatchRecruitmentNotifications} from '../_shared/whatsapp/recruitment-dispatch.ts';
 import {dispatchWANotifierNotifications} from '../_shared/whatsapp/interview-dispatch.ts';
 import {wanotifierNotificationTransport,registeredNotificationLanguages} from '../_shared/whatsapp/wanotifier-notification.ts';
 import {constantTimeEqual} from '../_shared/whatsapp/signature.ts';
@@ -15,9 +16,9 @@ export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof 
  // Bound body bytes even if a caller omits or falsifies Content-Length.
  const reader=req.body?.getReader();if(!reader)return reply(400,{error:'Notification kind required'});
  let bytes=new Uint8Array();for(;;){const {done,value}=await reader.read();if(done)break;if(bytes.length+value.length>256){await reader.cancel();return reply(413,{error:'Request too large'});}const next=new Uint8Array(bytes.length+value.length);next.set(bytes);next.set(value,bytes.length);bytes=next;}
- let kind:'interviews'|'registered_alerts';
- try{const body=JSON.parse(new TextDecoder().decode(bytes));if(!body||Array.isArray(body)||Object.keys(body).length!==1||!['interviews','registered_alerts'].includes(body.kind))throw Error();kind=body.kind;}catch{return reply(400,{error:'Notification kind required'});}
- if(get(kind==='interviews'?'WANOTIFIER_INTERVIEWS_ENABLED':'WANOTIFIER_REGISTERED_ALERTS_ENABLED')!=='true')return reply(503,{error:'Notification kind is not enabled'});
+ let kind:'interviews'|'registered_alerts'|'recruitment_updates';
+ try{const body=JSON.parse(new TextDecoder().decode(bytes));if(!body||Array.isArray(body)||Object.keys(body).length!==1||!['interviews','registered_alerts','recruitment_updates'].includes(body.kind))throw Error();kind=body.kind;}catch{return reply(400,{error:'Notification kind required'});}
+ if(get(kind==='recruitment_updates'?'WANOTIFIER_RECRUITMENT_UPDATES_ENABLED':kind==='interviews'?'WANOTIFIER_INTERVIEWS_ENABLED':'WANOTIFIER_REGISTERED_ALERTS_ENABLED')!=='true')return reply(503,{error:'Notification kind is not enabled'});
  let claimStarted=false;
  try{
   const interviewEn=kind==='interviews'?wanotifierNotificationTransport(get('WANOTIFIER_INTERVIEW_EN_URL'),fetcher):null;
@@ -32,6 +33,7 @@ export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof 
   };
   const config=await rpc('console_sender_configuration',{});
   if(config?.ready!==true||config.phone_id!==get('WANOTIFIER_PHONE_NUMBER_ID')||config.account_id!==get('WANOTIFIER_BUSINESS_ACCOUNT_ID'))return reply(503,{error:'Verified sender required'});
+  if(kind==='recruitment_updates'){const result=await dispatchRecruitmentNotifications('wanotifier:'+crypto.randomUUID(),config.phone_id,config.account_id,get,rpc,fetcher);return reply(200,result);}
   claimStarted=true;
   const result=await dispatchWANotifierNotifications(kind,'wanotifier:'+crypto.randomUUID(),config.phone_id,config.account_id,{rpc,validateRoute:row=>{
    if(kind==='registered_alerts'&&((row as any).template_name!==registeredTemplate||row.template_language!==registeredLanguage))throw Error('Registered template route mismatch');
