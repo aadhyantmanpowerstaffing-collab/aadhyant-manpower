@@ -18,14 +18,17 @@ export async function dispatchRecruitmentNotifications(worker:string,phoneId:str
  await rpc('prepare_recruitment_notifications',{});
  const rows=await rpc('console_claim_recruitment_notifications',{p_worker_id:worker});
  if(!Array.isArray(rows)||rows.length>10)throw Error('Recruitment claim unconfirmed');
- const outcomes=[];
- for(const row of rows){
+ // Claims share a 60-second lease. Run this bounded batch concurrently so a
+ // slow provider response cannot consume the leases of later recipients.
+ const results=await Promise.allSettled(rows.map(async row=>{
   let payload;
   try{payload=recruitmentPayload(row);if(await rpc('console_recruitment_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:phoneId,p_account_id:accountId})!==true)throw Error('Boundary denied');}
-  catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'eligibility_changed',p_error_code:'recruitment_final_check',p_failure_kind:'permanent'});outcomes.push('blocked');continue;}
+  catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'eligibility_changed',p_error_code:'recruitment_final_check',p_failure_kind:'permanent'});return 'blocked';}
   try{const receipt=await transports[row.template_name](payload);const id=wanotifierMessageId(receipt);
-   if(await rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id})!==true)throw Error('Receipt not persisted');outcomes.push('sent');
-  }catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'ambiguous_provider_outcome',p_error_code:'reconcile_before_retry',p_failure_kind:'ambiguous'});outcomes.push('reconciliation_required');}
- }
+   if(await rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id})!==true)throw Error('Receipt not persisted');return 'sent';
+  }catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'ambiguous_provider_outcome',p_error_code:'reconcile_before_retry',p_failure_kind:'ambiguous'});return 'reconciliation_required';}
+ }));
+ if(results.some(r=>r.status==='rejected'))throw Error('Recruitment result persistence unconfirmed');
+ const outcomes=results.map(r=>(r as PromiseFulfilledResult<string>).value);
  return {processed:outcomes.length,sent:outcomes.filter(x=>x==='sent').length,blocked:outcomes.filter(x=>x==='blocked').length,reconciliation_required:outcomes.filter(x=>x==='reconciliation_required').length};
 }

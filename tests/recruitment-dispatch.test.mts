@@ -10,3 +10,12 @@ test('exact boundary precedes one send and receipt persistence',async()=>{const 
 test('changed eligibility blocks provider',async()=>{const f=fixture({boundary:false});assert.equal((await run(f)).blocked,1);assert.equal(f.sends,0);});
 for(const receipt of [{error:false},{wamid:'not-a-wa-id'},{wamid:'wamid.one',messages:[{id:'wamid.other'}]}])test('uncertain receipt never retries',async()=>{const f=fixture({receipt:receipt as any});assert.equal((await run(f)).reconciliation_required,1);assert.equal(f.sends,1);assert.ok(!f.calls.some(x=>x.name==='mark_whatsapp_outbound_sent'));});
 test('receipt persistence failure is not success and never resends',async()=>{const f=fixture({persist:false});assert.equal((await run(f)).reconciliation_required,1);assert.equal(f.sends,1);});
+test('a slow recipient does not prevent the rest of a bounded batch crossing their valid leases',async()=>{
+ const rows=Array.from({length:10},(_,i)=>({...row,message_id:'synthetic-'+i}));let sends=0,boundaries=0,release:any;const blocked=new Promise<void>(resolve=>{release=resolve});
+ const rpc=async(n:string,_a:any)=>{if(n==='console_claim_recruitment_notifications')return rows;if(n==='console_recruitment_provider_boundary')boundaries++;return true;};
+ const fetcher:any=async()=>{const number=++sends;if(number===1)await blocked;return Response.json({wamid:'wamid.synthetic-'+number});};
+ const work=dispatchRecruitmentNotifications('worker','1415347881659158','1386833723249335',()=>endpoint,rpc,fetcher);
+ try{for(let i=0;i<30&&sends<10;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(boundaries,10);assert.equal(sends,10);}finally{release();}
+ assert.deepEqual(await work,{processed:10,sent:10,blocked:0,reconciliation_required:0});
+});
+test('unconfirmed failure persistence cannot report a completed recruitment batch',async()=>{const f=fixture({boundary:false});const rpc=async(n:string,a:any)=>{if(n==='mark_whatsapp_outbound_failure')throw Error('synthetic persistence failure');return f.rpc(n,a);};await assert.rejects(()=>dispatchRecruitmentNotifications('worker','1415347881659158','1386833723249335',()=>endpoint,rpc,f.fetcher),/persistence unconfirmed/);assert.equal(f.sends,0);});
