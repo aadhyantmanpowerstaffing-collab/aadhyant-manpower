@@ -56,6 +56,13 @@
    form.append(button('Save Permission',()=>run(async()=>{if(!confirmed.checked||!date.value)throw new Error('Confirm the permission and its received date.');await call(client,'admin_console_record_consent',{p_contact_id:row.contact_id,p_source:source.value,p_received_at:new Date(date.value).toISOString()});dialog.close();dialog.remove();await loadContacts();}),true),button('Close',()=>{dialog.close();dialog.remove();}));
    dialog.append(form);main.append(dialog);dialog.showModal();
   };
+  const showInterviewPermission=row=>{
+   const dialog=make('dialog','','wa-dialog'),source=make('select');['phone_call','written_permission','in_person'].forEach(v=>source.append(new Option(v.replaceAll('_',' '),v)));
+   const date=input();date.type='datetime-local';const confirmed=make('input');confirmed.type='checkbox';
+   dialog.append(make('h3','Interview updates permission · '+row.mobile_masked),make('p','Record this person’s permission for WhatsApp interview confirmations, reminders and joining details. Job alerts are a separate choice.'),field('Permission received through',source),field('Date and time received',date),field('This candidate agreed to receive these recruitment updates on WhatsApp.',confirmed));
+   const save=allowed=>run(async()=>{if(!date.value||(allowed&&!confirmed.checked))throw Error('Record the actual permission source, date and confirmation.');const stamp=new Date(date.value);if(!Number.isFinite(stamp.getTime())||stamp>new Date())throw Error('Enter the actual date and time permission was received.');const result=await call(client,'admin_console_set_interview_permission',{p_contact_id:row.contact_id,p_allowed:allowed,p_source:source.value,p_received_at:stamp.toISOString()});if(result!==true)throw Error('Permission was not confirmed.');dialog.close();dialog.remove();await loadContacts();notice(allowed?'Interview updates permission saved. Upcoming interview messages can be processed by the scheduler.':'Interview updates permission withdrawn.');});
+   dialog.append(button('Save Interview Permission',()=>save(true),true),button('Withdraw Interview Permission',()=>save(false)),button('Close',()=>{dialog.close();dialog.remove();}));main.append(dialog);dialog.showModal();
+  };
   const showBulkConsent=()=>{
    const ids=[...contactSelection];if(!ids.length)return;
    const dialog=make('dialog','','wa-dialog'),source=make('select');['phone_call','written_permission','in_person'].forEach(v=>source.append(new Option(v.replaceAll('_',' '),v)));
@@ -126,10 +133,11 @@
    const local=make('div','','wa-grid');local.append(field('Search loaded contacts',search),field('Permission',permission),button('Search This Page',()=>{contactQuery=search.value.trim();contactPermission=permission.value;render();}));
    const visibleContacts=contacts.filter(r=>(!contactPermission||r.consent===contactPermission)&&(!contactQuery||[r.name_masked,r.mobile_masked,...(r.lists||[]),...(r.tags||[])].join(' ').toLowerCase().includes(contactQuery.toLowerCase())));
    selectPage.disabled=!visibleContacts.length;content.append(make('h3','Contacts'),toolbar,local,make('p',visibleContacts.length+' of '+contacts.length+' contacts on this page. List and tag filters search the saved contact database.','wa-help'),selectionBar);if(!contacts.length)content.append(make('p','No contacts yet. Import an Excel or CSV file below.','wa-empty'));
-   else content.append(table(['Select','Name','WhatsApp','Permission','Lists','Tags','Action'],visibleContacts.map(row=>{
+   else content.append(table(['Select','Name','WhatsApp','Job alerts','Interview updates','Lists','Tags','Action'],visibleContacts.map(row=>{
     const check=make('input');check.type='checkbox';check.checked=contactSelection.has(row.contact_id);check.setAttribute('aria-label','Select '+row.mobile_masked);check.addEventListener('change',()=>{if(check.checked){if(contactSelection.size>=500){check.checked=false;notice('Select up to 500 contacts.',true);return;}contactSelection.add(row.contact_id);}else contactSelection.delete(row.contact_id);updateSelection();});
     const action=row.consent==='unknown'&&['resolved','unresolved'].includes(row.resolution_status)?button('Record Permission',()=>showConsent(row)):make('span',row.consent==='opted_out'?'Unsubscribed':row.consent==='opted_in'?'Subscribed':'Needs review');
-    return[check,row.name_masked,row.mobile_masked,row.consent,(row.lists||[]).join(', '),(row.tags||[]).join(', '),action];
+    const actions=make('div','','wa-actions');actions.append(action);if(row.candidate_linked&&row.consent!=='opted_out'&&row.interview_permission!=='suppressed')actions.append(button('Interview Permission',()=>showInterviewPermission(row)));
+    return[check,row.name_masked,row.mobile_masked,row.consent,row.interview_permission==='allowed'?'Allowed':row.interview_permission==='suppressed'?'Stopped':'Permission required',(row.lists||[]).join(', '),(row.tags||[]).join(', '),actions];
    })));
    content.append(pages(100,contacts,loadContacts));const organize=make('details');organize.append(make('summary','Organize Selected Contacts'));const lists=input('New or comma-separated list names'),tagsInput=input('New or comma-separated tags');
    const savedList=labelSelect(contactLabels.lists,'','Choose a saved list'),savedTag=labelSelect(contactLabels.tags,'','Choose a saved tag');
