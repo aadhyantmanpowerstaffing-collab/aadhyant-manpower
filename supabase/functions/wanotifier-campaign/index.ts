@@ -56,21 +56,24 @@ export async function handleSelectedVacancy(req:Request,get:Get,fetcher:typeof f
   const worker='wanotifier-vacancy:'+crypto.randomUUID();claimStarted=true;
   const rows=await rpc('console_claim_campaign',{p_campaign_id:body.campaign_id,p_worker_id:worker});
   if(!Array.isArray(rows)||rows.length>10)throw Error('Claim result unconfirmed');
-  let sent=0,failed=0,reconciliation=0;
-  for(const row of rows){
+  // The bounded batch shares a 120-second lease. Do not let one slow
+  // notification consume the remaining recipients' provider-boundary time.
+  const results=await Promise.allSettled(rows.map(async row=>{
    const failure=(category:string,code:string,kind:string)=>rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:category,p_error_code:code,p_failure_kind:kind,p_retry_at:null});
    let payload;
    try{
     if(row.template_name!==campaign.template_name||row.template_language!==route.language||row.template_variables?.campaign_id!==body.campaign_id)throw Error('Campaign route mismatch');
     payload=selectedVacancyPayload(row);
     if(await rpc('console_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:config.phone_id,p_account_id:config.account_id})!==true)throw Error('Boundary denied');
-   }catch{await failure('eligibility_changed','final_check_failed','permanent');failed++;continue;}
+   }catch{await failure('eligibility_changed','final_check_failed','permanent');return 'failed';}
    try{
     const id=wanotifierMessageId(await send(payload));
-    if(await rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id,p_provider_timestamp:null})!==true)throw Error('Receipt persistence unconfirmed');sent++;
-   }catch{await failure('ambiguous_provider_outcome','reconcile_before_retry','ambiguous');reconciliation++;}
-  }
-  return reply(200,{processed:rows.length,sent,failed,reconciliation_required:reconciliation});
+    if(await rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id,p_provider_timestamp:null})!==true)throw Error('Receipt persistence unconfirmed');return 'sent';
+   }catch{await failure('ambiguous_provider_outcome','reconcile_before_retry','ambiguous');return 'reconciliation_required';}
+  }));
+  if(results.some(result=>result.status==='rejected'))throw Error('Campaign result persistence unconfirmed');
+  const outcomes=results.map(result=>(result as PromiseFulfilledResult<string>).value);
+  return reply(200,{processed:outcomes.length,sent:outcomes.filter(value=>value==='sent').length,failed:outcomes.filter(value=>value==='failed').length,reconciliation_required:outcomes.filter(value=>value==='reconciliation_required').length});
  }catch{return reply(503,{error:claimStarted?'Outcome unconfirmed. Review WANotifier before any retry.':'vacancy configuration unavailable. No campaign was sent.'});}
 }
 const get=(name:string)=>(globalThis as any).Deno?.env.get(name)||'';
