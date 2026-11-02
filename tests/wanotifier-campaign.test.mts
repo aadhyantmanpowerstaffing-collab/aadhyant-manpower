@@ -12,7 +12,7 @@ function fixture(options:any={}){const calls:any[]=[],state={sends:0,claims:0};c
  if(name==='admin_console_access')return Response.json(!options.denied);
  if(name==='whatsapp_campaigns'){assert.equal(u.searchParams.get('id'),'eq.'+campaign);return Response.json([{id:campaign,template_name:options.template??row.template_name,template_language:options.row?.template_language??'en'}]);}
  if(name==='console_sender_configuration')return Response.json({ready:options.ready!==false,phone_id:settings.WANOTIFIER_PHONE_NUMBER_ID,account_id:settings.WANOTIFIER_BUSINESS_ACCOUNT_ID});
- if(name==='console_claim_campaign'){state.claims++;return Response.json([options.row??row]);}
+ if(name==='console_claim_campaign'){state.claims++;return Response.json(options.rows??[options.row??row]);}
  if(name==='console_provider_boundary')return Response.json(!options.stop);
  if(name==='mark_whatsapp_outbound_sent')return Response.json(!options.persistFail);
  if(name==='mark_whatsapp_outbound_failure')return Response.json(true);
@@ -30,3 +30,27 @@ for(const lang of ['en','hi'])test(lang+' selected vacancy Interested templates 
 for(const lang of ['en','hi'])test(lang+' Interested route completes the same canonical boundary with no URL variables',async()=>{const name='aadhyant_selected_vacancy_'+lang+'_v1';const f=fixture({template:name,row:{...row,template_name:name,template_language:lang}});const config={...settings,WANOTIFIER_SELECTED_INTERESTED_EN_URL:settings.WANOTIFIER_SELECTED_VACANCY_EN_V4_URL,WANOTIFIER_SELECTED_INTERESTED_HI_URL:settings.WANOTIFIER_SELECTED_VACANCY_EN_V4_URL};const r=await handle(request(),k=>config[k]||'',f.fetcher);assert.equal((await r.json()).sent,1);assert.equal(f.state.sends,1);const payload=f.calls.find(c=>c[0]==='synthetic1')[1];assert.deepEqual(Object.keys(payload.data),['body_variables']);});
 
 test('rich template placeholders never label the selected role as the company before canonical preview',()=>{const window:any={};vm.runInNewContext(fs.readFileSync('admin/whatsapp-console.js','utf8'),{window,Date});const job={requirement_code:'JOB123',job_role:'Operator'};assert.equal(window.AadhyantWhatsAppConsole.renderMessage({body:'Company {{2}} Role {{3}}'},job),'Company {{2}} Role {{3}}');assert.equal(window.AadhyantWhatsAppConsole.renderMessage({body:'Vacancy {{1}} Role {{2}}'},job),'Vacancy JOB123 Role Operator');});
+
+
+test('a slow vacancy notification does not consume the rest of the batch lease',async()=>{
+ const rows=Array.from({length:10},(_,i)=>({...row,message_id:'synthetic-'+i}));const f=fixture({rows});
+ let sends=0,release:any;const blocked=new Promise<void>(resolve=>{release=resolve});
+ const fetcher:typeof fetch=async(input,init)=>{if(new URL(String(input)).origin==='https://app.wanotifier.com'){const number=++sends;if(number===1)await blocked;return Response.json({wamid:'wamid.selected-'+number});}return f.fetcher(input,init);};
+ const work=handle(request(),k=>settings[k]||'',fetcher);
+ try{for(let i=0;i<40&&sends<10;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(sends,10);assert.equal(f.calls.filter(c=>c[0]==='console_provider_boundary').length,10);}finally{release();}
+ assert.deepEqual(await (await work).json(),{processed:10,sent:10,failed:0,reconciliation_required:0});
+});
+
+test('a failed result write waits for other in-flight recipients and reports an uncertain batch',async()=>{
+ const rows=[row,{...row,message_id:'synthetic-second'}],f=fixture({rows});let sends=0,release:any;
+ const blocked=new Promise<void>(resolve=>{release=resolve});
+ const fetcher:typeof fetch=async(input,init)=>{const name=new URL(String(input)).pathname.split('/').at(-1);
+  if(name==='console_provider_boundary'&&JSON.parse(String(init?.body)).p_message_id===row.message_id)return Response.json(false);
+  if(name==='mark_whatsapp_outbound_failure')throw Error('synthetic persistence failure');
+  if(new URL(String(input)).origin==='https://app.wanotifier.com'){sends++;await blocked;return Response.json({wamid:'wamid.second'});}
+  return f.fetcher(input,init);
+ };
+ let settled=false;const work=handle(request(),k=>settings[k]||'',fetcher).then(r=>{settled=true;return r;});
+ try{for(let i=0;i<40&&sends<1;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(sends,1);assert.equal(settled,false);}finally{release();}
+ const response=await work;assert.equal(response.status,503);assert.match((await response.json()).error,/Outcome unconfirmed/);assert.equal(sends,1);assert.equal(f.calls.filter(c=>c[0]==='mark_whatsapp_outbound_sent').length,1);
+});
