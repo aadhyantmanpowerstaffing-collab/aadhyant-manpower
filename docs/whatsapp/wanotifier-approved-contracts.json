@@ -1,0 +1,232 @@
+[
+  {
+    "name": "aadhyant_selected_vacancy_en_v1",
+    "language": "en",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nInterested? Tap Interested to receive the registration form for this job.\nCall: 96244 53543\nTo stop job alerts, tap Stop alerts or reply STOP."
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Interested"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registered_job_alert_v5",
+    "language": "en",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Review the summary below and share this opportunity with someone looking for work.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\n\nFor more information or to apply for a job, call 9624453543.\n\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP."
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "View Job & Apply",
+            "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registered_job_video_en_v1",
+    "language": "en",
+    "components": [
+      {
+        "type": "HEADER",
+        "format": "VIDEO"
+      },
+      {
+        "type": "BODY",
+        "text": "Hello,\n\n*Aadhyant Manpower & Staffing* has a new job opening. Watch the video and review the details below.\n\n*Job details*\n• Vacancy: {{1}}\n• Company: {{2}}\n• Role: {{3}}\n• Location: {{4}}\n\n*Qualification*\n{{5}}\n\n*Salary & duty*\n• CTC / Salary: {{6}}\n• Approx. take home: {{7}}\n• Overtime: {{8}}\n• Duty: {{9}}\n\n*Benefits*\n{{10}}\n\nTap View Job & Apply for complete eligibility, salary breakup, deductions, facilities, conditions and application.\nFor more information or to apply, call 9624453543.\nTo stop WhatsApp job alerts, tap Stop alerts or reply STOP."
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "View Job & Apply",
+            "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_selected_vacancy_hi_v1",
+    "language": "hi",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "नमस्ते,\n*Aadhyant Manpower & Staffing* में नौकरी का नया अवसर है।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nइस नौकरी का रजिस्ट्रेशन फॉर्म पाने के लिए Interested दबाएँ।\nकॉल करें: 96244 53543\nअलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Interested"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registered_job_alert_hi_v2",
+    "language": "hi",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "नमस्ते,\n*Aadhyant Manpower & Staffing* की ओर से नौकरी का नया अवसर है। नीचे विवरण देखें और काम ढूँढ रहे लोगों के साथ साझा करें।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nपूरी पात्रता, वेतन विवरण, कटौती, सुविधाएँ, शर्तें और आवेदन के लिए नीचे नौकरी देखें बटन दबाएँ।\n\nअधिक जानकारी या नौकरी के लिए आवेदन करने हेतु 9624453543 पर कॉल करें।\n\nWhatsApp नौकरी अलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "नौकरी देखें और आवेदन करें",
+            "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registered_job_image_hi_v1",
+    "language": "hi",
+    "components": [
+      {
+        "type": "HEADER",
+        "format": "IMAGE"
+      },
+      {
+        "type": "BODY",
+        "text": "नमस्ते,\n*Aadhyant Manpower & Staffing* की ओर से नौकरी का नया अवसर है। नौकरी का पोस्टर देखें और नीचे जानकारी पढ़ें।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nपूरी पात्रता, वेतन विवरण, कटौती, सुविधाएँ, शर्तें और आवेदन के लिए नीचे बटन दबाएँ।\nअधिक जानकारी या आवेदन के लिए 9624453543 पर कॉल करें।\nअलर्ट बंद करने के लिए अलर्ट बंद करें दबाएँ या STOP लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "नौकरी देखें और आवेदन करें",
+            "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "अलर्ट बंद करें"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_same_day_pay_hi_v2",
+    "language": "hi",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "*रोकड़ी काम — उसी शाम भुगतान*\n*Aadhyant Manpower & Staffing*\n\n📍 *स्थान:* {{1}}\n🛠️ *काम:* {{2}}\n📅 *तारीख:* {{3}}\n🕗 *समय:* {{4}}\n👥 *ज़रूरत:* {{5}} लोग\n💵 *मेहनताना:* {{6}} प्रति व्यक्ति, पूरी शिफ्ट का\n✅ *भुगतान:* उसी दिन {{7}}\n\nकाम के लिए उपलब्ध हैं? नीचे बटन दबाकर आवेदन करें। कंपनी/ठेकेदार आपकी जगह की पुष्टि करेगा।\n\nअधिक जानकारी या नौकरी के लिए आवेदन करने हेतु 9624453543 पर कॉल करें।\n\nअलर्ट बंद करने के लिए *Stop alerts* दबाएँ या *STOP* लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "View Details & Apply",
+            "url": "https://aadhyantmanpower.in/same-day-pay/?role=candidate&job={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registration_video_hi_v1",
+    "language": "hi",
+    "components": [
+      {
+        "type": "HEADER",
+        "format": "VIDEO"
+      },
+      {
+        "type": "BODY",
+        "text": "*Aadhyant Manpower & Staffing*\n\nसाणंद GIDC और आसपास नौकरी ढूंढ रहे हैं?\nउपलब्ध नौकरियों के WhatsApp Job Alerts पाने के लिए आज ही रजिस्टर करें।\n\nरजिस्ट्रेशन निःशुल्क है। नौकरी के लिए उम्मीदवारों से कोई फीस नहीं ली जाती।\n\nनीचे Register Now बटन दबाएँ या https://aadhyantmanpower.in/ खोलें।\nजानकारी के लिए कॉल करें: 9624453543\n\nअलर्ट बंद करने के लिए Stop alerts दबाएँ या STOP लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Register Now",
+            "url": "https://aadhyantmanpower.in/"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Stop alerts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aadhyant_registered_job_video_hi_v1",
+    "language": "hi",
+    "components": [
+      {
+        "type": "HEADER",
+        "format": "VIDEO"
+      },
+      {
+        "type": "BODY",
+        "text": "नमस्ते,\n*Aadhyant Manpower & Staffing* की ओर से नौकरी का नया अवसर है। हिंदी वीडियो देखें और नीचे जानकारी पढ़ें।\n\n*नौकरी का विवरण*\n• भर्ती संदर्भ: {{1}}\n• कंपनी: {{2}}\n• पद: {{3}}\n• स्थान: {{4}}\n\n*योग्यता*\n{{5}}\n\n*वेतन और ड्यूटी*\n• CTC / वेतन: {{6}}\n• अनुमानित हाथ में वेतन: {{7}}\n• ओवरटाइम: {{8}}\n• ड्यूटी: {{9}}\n\n*सुविधाएँ*\n{{10}}\n\nपूरी पात्रता, वेतन विवरण, कटौती, सुविधाएँ, शर्तें और आवेदन के लिए नीचे बटन दबाएँ।\nअधिक जानकारी या आवेदन के लिए 9624453543 पर कॉल करें।\nअलर्ट बंद करने के लिए अलर्ट बंद करें दबाएँ या STOP लिखें।"
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "नौकरी देखें और आवेदन करें",
+            "url": "https://aadhyantmanpower.in/jobs/?requirement={{1}}"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "अलर्ट बंद करें"
+          }
+        ]
+      }
+    ]
+  }
+]
