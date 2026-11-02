@@ -113,6 +113,11 @@ test('builder creates the exact allowlisted deterministic artifact', () => {
   const secondTree = hashTree();
   assert.deepEqual(second, first);
   assert.equal(secondTree, firstTree);
+  const adminHtml = fs.readFileSync(path.join(DIST_ROOT, 'admin/index.html'), 'utf8');
+  const csp = adminHtml.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
+  assert.match(csp, /img-src 'self' data: blob: https:\/\/wsuctjhbqiedttfnwjvf\.supabase\.co;/);
+  assert.match(csp, /media-src 'self' blob: https:\/\/wsuctjhbqiedttfnwjvf\.supabase\.co;/);
+  assert.doesNotMatch(csp, /(?:img|media)-src[^;]*(?:\*|https:;)/);
   assert.equal(first.payloadFileCount, SOURCE_RUNTIME_FILES.length + 1);
   assert.equal(first.artifactFileCount, EXPECTED_ARTIFACT_PATHS.length);
   assert.equal(first.paths.length, new Set(first.paths.map((item) => item.toLowerCase())).size);

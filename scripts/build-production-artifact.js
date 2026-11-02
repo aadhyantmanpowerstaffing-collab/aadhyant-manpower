@@ -183,7 +183,7 @@ function getReleaseRevision() {
 }
 
 function productionCspMeta() {
-  return '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; base-uri \'self\'; object-src \'none\'; frame-ancestors \'none\'; form-action \'self\'; script-src \'self\' https://cdn.jsdelivr.net; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: blob:; font-src \'self\'; connect-src \'self\' https://wsuctjhbqiedttfnwjvf.supabase.co wss://wsuctjhbqiedttfnwjvf.supabase.co;">';
+  return '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; base-uri \'self\'; object-src \'none\'; frame-ancestors \'none\'; form-action \'self\'; script-src \'self\' https://cdn.jsdelivr.net; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: blob: https://wsuctjhbqiedttfnwjvf.supabase.co; media-src \'self\' blob: https://wsuctjhbqiedttfnwjvf.supabase.co; font-src \'self\'; connect-src \'self\' https://wsuctjhbqiedttfnwjvf.supabase.co wss://wsuctjhbqiedttfnwjvf.supabase.co;">';
 }
 
 function transformRuntimeHtml(sourcePath, content, releaseRevision) {
