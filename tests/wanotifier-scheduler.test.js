@@ -3,8 +3,8 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {run}=require('../scripts/whatsapp/run-wanotifier-alerts.cjs');
 const env={WANOTIFIER_SCHEDULER_ENABLED:'true',WANOTIFIER_INTERVIEWS_ENABLED:'true',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'true',GITHUB_REPOSITORY:'aadhyantmanpowerstaffing-collab/aadhyant-manpower',GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'schedule',WANOTIFIER_SCHEDULER_APPROVED_SHA:'a'.repeat(40),CHECKED_OUT_SHA:'a'.repeat(40),WHATSAPP_WORKER_SECRET:'b'.repeat(64)};
 test('scheduler is gated and rejects unreviewed source, unexpected branch/event or missing credentials',async()=>{
- const workflow=fs.readFileSync('.github/workflows/wanotifier-approved-queue.yml','utf8');assert.match(workflow,/vars\.WANOTIFIER_SCHEDULER_ENABLED == 'true'/);assert.match(workflow,/persist-credentials: false/);
- let calls=0;for(const patch of [{WANOTIFIER_SCHEDULER_ENABLED:'false'},{CHECKED_OUT_SHA:'c'.repeat(40)},{GITHUB_REF:'refs/heads/other'},{GITHUB_EVENT_NAME:'workflow_dispatch'},{WHATSAPP_WORKER_SECRET:''},{WANOTIFIER_INTERVIEWS_ENABLED:'false',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'false'}])await assert.rejects(()=>run({...env,...patch},async()=>{calls++;throw Error('No network expected');}));assert.equal(calls,0);
+ const workflow=fs.readFileSync('.github/workflows/wanotifier-approved-queue.yml','utf8');assert.match(workflow,/vars.WANOTIFIER_SCHEDULER_ENABLED == 'true'/);assert.match(workflow,/persist-credentials: false/);
+ let calls=0;for(const patch of [{WANOTIFIER_SCHEDULER_ENABLED:'false'},{CHECKED_OUT_SHA:'c'.repeat(40)},{GITHUB_REF:'refs/heads/other'},{GITHUB_EVENT_NAME:'push'},{WHATSAPP_WORKER_SECRET:''},{WANOTIFIER_INTERVIEWS_ENABLED:'false',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'false'}])await assert.rejects(()=>run({...env,...patch},async()=>{calls++;throw Error('No network expected');}));assert.equal(calls,0);
 });
 test('scheduler sends only fixed notification kinds to the pinned worker and returns safe counts',async()=>{
  const calls=[];const result=await run(env,async(url,init)=>{calls.push({url,init});return Response.json({processed:1,sent:1,blocked:0,reconciliation_required:0});});
@@ -19,3 +19,5 @@ test('uncertain results stop the current run before the next kind, without resen
  let calls=0;await assert.rejects(()=>run(env,async()=>{calls++;return Response.json({processed:1,sent:0,blocked:0,reconciliation_required:1});}),/Review message results/);assert.equal(calls,1);
  for(const result of [{processed:1,sent:0,blocked:0,reconciliation_required:0},{processed:11,sent:11,blocked:0,reconciliation_required:0},{processed:0,sent:-1,blocked:1,reconciliation_required:0}])await assert.rejects(()=>run(env,async()=>Response.json(result)),/result unconfirmed/);
 });
+
+test('authorized manual verification uses the same bounded worker route',async()=>{let calls=0;const r=await run({...env,GITHUB_EVENT_NAME:'workflow_dispatch',WANOTIFIER_INTERVIEWS_ENABLED:'false',WANOTIFIER_REGISTERED_ALERTS_ENABLED:'false',WANOTIFIER_RECRUITMENT_UPDATES_ENABLED:'true'},async(url,init)=>{calls++;assert.deepEqual(JSON.parse(init.body),{kind:'recruitment_updates'});return Response.json({processed:0,sent:0,blocked:0,reconciliation_required:0});});assert.equal(calls,1);assert.equal(r.recruitment_updates.processed,0);});

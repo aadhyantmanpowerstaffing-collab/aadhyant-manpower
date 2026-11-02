@@ -2,7 +2,7 @@
 const endpoint='https://wsuctjhbqiedttfnwjvf.supabase.co/functions/v1/wanotifier-outbox-worker';
 async function run(env=process.env,fetcher=fetch){
  if(env.WANOTIFIER_SCHEDULER_ENABLED!=='true'||env.GITHUB_REPOSITORY!=='aadhyantmanpowerstaffing-collab/aadhyant-manpower'
- ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_EVENT_NAME!=='schedule')throw Error('WANotifier scheduler is not authorized');
+ ||env.GITHUB_REF!=='refs/heads/main'||!['schedule','workflow_dispatch'].includes(env.GITHUB_EVENT_NAME))throw Error('WANotifier scheduler is not authorized');
  if(!/^[a-f0-9]{40}$/.test(env.WANOTIFIER_SCHEDULER_APPROVED_SHA||'')||env.CHECKED_OUT_SHA!==env.WANOTIFIER_SCHEDULER_APPROVED_SHA)throw Error('Reviewed scheduler source required');
  if(!/^[a-f0-9]{64}$/.test(env.WHATSAPP_WORKER_SECRET||''))throw Error('Worker credential is missing');
  const kinds=['interviews','registered_alerts','recruitment_updates'].filter(kind=>env[kind==='recruitment_updates'?'WANOTIFIER_RECRUITMENT_UPDATES_ENABLED':kind==='interviews'?'WANOTIFIER_INTERVIEWS_ENABLED':'WANOTIFIER_REGISTERED_ALERTS_ENABLED']==='true');
