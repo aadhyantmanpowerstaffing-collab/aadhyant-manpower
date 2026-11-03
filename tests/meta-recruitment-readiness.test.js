@@ -13,8 +13,8 @@ test('browser roles have no readiness execution; service role has only the inten
 
 test('database scheduler is dormant while paused, bounded when active and keeps credentials private',async t=>{
  const db=await fixture(t);await db.exec(`create schema vault;create schema net;create schema cron;
- create table private.whatsapp_automatic_dispatch_state(singleton boolean primary key,last_requested_at timestamptz);
- insert into private.whatsapp_automatic_dispatch_state values(true,null);
+ create table private.whatsapp_automatic_dispatch_state(singleton boolean primary key,last_requested_at timestamptz,key_hash bytea);
+ insert into private.whatsapp_automatic_dispatch_state values(true,null,null);
  create table vault.decrypted_secrets(name text,decrypted_secret text);
  insert into vault.decrypted_secrets values('aadhyant_automatic_dispatch_key','synthetic-secret-not-in-cron');
  create table private.test_requests(url text,body jsonb,headers jsonb);
@@ -22,11 +22,13 @@ test('database scheduler is dormant while paused, bounded when active and keeps 
  create function net.http_post(url text,body jsonb,headers jsonb,timeout_milliseconds integer) returns bigint language plpgsql as $$begin insert into private.test_requests values(url,body,headers);return 1;end;$$;
  create function cron.schedule(name text,schedule text,command text) returns bigint language plpgsql as $$begin insert into private.test_cron values(name,schedule,command);return 1;end;$$;`);
  await db.exec(fs.readFileSync('supabase/migrations/20261103064531_direct_recruitment_scheduler.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/20261103071137_direct_recruitment_one_time_wake_fix.sql','utf8'));
+ await db.exec(`create function public.console_verify_automatic_wake(p_key text) returns boolean language plpgsql security definer set search_path='' as $$begin update private.whatsapp_automatic_dispatch_state set key_hash=sha256(convert_to(gen_random_uuid()::text,'UTF8')) where singleton and key_hash=sha256(convert_to(p_key,'UTF8')) and last_requested_at>clock_timestamp()-interval '5 minutes';return found;end;$$;`);
  const run='select private.wake_direct_recruitment_worker() id';
  await db.exec('update private.whatsapp_console_config set recruitment_updates_enabled=false');assert.equal((await db.query(run)).rows[0].id,null);assert.equal((await db.query('select count(*) n from private.test_requests')).rows[0].n,0);
  await db.exec('update private.whatsapp_console_config set recruitment_updates_enabled=true');assert.equal((await db.query(run)).rows[0].id,1);assert.equal((await db.query(run)).rows[0].id,null);
- const request=(await db.query('select * from private.test_requests')).rows[0];assert.deepEqual(request.body,{kind:'recruitment_updates'});assert.equal(request.headers['x-whatsapp-wake-key'],'synthetic-secret-not-in-cron');
+ const request=(await db.query('select * from private.test_requests')).rows[0];assert.deepEqual(request.body,{kind:'recruitment_updates'});assert.match(request.headers['x-whatsapp-wake-key'],/^[a-f0-9]{64}$/);assert.equal((await db.query('select public.console_verify_automatic_wake($1) ok',[request.headers['x-whatsapp-wake-key']])).rows[0].ok,true);assert.equal((await db.query('select public.console_verify_automatic_wake($1) ok',[request.headers['x-whatsapp-wake-key']])).rows[0].ok,false);
  const job=(await db.query('select * from private.test_cron')).rows[0];assert.equal(job.schedule,'*/5 * * * *');assert.doesNotMatch(job.command,/synthetic-secret|https|wake-key/);
  for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'private.wake_direct_recruitment_worker()','EXECUTE') ok",[role])).rows[0].ok,false);
- await db.exec('update private.whatsapp_automatic_dispatch_state set recruitment_last_requested_at=null;delete from vault.decrypted_secrets');assert.equal((await db.query(run)).rows[0].id,null);assert.equal((await db.query('select recruitment_last_error from private.whatsapp_automatic_dispatch_state')).rows[0].recruitment_last_error,'recruitment_wake_unavailable');
+ await db.exec('update private.whatsapp_automatic_dispatch_state set recruitment_last_requested_at=null,last_requested_at=null;delete from vault.decrypted_secrets');assert.equal((await db.query(run)).rows[0].id,1);
 });
