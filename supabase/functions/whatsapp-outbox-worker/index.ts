@@ -114,6 +114,10 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
    const meta=async(url:URL)=>{const r=await fetcher(url,{headers:{authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Meta verification failed');return r.json();};
    const phones=await meta(new URL('https://graph.facebook.com/v25.0/'+account+'/phone_numbers?fields=id&limit=100'));
    if(!Array.isArray(phones.data)||phones.paging?.next||!phones.data.some((p:any)=>p.id===phone))throw Error('Sender ownership not confirmed');
+   const subscribed=await meta(new URL('https://graph.facebook.com/v25.0/'+account+'/subscribed_apps'));
+   if(!Array.isArray(subscribed.data)||subscribed.paging?.next)throw Error('Complete webhook subscriptions required');
+   const app=subscribed.data.find((entry:any)=>entry?.whatsapp_business_api_data?.id===(env.get('WHATSAPP_APP_ID')||'2181424935760142'));
+   if(!app||(app.override_callback_uri&&app.override_callback_uri!==base+'/functions/v1/whatsapp-webhook'))throw Error('Direct delivery receipt webhook required');
    const templates:any[]=[];let after:string|undefined;
    for(let page=0;page<10;page++){
     const url=new URL('https://graph.facebook.com/v25.0/'+account+'/message_templates');url.searchParams.set('fields','id,name,status,language,components');url.searchParams.set('limit','100');if(after)url.searchParams.set('after',after);
@@ -121,6 +125,7 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
     if(!data.paging?.next){after=undefined;break;}after=data.paging?.cursors?.after;if(!after)throw Error('Incomplete template list');
    }
    if(after)throw Error('Incomplete template list');
+   for(let start=0;start<templates.length;start+=100)await rpc('console_sync_verified_template_subset',{p_rows:templates.slice(start,start+100)});
    await rpc('console_sync_templates',{p_rows:templates});await rpc('console_sender_connection',{p_phone_id:phone,p_account_id:account});await rpc('console_automatic_worker_heartbeat',{});
   }
   const config=await rpc('console_sender_configuration',{});if(!config?.ready||!token||config.account_id!==env.get('WHATSAPP_BUSINESS_ACCOUNT_ID')||!/^\d{8,40}$/.test(config.phone_id))return reply(503,{error:'Verify sender connection before sending'});

@@ -30,7 +30,7 @@ there is no second outbox or duplicate notification preparation path.
   Delivered. Uncertain network/receipt/persistence outcomes require reconciliation;
   there is no second provider fallback or automatic resend.
 - The five-minute database scheduler generates a fresh one-time wake nonce and
-  reuses the existing canonical five-minute verifier.
+  uses a separate recruitment verifier with the same five-minute single-use contract.
   No secret appears in cron command text. Separate recruitment wake timestamps
   avoid interfering with the registered-job publication timer. It remains dormant
   while recruitment_updates_enabled=false and never enables a feature itself.
@@ -40,7 +40,8 @@ there is no second outbox or duplicate notification preparation path.
 1. Merge the reviewed source and apply the two additive migrations in order:
    20261103064104_direct_meta_recruitment_readiness.sql and
    20261103064531_direct_recruitment_scheduler.sql, then the corrective
-   20261103071137_direct_recruitment_one_time_wake_fix.sql.
+   20261103071137_direct_recruitment_one_time_wake_fix.sql and
+   20261103073032_separate_recruitment_wake_credentials.sql.
 2. Deploy wanotifier-outbox-worker and all reviewed runtime dependencies, retaining
    verify_jwt=false because the endpoint authenticates its server wake/worker key.
    Download the runtime and compare exact source. Verify an unauthenticated POST
@@ -68,3 +69,9 @@ Live verification found that the current canonical verifier consumes each nonce
 once and requires a fresh request timestamp. The corrective migration preserves
 that contract; it does not revert to the historical static Vault key. Focused
 checks prove real verifier-style consumption and reject a second use of the nonce.
+
+Registered job alerts now check the current app subscription and callback before
+syncing templates or claiming messages. Verified template identity rebinding runs
+before complete sync. Recruitment has its own nonce hash and verifier in the
+existing dispatch state, so simultaneous job/recruitment wakes cannot invalidate
+each other. Both remain single-use and expire after five minutes.

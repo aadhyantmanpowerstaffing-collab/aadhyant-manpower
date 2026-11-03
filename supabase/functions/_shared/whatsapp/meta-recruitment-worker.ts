@@ -23,7 +23,7 @@ export async function handleMetaRecruitmentWorker(req:Request,get:Get,fetcher:ty
  let authorized=secret.length>=32&&constantTimeEqual(req.headers.get('x-whatsapp-worker-key')||'',secret);
  const wake=req.headers.get('x-whatsapp-wake-key');
  if(!authorized&&wake&&/^[a-f0-9]{64}$/.test(wake))try{
-  const r=await fetcher(get('SUPABASE_URL')+'/rest/v1/rpc/console_verify_automatic_wake',{method:'POST',headers:{...serverDatabaseHeaders(runtimeServerKey(get)),'content-type':'application/json'},body:JSON.stringify({p_key:wake}),redirect:'error',signal:AbortSignal.timeout(10000)});
+  const r=await fetcher(get('SUPABASE_URL')+'/rest/v1/rpc/console_verify_recruitment_wake',{method:'POST',headers:{...serverDatabaseHeaders(runtimeServerKey(get)),'content-type':'application/json'},body:JSON.stringify({p_key:wake}),redirect:'error',signal:AbortSignal.timeout(10000)});
   authorized=r.ok&&await r.json()===true;
  }catch{authorized=false;}
  if(!authorized)return reply(401,{error:'Worker authentication required'});
