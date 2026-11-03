@@ -371,3 +371,40 @@ test("parser preserves a full 4096-character incoming message for the Inbox", ()
   const events = parseWhatsAppWebhook(envelope({ messages: [{ id: "wamid.long-text", from: "919876543210", type: "text", text: { body } }] }));
   assert.equal(events[0].safeText, body);
 });
+
+
+test('signed Meta interview button and list replies reach the canonical exact-response processor without a send',async()=>{
+ for(const type of ['button','list'])for(const action of ['Will attend','Cannot attend']){
+  const calls:{name:string;body:any}[]=[];
+  const message:any={id:'wamid.interview-reply',from:'919876543210',timestamp:String(Math.floor(Date.now()/1000)),context:{id:'wamid.original-interview'}};
+  if(type==='button')Object.assign(message,{type:'button',button:{payload:action,text:action}});
+  else Object.assign(message,{type:'interactive',interactive:{type:'list_reply',list_reply:{id:action,title:action}}});
+  const fetcher:typeof fetch=async(input,init)=>{
+   const name=String(input).split('/').pop()!,body=JSON.parse(String(init?.body));calls.push({name,body});
+   if(name==='record_whatsapp_inbound_message'){
+    assert.equal(body.p_action_id,action);assert.equal(body.p_correlation_key,'wamid.original-interview');
+    return Response.json('00000000-0000-0000-0000-000000000003');
+   }
+   if(name==='process_interview_whatsapp_response'){assert.deepEqual(body,{p_inbound_id:'00000000-0000-0000-0000-000000000003'});return Response.json(false);}
+   assert.ok(['accept_whatsapp_webhook_event','upsert_whatsapp_inbound_contact'].includes(name));return Response.json('00000000-0000-0000-0000-000000000001');
+  };
+  const p=createSupabaseWebhookPersistence(environment,fetcher);
+  assert.equal((await handleWhatsAppWebhook(await signedRequest(envelope({messages:[message]})),environment,p.acceptEvent,p.processEvent)).status,200);
+  assert.deepEqual(calls.map(x=>x.name),['accept_whatsapp_webhook_event','upsert_whatsapp_inbound_contact','record_whatsapp_inbound_message','process_interview_whatsapp_response']);
+ }
+});
+test('unsigned interview replies cannot call persistence or mutate interview responses',async()=>{
+ const payload=envelope({messages:[{id:'wamid.interview-unsigned',from:'919876543210',type:'button',button:{payload:'Will attend',text:'Will attend'},context:{id:'wamid.original'}}]});
+ const deny=async()=>{assert.fail('Unsigned response reached persistence');};
+ assert.equal((await handleWhatsAppWebhook(await signedRequest(payload,{signature:null}),environment,deny,deny)).status,403);
+});
+test('plain interview-like text and unrelated button payloads never update interview responses',async()=>{
+ for(const message of [
+  {id:'wamid.plain',from:'919876543210',type:'text',text:{body:'Will attend'}},
+  {id:'wamid.unrelated',from:'919876543210',type:'button',button:{payload:'Will attend tomorrow',text:'Will attend'}}
+ ]){
+  const calls:string[]=[];const fetcher:typeof fetch=async(input)=>{const name=String(input).split('/').pop()!;calls.push(name);assert.ok(['accept_whatsapp_webhook_event','upsert_whatsapp_inbound_contact','record_whatsapp_inbound_message'].includes(name));return Response.json('00000000-0000-0000-0000-000000000001');};
+  const p=createSupabaseWebhookPersistence(environment,fetcher);assert.equal((await handleWhatsAppWebhook(await signedRequest(envelope({messages:[message]})),environment,p.acceptEvent,p.processEvent)).status,200);
+  assert.equal(calls.includes('process_interview_whatsapp_response'),false);
+ }
+});
