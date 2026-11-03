@@ -19,3 +19,9 @@ test('a slow recipient does not prevent the rest of a bounded batch crossing the
  assert.deepEqual(await work,{processed:10,sent:10,blocked:0,reconciliation_required:0});
 });
 test('unconfirmed failure persistence cannot report a completed recruitment batch',async()=>{const f=fixture({boundary:false});const rpc=async(n:string,a:any)=>{if(n==='mark_whatsapp_outbound_failure')throw Error('synthetic persistence failure');return f.rpc(n,a);};await assert.rejects(()=>dispatchRecruitmentNotifications('worker','1415347881659158','1386833723249335',()=>endpoint,rpc,f.fetcher),/persistence unconfirmed/);assert.equal(f.sends,0);});
+
+test('direct Meta definite rejection records the numeric reason without private provider text or retry',async()=>{
+ const f=fixture();let sends=0;const result=await dispatchRecruitmentNotifications('worker','1415347881659158','1386833723249335',()=>'',f.rpc,async()=>{sends++;return Response.json({error:{code:131048,message:'PRIVATE provider detail'}},{status:400});},{accessToken:'synthetic-meta-key'});
+ assert.deepEqual(result,{processed:1,sent:0,blocked:1,reconciliation_required:0});assert.equal(sends,1);
+ assert.equal(f.calls.at(-1).args.p_error_code,'131048');assert.equal(f.calls.at(-1).args.p_failure_kind,'permanent');assert.doesNotMatch(JSON.stringify(f.calls),/PRIVATE|synthetic-meta-key/);
+});

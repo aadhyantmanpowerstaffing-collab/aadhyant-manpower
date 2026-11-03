@@ -1,3 +1,4 @@
+import {handleMetaRecruitmentWorker} from '../_shared/whatsapp/meta-recruitment-worker.ts';
 import {dispatchRecruitmentNotifications} from '../_shared/whatsapp/recruitment-dispatch.ts';
 import {dispatchWANotifierNotifications} from '../_shared/whatsapp/interview-dispatch.ts';
 import {wanotifierNotificationTransport,registeredNotificationLanguages} from '../_shared/whatsapp/wanotifier-notification.ts';
@@ -6,6 +7,7 @@ import {runtimeServerKey,serverDatabaseHeaders} from '../_shared/whatsapp/server
 
 type Get=(key:string)=>string;
 export async function handleWANotifierWorker(req:Request,get:Get,fetcher:typeof fetch=fetch){
+ if(get('WHATSAPP_RECRUITMENT_UPDATES_ENABLED')==='true')return handleMetaRecruitmentWorker(req,get,fetcher);
  const reply=(status:number,value:unknown)=>Response.json(value,{status,headers:{'cache-control':'no-store'}});
  if(req.method!=='POST')return reply(405,{error:'POST required'});
  const secret=get('WHATSAPP_WORKER_SECRET');

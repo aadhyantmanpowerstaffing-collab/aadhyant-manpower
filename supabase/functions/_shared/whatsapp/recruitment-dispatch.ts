@@ -12,9 +12,16 @@ export function recruitmentPayload(row:any){
  if(values.some(v=>typeof v!=='string'||!v.trim()||Array.from(v).length>300||/[\u0000-\u001f\u007f]/.test(v)))throw Error('Invalid recruitment variables');
  return {data:{body_variables:values},recipients:[{whatsapp_number:row.destination}]};
 }
-export async function dispatchRecruitmentNotifications(worker:string,phoneId:string,accountId:string,get:(k:string)=>string,rpc:(n:string,a:Record<string,unknown>)=>Promise<any>,fetcher:typeof fetch){
+export function recruitmentMetaPayload(row:any){
+ const checked=recruitmentPayload(row);
+ const components:any[]=[{type:'body',parameters:checked.data.body_variables.map(text=>({type:'text',text}))}];
+ if(!row.template_name.startsWith('aadhyant_joining_details_'))for(const [index,payload] of ['Will attend','Cannot attend'].entries())components.push({type:'button',sub_type:'quick_reply',index:String(index),parameters:[{type:'payload',payload}]});
+ return {messaging_product:'whatsapp',to:row.destination.slice(1),type:'template',template:{name:row.template_name,language:{code:row.template_language},components}};
+}
+export async function dispatchRecruitmentNotifications(worker:string,phoneId:string,accountId:string,get:(k:string)=>string,rpc:(n:string,a:Record<string,unknown>)=>Promise<any>,fetcher:typeof fetch,meta?:{accessToken:string}){
  // Validate every configured route before preparing or claiming any candidate message.
- const transports=Object.fromEntries(Object.entries(recruitmentRoutes).map(([name,key])=>[name,wanotifierNotificationTransport(get(key),fetcher)]));
+ if(meta&&(!meta.accessToken||!/^\d{8,40}$/.test(phoneId)||!/^\d{8,40}$/.test(accountId)))throw Error('Configured Meta sender required');
+ const transports=meta?{}:Object.fromEntries(Object.entries(recruitmentRoutes).map(([name,key])=>[name,wanotifierNotificationTransport(get(key),fetcher)]));
  await rpc('prepare_recruitment_notifications',{});
  const rows=await rpc('console_claim_recruitment_notifications',{p_worker_id:worker});
  if(!Array.isArray(rows)||rows.length>10)throw Error('Recruitment claim unconfirmed');
@@ -24,7 +31,15 @@ export async function dispatchRecruitmentNotifications(worker:string,phoneId:str
   let payload;
   try{payload=recruitmentPayload(row);if(await rpc('console_recruitment_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:phoneId,p_account_id:accountId})!==true)throw Error('Boundary denied');}
   catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'eligibility_changed',p_error_code:'recruitment_final_check',p_failure_kind:'permanent'});return 'blocked';}
-  try{const receipt=await transports[row.template_name](payload);const id=wanotifierMessageId(receipt);
+  try{let receipt:any;
+   if(meta){const sent=await fetcher('https://graph.facebook.com/v25.0/'+phoneId+'/messages',{method:'POST',headers:{authorization:'Bearer '+meta.accessToken,'content-type':'application/json'},body:JSON.stringify(recruitmentMetaPayload(row)),redirect:'error',signal:AbortSignal.timeout(15000)});receipt=await sent.json();
+    const code=String(receipt?.error?.code??'');
+    if(sent.status>=400&&sent.status<500&&receipt.messages===undefined&&receipt.wamid===undefined&&/^\d{1,12}$/.test(code)){
+     if(await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'provider_rejected',p_error_code:code,p_failure_kind:'permanent'})!==true)throw Error('Failure persistence unconfirmed');return 'blocked';
+    }
+    if(!sent.ok||receipt?.error||!Array.isArray(receipt?.messages)||receipt.messages.length!==1)throw Error('Meta acceptance unconfirmed');}
+   else receipt=await transports[row.template_name](payload);
+   const id=wanotifierMessageId(receipt);
    if(await rpc('mark_whatsapp_outbound_sent',{p_message_id:row.message_id,p_worker_id:worker,p_provider_message_id:id})!==true)throw Error('Receipt not persisted');return 'sent';
   }catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'ambiguous_provider_outcome',p_error_code:'reconcile_before_retry',p_failure_kind:'ambiguous'});return 'reconciliation_required';}
  }));
