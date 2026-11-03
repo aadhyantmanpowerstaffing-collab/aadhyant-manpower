@@ -15,7 +15,15 @@ test('CSV supports quoted commas, escaped quotes and CRLF',()=>{
   const out=api.csv('Name,Email,Mobile,Gender,Age,State,District\r\n"Sample, ""Person""",,9876543210,Male,25,Gujarat,Ahmedabad\r\n');assert.equal(out.rows[0].Name,'Sample, "Person"');assert.equal(out.rows[0].Email,'');
 });
 test('missing/duplicate headers and malformed quotes fail clearly',()=>{
-  assert.throws(()=>api.normalize([['Name','Mobile']]),/Required columns/);assert.throws(()=>api.normalize([[...header,'Mobile'],row]),/Required columns/);assert.throws(()=>api.csv('"unclosed'),/Unclosed/);
+  assert.throws(()=>api.normalize([['Name']]),/Required columns/);assert.throws(()=>api.normalize([[...header,'Mobile'],row]),/Required columns/);assert.throws(()=>api.csv('"unclosed'),/Unclosed/);
+});
+test('name and mobile imports accept aliases and blank optional details without inventing demographics',()=>{
+  for(const heading of ['Mobile','Mobile Number','Mobile ']) {
+    const out=api.normalize([['Name',heading],['Sample Person','919876543210'],['Sample Again','9876543210']]);
+    assert.equal(out.rows.length,1);assert.equal(out.duplicates.length,1);assert.equal(out.errors.length,0);
+    assert.deepEqual(out.rows[0],{Name:'Sample Person',Email:'',Mobile:'9876543210',Gender:'',Age:'',State:'',District:''});
+  }
+  assert.throws(()=>api.normalize([['Name','Mobile','Mobile Number'],['Sample','9876543210','9876543211']]),/Required columns/);
 });
 test('row/file limits and invalid spreadsheet archives fail before import',async()=>{
   assert.throws(()=>api.normalize([header,...Array.from({length:501},(_,i)=>{const r=[...row];r[2]=String(9000000000+i);return r;})]),/500/);

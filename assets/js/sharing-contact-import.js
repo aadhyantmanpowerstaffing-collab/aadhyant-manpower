@@ -9,8 +9,8 @@
   }
   function normalize(matrix) {
     if (!matrix.length) throw new Error('The file is empty.');
-    const columns = matrix[0].map(v=>clean(v).replace(/^\uFEFF/,'').toLowerCase());
-    if (headers.some(h=>columns.filter(v=>v===h.toLowerCase()).length!==1)) throw new Error('Required columns: '+headers.join(', '));
+    const columns = matrix[0].map(v=>clean(v).replace(/^\uFEFF/,'').toLowerCase()).map(v=>['mobile number','phone','phone number','whatsapp number'].includes(v)?'mobile':v);
+    if (['name','mobile'].some(h=>columns.filter(v=>v===h).length!==1) || headers.some(h=>columns.filter(v=>v===h.toLowerCase()).length>1)) throw new Error('Required columns: Name, Mobile (or Mobile Number). Each column must appear once.');
     const seen=new Map(),rows=[],errors=[],duplicates=[];
     matrix.slice(1).forEach((cells,index)=>{
       if (!cells.some(v=>clean(v))) return;
@@ -19,12 +19,12 @@
       const age=Number(row.Age),reasons=[];
       if (!phone) reasons.push('invalid Indian mobile');
       if (!row.Name || row.Name.length>160) reasons.push('invalid name');
-      if (!gender) reasons.push('invalid gender');
-      if (!/^\d{1,2}$/.test(row.Age)||!Number.isInteger(age)||age<18||age>75) reasons.push('age must be 18–75');
-      if (!row.State||row.State.length>160||!row.District||row.District.length>160) reasons.push('state and district required');
+      if (row.Gender && !gender) reasons.push('invalid gender');
+      if (row.Age && (!/^\d{1,2}$/.test(row.Age)||!Number.isInteger(age)||age<18||age>75)) reasons.push('age must be 18–75');
+      if (row.State.length>160||row.District.length>160) reasons.push('state and district must be at most 160 characters');
       if (row.Email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.Email)||row.Email.length>254)) reasons.push('invalid email');
       if (reasons.length) { errors.push({row:index+2,reasons});return; }
-      row.Mobile=phone;row.Gender=gender;row.Age=age;
+      row.Mobile=phone;row.Gender=gender||'';row.Age=row.Age?age:'';
       if (seen.has(phone)) { duplicates.push({row:index+2,firstRow:seen.get(phone)});return; }
       seen.set(phone,index+2);rows.push(row);
     });
