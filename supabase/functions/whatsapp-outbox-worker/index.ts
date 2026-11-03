@@ -1,4 +1,5 @@
 import {runtimeServerKey,serverDatabaseHeaders} from '../_shared/whatsapp/server-headers.ts';
+import {campaignMediaUrl} from '../_shared/whatsapp/wanotifier-campaign-media.ts';
 import {constantTimeEqual} from '../_shared/whatsapp/signature.ts';
 type Env={get:(key:string)=>string};
 type Fetcher=typeof fetch;
@@ -19,6 +20,20 @@ export function templatePayload(row:any,videoLink?:string){
   return {messaging_product:'whatsapp',to:row.destination.replace(/^\+/,''),type:'template',template:{name:row.template_name,language:{code:'hi'},components:[{type:'header',parameters:[{type:'video',video:{link:videoLink}}]},{type:'button',sub_type:'quick_reply',index:'1',parameters:[{type:'payload',payload:'STOP'}]}]}};
  }
 
+ if(['aadhyant_selected_vacancy_en_v1','aadhyant_selected_vacancy_hi_v1'].includes(row.template_name)){
+  const hindi=row.template_name==='aadhyant_selected_vacancy_hi_v1';
+  const p=templatePayload({...row,template_name:hindi?'aadhyant_registered_job_alert_hi_v1':'aadhyant_registered_job_alert_v4'});
+  p.template.name=row.template_name;
+  p.template.components[1]={type:'button',sub_type:'quick_reply',index:'0',parameters:[{type:'payload',payload:'INTERESTED'}]} as any;
+  return p;
+ }
+ if(row.template_name==='aadhyant_registered_job_image_hi_v1'){
+  if(!videoLink||!/^https:\/\//.test(videoLink))throw Error('Verified private image required');
+  const p=templatePayload({...row,template_name:'aadhyant_registered_job_alert_hi_v2'});
+  p.template.name=row.template_name;
+  p.template.components.unshift({type:'header',parameters:[{type:'image',image:{link:videoLink}}]} as any);
+  return p;
+ }
  if(['aadhyant_registered_job_alert_v5','aadhyant_same_day_pay_hi_v2'].includes(row.template_name)){
   const sameDay=row.template_name==='aadhyant_same_day_pay_hi_v2';
   const p=templatePayload({...row,template_name:sameDay?'aadhyant_same_day_pay_hi_v1':'aadhyant_registered_job_alert_v4'});
@@ -112,19 +127,7 @@ export async function handleWorker(req:Request,env:Env,fetcher:Fetcher=fetch):Pr
   const worker='console:'+crypto.randomUUID();claimPending=true;const rows=automatic?await rpc('console_claim_registered_alerts',{p_worker_id:worker}):await rpc('console_claim_campaign',{p_campaign_id:campaign,p_worker_id:worker});if(!Array.isArray(rows)||rows.length>10)throw Error('Invalid claim result');claimPending=false;
   const outcomes=await Promise.all(rows.map(async(row:any)=>{
    let payload;try{
-    let videoLink:string|undefined;
-    if(['aadhyant_registered_job_video_en_v1','aadhyant_registered_job_video_hi_v1','aadhyant_registration_video_hi_v1'].includes(row.template_name)){
-     const bucket=row.template_name==='aadhyant_registration_video_hi_v1'?'whatsapp-campaign-media':'recruitment-reels';
-     const path=await rpc('console_claimed_reel_object',{p_message_id:row.message_id,p_worker_id:worker});
-     if(typeof path!=='string'||!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(path))throw Error('Current Reel required');
-     const media=await fetcher(base+'/storage/v1/object/authenticated/'+bucket+'/'+path,{method:'HEAD',headers:serverDatabaseHeaders(key),redirect:'error',signal:AbortSignal.timeout(10000)});
-     const size=Number(media.headers.get('content-length'));
-     if(!media.ok||!Number.isInteger(size)||size<100||size>16000000||media.headers.get('content-type')?.split(';')[0]!=='video/mp4')throw Error('Unsupported video size or type');
-     const signed=await fetcher(base+'/storage/v1/object/sign/'+bucket+'/'+path,{method:'POST',headers:{...serverDatabaseHeaders(key),'content-type':'application/json'},body:JSON.stringify({expiresIn:3600}),redirect:'error',signal:AbortSignal.timeout(10000)});
-     if(!signed.ok)throw Error('Reel unavailable');const data=await signed.json();
-     if(typeof data.signedURL!=='string'||!data.signedURL.startsWith('/object/sign/'+bucket+'/'+path+'?'))throw Error('Unexpected media URL');
-     videoLink=base+'/storage/v1'+data.signedURL;
-    }
+    const videoLink=await campaignMediaUrl(row,worker,base,key,rpc,fetcher);
     payload=templatePayload(row,videoLink);
    }catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'unsupported_template',p_error_code:'payload_rejected',p_failure_kind:'permanent',p_retry_at:null});return 'failed';}
    try{if(await rpc('console_provider_boundary',{p_message_id:row.message_id,p_worker_id:worker,p_phone_id:config.phone_id,p_account_id:config.account_id})!==true)throw Error('Boundary rejected');}catch{await rpc('mark_whatsapp_outbound_failure',{p_message_id:row.message_id,p_worker_id:worker,p_error_category:'eligibility_changed',p_error_code:'boundary_rejected',p_failure_kind:'permanent',p_retry_at:null});return 'failed';}

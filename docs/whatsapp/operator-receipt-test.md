@@ -1,0 +1,9 @@
+# Operator receipt check
+
+`wanotifier-receipt-test` runs one explicitly authorized owner-number diagnostic through the production Notification transport. Deploy with JWT verification enabled. The dashboard tester supplies its own gateway authorization; supply the existing project secret API key in `apikey` for the handler's operator check. Never put credentials into source, logs, screenshots or public issue comments.
+
+Set a fixed `WANOTIFIER_TEST_MESSAGE_ID`, `WANOTIFIER_TEST_DESTINATION`, a `WANOTIFIER_TEST_EXPIRES_AT` at most 30 minutes ahead, and `WANOTIFIER_TEST_ENABLED=true`. The request is exactly `{"action":"send_test"}`. The canonical outbox row must have purpose `provider_diagnostic`, max attempts 1, the exact six technical-test variables exported by the handler, no candidate/requirement, the diagnostic idempotency prefix and an infinite next-attempt timestamp. The operator-only RPC additionally limits access to recent diagnostic rows and checks contact suppression. It grants no table access to service_role, anon or authenticated.
+
+The atomic claim, suppression recheck, provider receipt and existing canonical mark-sent RPC prevent concurrent or repeated sends. An uncertain provider outcome is marked for reconciliation and must never be retried automatically. A successful response means provider acceptance; inspect the exact recipient in WANotifier Delivery Report separately. Turn the test flag off immediately afterward.
+
+A successful diagnostic does not enable the general worker, clear candidate consent requirements, renew the 24-hour sender/template approval gates, or enable the scheduled workflow. Activation must separately verify all configured templates, exact sender IDs, current candidate eligibility, approved immutable source, scheduler credentials and feature flags. Keep legacy interview sending off when recruitment lifecycle sending is enabled.

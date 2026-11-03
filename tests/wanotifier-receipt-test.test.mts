@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {handleReceiptTest,receiptTestVariables} from '../supabase/functions/wanotifier-receipt-test/index.ts';
+const id='00000000-0000-4000-8000-000000000001';
+function fixture(options:any={}){
+ const now=Date.now();const env:any={SUPABASE_SERVICE_ROLE_KEY:'synthetic-operator-key-'.repeat(3),SUPABASE_URL:'https://wsuctjhbqiedttfnwjvf.supabase.co',WANOTIFIER_TEST_ENABLED:'true',WANOTIFIER_TEST_MESSAGE_ID:id,WANOTIFIER_TEST_DESTINATION:'+919876543210',WANOTIFIER_TEST_EXPIRES_AT:new Date(now+600000).toISOString(),WANOTIFIER_SENDER_NUMBER:'+919624453543',WANOTIFIER_PHONE_NUMBER_ID:'1415347881659158',WANOTIFIER_BUSINESS_ACCOUNT_ID:'1386833723249335',WANOTIFIER_INTERVIEW_CONFIRMATION_EN_URL:'https://app.wanotifier.com/api/v1/notifications/synthetic123?key=synthetic-key'};
+ const row:any={id,contact_id:id,destination:env.WANOTIFIER_TEST_DESTINATION,purpose:'provider_diagnostic',state:'queued',send_phase:'ready',attempt_count:0,max_attempts:1,template_name:'aadhyant_interview_confirmation_en_v1',template_language:'en',template_version:'1',template_variables:receiptTestVariables,...options.row};
+ let sends=0,claims=0,contacts=0,sent=0,failed=0;
+ const fetcher=async(input:any,init:any={})=>{const url=new URL(String(input));
+  if(url.origin==='https://app.wanotifier.com'){sends++;const payload=JSON.parse(init.body);assert.deepEqual(payload.recipients,[{whatsapp_number:env.WANOTIFIER_TEST_DESTINATION}]);assert.deepEqual(payload.data.body_variables,Object.values(receiptTestVariables));if(options.provider403)return new Response('error code: 1010',{status:403});return Response.json({error:false,status:'attempted',wamid:'wamid.synthetic-server-test'});}
+  if(url.pathname.endsWith('/operator_whatsapp_receipt_test')){const action=JSON.parse(init.body).p_action;
+   if(action==='contact'){contacts++;return Response.json([{id,opted_out_at:null,transactional_contact_status:options.suppressed||(contacts>1&&options.stopAfterClaim)?'suppressed':'unknown'}]);}
+   if(action==='claim'){claims++;if(row.state!=='queued')return Response.json([]);row.state='sending';return Response.json([row]);}return Response.json([row]);}
+  if(url.pathname.endsWith('/mark_whatsapp_outbound_sent')){sent++;if(options.persistFail)return Response.json(false);return Response.json(true);}
+  if(url.pathname.endsWith('/mark_whatsapp_outbound_failure')){failed++;return Response.json(true);}
+  throw Error('Unexpected fetch');};
+ const request=(body:any={action:'send_test'})=>new Request('https://server.test',{method:'POST',headers:{authorization:'Bearer '+env.SUPABASE_SERVICE_ROLE_KEY,'content-type':'application/json'},body:JSON.stringify(body)});
+ return {env,now,fetcher,request,get:(k:string)=>env[k]||'',counts:()=>({sends,claims,sent,failed})};
+}
+test('server receipt test uses one canonical claim, one exact provider send and persisted wamid',async()=>{const f=fixture();const r=await handleReceiptTest(f.request(),f.get,f.fetcher,f.now);assert.equal(r.status,200);assert.equal((await r.json()).wamid,'wamid.synthetic-server-test');assert.deepEqual(f.counts(),{sends:1,claims:1,sent:1,failed:0});const replay=await handleReceiptTest(f.request(),f.get,f.fetcher,f.now);assert.equal(replay.status,409);assert.equal(f.counts().sends,1);});
+for(const setting of ['WANOTIFIER_TEST_ENABLED','WANOTIFIER_TEST_MESSAGE_ID','WANOTIFIER_TEST_EXPIRES_AT','WANOTIFIER_SENDER_NUMBER'])test('invalid test gate prevents any claim: '+setting,async()=>{const f=fixture();f.env[setting]='';assert.equal((await handleReceiptTest(f.request(),f.get,f.fetcher,f.now)).status,503);assert.equal(f.counts().claims,0);});
+test('ordinary caller and supplied recipient cannot invoke probe',async()=>{const f=fixture();const unauth=new Request('https://server.test',{method:'POST',body:'{}'});assert.equal((await handleReceiptTest(unauth,f.get,f.fetcher,f.now)).status,401);assert.equal((await handleReceiptTest(f.request({action:'send_test',destination:'+919999999999'}),f.get,f.fetcher,f.now)).status,400);assert.equal(f.counts().claims,0);});
+for(const options of [{row:{destination:'+919999999999'}},{row:{max_attempts:3}},{row:{purpose:'recruitment_update'}},{suppressed:true},{stopAfterClaim:true}])test('changed target, shape or suppression never sends '+JSON.stringify(options),async()=>{const f=fixture(options);await handleReceiptTest(f.request(),f.get,f.fetcher,f.now);assert.equal(f.counts().sends,0);});
+for(const options of [{provider403:true},{persistFail:true}])test('uncertain provider or receipt persistence never retries '+JSON.stringify(options),async()=>{const f=fixture(options);const r=await handleReceiptTest(f.request(),f.get,f.fetcher,f.now);assert.equal(r.status,503);const body=await r.json();assert.equal(body.retry,false);assert.equal(f.counts().sends,1);assert.equal(f.counts().failed,1);assert.ok(!JSON.stringify(body).includes('synthetic-key'));});

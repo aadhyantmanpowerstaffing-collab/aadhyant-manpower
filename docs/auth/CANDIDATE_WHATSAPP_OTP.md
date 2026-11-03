@@ -23,7 +23,7 @@ allows Auth signup. No synthetic email addresses or generated passwords are used
   by this exact registration require staff review. Marketing consent stays separate.
 - An additional audit event records the identity link once without phone/code data.
 - Supabase owns OTP verification, validity, rate limits and session tokens. Its
-  Send SMS HTTP Hook routes the generated code to WANotifier. The client uses the
+  Send SMS HTTP Hook routes the generated code directly to Meta Cloud API. The client uses the
   normal SMS OTP API; `channel: whatsapp` is reserved for built-in Twilio routing.
 - The hook authenticates Standard Webhooks HMAC signatures over the raw body and
   enforces a five-minute signature window and a 16 KiB body limit.
@@ -46,20 +46,23 @@ The cause of the account permission restriction has not been independently estab
 
 ## Activation prerequisites
 
-1. Resolve the observed provider account permission error. Obtain approval for
-   the Authentication template and create its dedicated Notification API route.
-2. Inspect the provider-generated example and confirm the exact one-recipient
-   contract: `data.body_variables: [OTP]`, `data.button_variables: [OTP]` and
-   `recipients: [{whatsapp_number: +91...}]`. The current adapter is gated and
-   must be corrected if the actual generated schema differs. Disable provider
-   retry schedules for time-sensitive OTP messages.
+1. Obtain approval for `aadhyant_candidate_login_otp_en_v1` directly on the
+   configured Meta WABA. Required category AUTHENTICATION, language en, Copy Code,
+   security recommendation and five-minute expiry. The old WANotifier error is
+   historical evidence only; current direct Meta template permission is unverified.
+2. The hook sends the OTP twice: body text and URL button index 0. It uses the
+   existing server-only `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and
+   `WHATSAPP_BUSINESS_ACCOUNT_ID`; no WANotifier URL/key is used. A successful
+   single `wamid.` response is required; malformed, rejected and uncertain calls
+   never trigger an automatic resend. Template approval must be confirmed before
+   setting the verified gate. Set template TTL to 300 seconds before activation.
 3. Obtain production deployment approval under AGENTS.md. Install the additive
    migration, deploy `candidate-whatsapp-auth` with gateway JWT checking off
    because raw-body HMAC authenticates it, and deploy the frontend assets.
-4. Keep secrets server-side: `SEND_SMS_HOOK_SECRET` in Standard Webhooks format
-   and the private `WANOTIFIER_AUTH_NOTIFICATION_URL`. Keep
-   `WANOTIFIER_AUTH_ENABLED` and `WANOTIFIER_AUTH_TEMPLATE_VERIFIED` false until
-   the generated provider contract is verified.
+4. Keep `SEND_SMS_HOOK_SECRET` server-side in Standard Webhooks format. Keep
+   `WHATSAPP_AUTH_ENABLED` and `WHATSAPP_AUTH_TEMPLATE_VERIFIED` false until
+   the exact template/sender contract is verified. Old WANotifier Auth flags
+   cannot activate this handler.
 5. Configure Supabase phone signups with automatic confirmation OFF, OTP length
    six, expiry five minutes and resend interval at least 60 seconds. Configure
    appropriate Auth request limits and abuse protection before public activation.
@@ -82,3 +85,16 @@ and stale-verification protections, 86/86 focused database/auth/form/portal/arti
 tests passed. Production artifact packaging and `git diff --check` pass. All local
 runtime tests use disposable PGlite fixtures and synthetic provider responses.
 The new migration and Auth settings have not been installed on production.
+
+## Direct Meta preparation — 3 November 2026
+
+The draft now uses the same Meta sender as the live Manager. The website branch
+has been incorporated without dropping the direct campaign, template rebind or
+account webhook fixes. No production migration, Auth hook setting, activation gate
+or OTP send was performed during this preparation. A provider receipt proves
+acceptance only; controlled delivery/login verification remains required.
+
+References: Supabase Send SMS Hook
+https://supabase.com/docs/guides/auth/auth-hooks/send-sms-hook
+and Meta's Authentication Copy Code template collection
+https://www.postman.com/meta/whatsapp-business-platform/request/6vkv46u/create-authentication-template-w-otp-copy-code-button

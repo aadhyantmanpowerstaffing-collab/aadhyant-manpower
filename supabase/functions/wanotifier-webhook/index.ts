@@ -57,10 +57,10 @@ export async function handleWANotifierWebhook(req:Request,get:Get,rpc:Rpc,fetche
   // payload. Canonical processing expects INTERESTED. Never infer this from text
   // messages or an unrelated button, and preserve the original signed ledger hash.
   const buttonAction=event.messageType==='button'?event.actionId?.trim().toUpperCase():null;
-  const actionId=buttonAction==='INTERESTED'?'INTERESTED':['STOP ALERTS','STOP_ALERTS','STOP'].includes(buttonAction||'')?'STOP':event.actionId??null;
+  const actionId=buttonAction==='INTERESTED'?'INTERESTED':['STOP ALERTS','STOP_ALERTS','STOP','अलर्ट बंद करें'].includes(buttonAction||'')?'STOP':event.actionId??null;
   const inboundId=await rpc('record_whatsapp_inbound_message',{p_webhook_event_id:webhookId,p_contact_id:contactId,p_provider_message_id:event.providerMessageId,p_provider_timestamp:event.providerTimestamp??null,p_message_type:event.messageType,p_safe_text:['text','button','list'].includes(event.messageType)?event.safeText??null:null,p_action_id:actionId,p_correlation_key:event.correlationKey??null,p_redacted_response:null});
   if(typeof inboundId!=='string'||!inboundId)return reply(500);
-  const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE'].includes((event.safeText||'').trim().toUpperCase()));
+  const stop=['STOP','UNSUBSCRIBE','STOP_ALERTS'].includes((actionId||'').trim().toUpperCase())||(event.messageType==='text'&&['STOP','UNSUBSCRIBE','अलर्ट बंद करें'].includes((event.safeText||'').trim().toUpperCase()));
   if(stop&&await rpc('set_whatsapp_contact_suppression',{p_contact_id:contactId,p_suppressed:true,p_source:'whatsapp_inbound',p_reason_category:'user_stop'})!==true)return reply(500);
   if(!stop&&get('WANOTIFIER_INTERVIEW_RESPONSES_ENABLED')==='true'&&['WILL ATTEND','CANNOT ATTEND'].includes((actionId||'').trim().toUpperCase()))await rpc('process_interview_whatsapp_response',{p_inbound_id:inboundId});
   if(!stop&&get('WANOTIFIER_INTERESTED_ENABLED')==='true'&&actionId==='INTERESTED'
