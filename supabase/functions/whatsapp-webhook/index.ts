@@ -216,6 +216,14 @@ export function createSupabaseWebhookPersistence(environment: WebhookEnvironment
         await callSupabaseRpc(environment,fetcher,'console_cancel_registration_chat',{p_contact_id:contactId});
         return;
       }
+      // Interview responses use the original provider message/contact and current
+      // schedule revision checked by the canonical processor. No acknowledgement
+      // or registration message is sent for an interview quick reply.
+      if (['button','list'].includes(event.messageType)
+        && ['WILL ATTEND','CANNOT ATTEND'].includes(event.actionId?.trim().toUpperCase() ?? '')) {
+        await callSupabaseRpc(environment,fetcher,'process_interview_whatsapp_response',{p_inbound_id:inboundMessageId});
+        return;
+      }
       if(postJob){
         const reply:any=await callSupabaseRpc(environment,fetcher,'console_process_employer_post_job',{p_inbound_message_id:inboundMessageId});
         if(reply?.outbound_id){
