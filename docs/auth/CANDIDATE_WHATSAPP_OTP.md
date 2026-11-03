@@ -98,3 +98,16 @@ References: Supabase Send SMS Hook
 https://supabase.com/docs/guides/auth/auth-hooks/send-sms-hook
 and Meta's Authentication Copy Code template collection
 https://www.postman.com/meta/whatsapp-business-platform/request/6vkv46u/create-authentication-template-w-otp-copy-code-button
+
+## Direct Meta submission result — 3 November 2026
+
+After explicit user approval, the prepared Copy Code template was submitted in
+Meta WhatsApp Manager on the current account. Meta rejected creation with:
+
+> This WhatsApp Business account does not have permission to create message template
+
+No template entered review and no OTP was sent. The same error is now reproduced
+directly at Meta, independently of WANotifier. Reassigning System User Full Access
+is not evidence of resolving template-category eligibility. Keep all Auth activation
+gates off until Meta accepts the Authentication template and approval is verified.
+Do not send bulk messages merely to attempt to unlock account eligibility.
