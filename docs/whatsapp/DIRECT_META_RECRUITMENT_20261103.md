@@ -75,3 +75,16 @@ syncing templates or claiming messages. Verified template identity rebinding run
 before complete sync. Recruitment has its own nonce hash and verifier in the
 existing dispatch state, so simultaneous job/recruitment wakes cannot invalidate
 each other. Both remain single-use and expire after five minutes.
+
+## Site daily cap removed at user request
+
+The pending release adds 20261103074538_remove_site_daily_alert_cap.sql. The
+canonical configuration uses NULL for no site daily cap, and the automatic claim
+stage no longer counts or blocks on a rolling daily attempt total. Ten-message
+claim batches, consent/STOP, canonical deduplication, sender/template checks and
+provider-boundary checks remain. Meta limits remain authoritative. The migration
+does not enable automatic alerts or send any message.
+
+The Admin workspace removes the numeric daily-limit input and sends a NULL cap.
+Old clients attempting activation with a numeric cap must refresh; pause requests
+from old clients remain supported. The audited configuration records no site cap.
