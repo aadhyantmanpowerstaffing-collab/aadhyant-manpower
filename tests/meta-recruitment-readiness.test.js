@@ -32,3 +32,22 @@ test('database scheduler is dormant while paused, bounded when active and keeps 
  for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'private.wake_direct_recruitment_worker()','EXECUTE') ok",[role])).rows[0].ok,false);
  await db.exec('update private.whatsapp_automatic_dispatch_state set recruitment_last_requested_at=null,last_requested_at=null;delete from vault.decrypted_secrets');assert.equal((await db.query(run)).rows[0].id,1);
 });
+
+test('job alerts and recruitment keep independent simultaneous single-use wake credentials',async t=>{
+ const db=await fixture(t);await db.exec(`create schema net;
+ create table private.whatsapp_automatic_dispatch_state(singleton boolean primary key,key_hash bytea,last_requested_at timestamptz,recruitment_last_requested_at timestamptz,recruitment_last_request_id bigint,recruitment_last_error text);
+ insert into private.whatsapp_automatic_dispatch_state values(true,sha256(convert_to(repeat('b',64),'UTF8')),clock_timestamp(),null,null,null);
+ create table private.isolated_requests(headers jsonb);
+ create function net.http_post(url text,body jsonb,headers jsonb,timeout_milliseconds integer) returns bigint language plpgsql as $$begin insert into private.isolated_requests values(headers);return 1;end;$$;`);
+ await db.exec(fs.readFileSync('supabase/migrations/20261103073032_separate_recruitment_wake_credentials.sql','utf8'));
+ const base=fs.readFileSync('supabase/migrations/20261019123133_one_time_automatic_wake_credentials.sql','utf8');await db.exec(base.slice(base.indexOf('create or replace function public.console_verify_automatic_wake'),base.indexOf('create or replace function private.wake_registered_alert_worker')));
+ assert.equal((await db.query('select private.wake_direct_recruitment_worker() id')).rows[0].id,1);
+ const nonce=(await db.query('select headers from private.isolated_requests')).rows[0].headers['x-whatsapp-wake-key'];
+ assert.notEqual(nonce,'b'.repeat(64));assert.equal((await db.query('select public.console_verify_recruitment_wake($1) ok',['b'.repeat(64)])).rows[0].ok,false);
+ assert.equal((await db.query('select public.console_verify_automatic_wake($1) ok',['b'.repeat(64)])).rows[0].ok,true);
+ assert.equal((await db.query('select public.console_verify_recruitment_wake($1) ok',[nonce])).rows[0].ok,true);assert.equal((await db.query('select public.console_verify_recruitment_wake($1) ok',[nonce])).rows[0].ok,false);
+ await db.exec("update private.whatsapp_automatic_dispatch_state set recruitment_key_hash=sha256(convert_to(repeat('c',64),'UTF8')),recruitment_last_requested_at=clock_timestamp()-interval '6 minutes'");assert.equal((await db.query('select public.console_verify_recruitment_wake($1) ok',['c'.repeat(64)])).rows[0].ok,false);
+ for(const value of [null,'bad','A'.repeat(64)])assert.equal((await db.query('select public.console_verify_recruitment_wake($1) ok',[value])).rows[0].ok,false);
+ for(const role of ['anon','authenticated'])assert.equal((await db.query("select has_function_privilege($1,'public.console_verify_recruitment_wake(text)','EXECUTE') ok",[role])).rows[0].ok,false);
+ assert.equal((await db.query("select has_function_privilege('service_role','public.console_verify_recruitment_wake(text)','EXECUTE') ok")).rows[0].ok,true);
+});
