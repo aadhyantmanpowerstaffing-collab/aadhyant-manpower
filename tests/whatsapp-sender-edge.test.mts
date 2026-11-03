@@ -71,3 +71,22 @@ test('database claim timeout is a specific preparation pause and never retries o
  const net=network();let claims=0;const fetcher=async(input:any,init:any)=>{if(String(input).endsWith('/console_claim_campaign')){claims++;return new Response('{}',{status:500});}return net.fetcher(input,init);};
  const result=await handleWorker(req(),{get},fetcher as typeof fetch);assert.equal(result.status,503);const body=await result.json();assert.equal(body.category,'claim_unconfirmed');assert.match(body.error,/preparing the next batch/);assert.equal(claims,1);assert.equal(net.calls.includes('messages'),false);
 });
+
+for(const language of ['en','hi'])test('direct Meta selected vacancy preserves Interested and STOP in '+language,()=>{
+ const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];
+ const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64),campaign_id:campaign,recipient_id:campaign};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'Value';
+ const r={...row,template_name:'aadhyant_selected_vacancy_'+language+'_v1',template_language:language,template_variables:v};
+ const p=templatePayload(r);assert.equal(p.template.name,r.template_name);assert.equal(p.template.language.code,language);
+ assert.deepEqual(p.template.components[0].parameters.map(x=>x.text),names.map(k=>v[k]));
+ assert.deepEqual(p.template.components.slice(1).map(x=>[x.sub_type,x.index,x.parameters[0].payload]),[['quick_reply','0','INTERESTED'],['quick_reply','1','STOP']]);
+ for(const patch of [{template_language:language==='hi'?'en':'hi'},{template_variables:{...v,qualification:''}},{template_variables:{...v,private_data:'unexpected'}}])assert.throws(()=>templatePayload({...r,...patch}));
+});
+test('direct Meta image campaign requires media and preserves the Hindi job and application button',()=>{
+ const names=['requirement_code','company','job_role','job_location','qualification','salary','take_home','overtime','duty','benefits'];
+ const v:any={template_contract:'registered_summary_v4',job_fingerprint:'a'.repeat(64)};for(const k of names)v[k]=k==='requirement_code'?'JOB-1':'Value';
+ const r={...row,template_name:'aadhyant_registered_job_image_hi_v1',template_language:'hi',template_variables:v};
+ assert.throws(()=>templatePayload(r));assert.throws(()=>templatePayload(r,'http://fixture.invalid/x.png'));
+ const p=templatePayload(r,'https://fixture.invalid/x.png');assert.equal(p.template.name,r.template_name);assert.equal(p.template.language.code,'hi');
+ assert.deepEqual(p.template.components[0],{type:'header',parameters:[{type:'image',image:{link:'https://fixture.invalid/x.png'}}]});
+ assert.equal(p.template.components[1].parameters.length,10);assert.equal(p.template.components[2].parameters[0].text,'JOB-1');assert.equal(p.template.components[3].parameters[0].payload,'STOP');
+});
