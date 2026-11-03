@@ -23,6 +23,13 @@ Deno.serve(async (req: Request) => {
    if(!data.paging?.next){after=undefined;break;}after=data.paging?.cursors?.after;if(!after)return reply(502,'Incomplete template response');
   }
   if(after)return reply(502,'Incomplete template response; no templates changed');
+  // Preserve canonical UUIDs when the verified account retains names but changes Meta IDs.
+  // Fetch every Meta page first. Rebind in bounded verified subsets, then perform the
+  // complete sync so templates absent from this account become unavailable.
+  for(let start=0;start<rows.length;start+=100){
+   const rebound=await fetch(base+'/rest/v1/rpc/console_sync_verified_template_subset',{method:'POST',headers:{authorization:'Bearer '+service,apikey:service,'content-type':'application/json'},body:JSON.stringify({p_rows:rows.slice(start,start+100)}),signal:AbortSignal.timeout(15000)});
+   if(!rebound.ok)return reply(502,'Template identity could not be verified; no message was sent');
+  }
   const saved=await fetch(base+'/rest/v1/rpc/console_sync_templates',{method:'POST',headers:{authorization:'Bearer '+service,apikey:service,'content-type':'application/json'},body:JSON.stringify({p_rows:rows}),signal:AbortSignal.timeout(15000)});
   if(!saved.ok)return reply(502,'Template metadata could not be saved');
   return new Response(JSON.stringify({synced:await saved.json()}),{headers});
