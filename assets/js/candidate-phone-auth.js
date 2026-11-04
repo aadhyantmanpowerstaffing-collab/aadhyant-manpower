@@ -13,6 +13,7 @@
     try{
      const ready=await client.rpc('get_candidate_phone_auth_status',{});
      if(ready.error||ready.data!==true)throw new Error('WhatsApp OTP login is not activated yet.');
+     if(current!==generation)throw fail();
      nextRequest=now()+60000;
      // Supabase's SMS hook routes this OTP to WhatsApp. Do not use channel:
      // whatsapp here: that option is specific to the Twilio built-in provider.
