@@ -28,6 +28,7 @@ export async function handleAuthHook(req:Request,get:Get,rpc:Rpc,fetcher:typeof 
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user?.id||'')||!/^\+91[6-9]\d{9}$/.test(phone)||typeof otp!=='string'||!/^\d{6}$/.test(otp))return reply(400);
  const token=get('WHATSAPP_ACCESS_TOKEN'),phoneId=get('WHATSAPP_PHONE_NUMBER_ID'),accountId=get('WHATSAPP_BUSINESS_ACCOUNT_ID');
  if(!token||!/^\d{8,40}$/.test(phoneId)||!/^\d{8,40}$/.test(accountId))return reply(503);
+ // Meta's Copy Code Authentication template is sent with the API's URL-button component encoding.
  // The client and hook payload cannot choose a sender, template or language.
  const payload={messaging_product:'whatsapp',to:phone.slice(1),type:'template',template:{
   name:'aadhyant_candidate_login_otp_en_v1',language:{code:'en'},components:[
