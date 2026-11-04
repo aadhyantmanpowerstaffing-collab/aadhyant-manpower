@@ -128,3 +128,6 @@ Identity collision review — 4 November 2026: An existing active Candidate `pla
 
 
 OTP send eligibility — 4 November 2026: The service-only delivery-claim RPC now sends only for either (1) an active, non-inactive Candidate Portal identity whose Auth user, Candidate mobile and account type/status all match, or (2) the exact phone on a currently valid, unexpired, incomplete private WhatsApp registration link. A generic phone-auth OTP request cannot use this hook to send to an unrelated number.
+
+
+Abuse controls — 4 November 2026: The delivery ledger serializes requests per Auth user with a transaction advisory lock and enforces a 60-second server-side cooldown even when an attacker sends a new Auth hook ID. The browser cooldown is only an additional UX layer. Supabase Auth provider rate limits must still be configured before activation.
