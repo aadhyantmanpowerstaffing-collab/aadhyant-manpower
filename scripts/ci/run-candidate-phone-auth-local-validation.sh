@@ -59,7 +59,7 @@ psql_file(){
     # Expose only stable diagnostics, never SQL, row contents or raw DB error text.
     local sqlstate line
     sqlstate="$(awk 'match($0,/ERROR: [0-9A-Z]{5}:/){print substr($0,RSTART+7,5)}' "$RAW_OUTPUT" | tail -n 1 || true)"
-    line="$(awk 'match($0,/psql:[^:]+:[0-9]+:/){value=substr($0,RSTART,RLENGTH);sub(/^.*:/,"",value);sub(/:$/,"",value);print value}' "$RAW_OUTPUT" | tail -n 1 || true)"
+    line="$(awk 'match($0,/psql:[^:]+:[0-9]+:/){value=substr($0,RSTART,RLENGTH);sub(/:$/,"",value);sub(/^.*:/,"",value);print value}' "$RAW_OUTPUT" | tail -n 1 || true)"
     [[ "$sqlstate" =~ ^[0-9A-Z]{5}$ ]] || sqlstate="UNAVAILABLE"
     [[ "$line" =~ ^[0-9]+$ ]] || line="UNAVAILABLE"
     log "CANDIDATE_OTP_LOCAL_SQLSTATE=$sqlstate"
@@ -125,7 +125,7 @@ main(){
   psql_file "tests/fixtures/candidate-whatsapp-preferences-baseline.sql"
   psql_assert "HISTORICAL_CANDIDATE_PREFERENCE_RPC_BASELINE" "select to_regprocedure('public.get_candidate_whatsapp_alert_preference()') is not null and to_regprocedure('public.set_candidate_whatsapp_alert_preference(boolean,timestamp with time zone,text,text)') is not null;"
 
-  # Reconstruct the current application schema in filename order, without hosted history. in filename order, without hosted history.
+  # Reconstruct the current application schema in filename order, without hosted history.
   local applied_date_count=0
   while IFS= read -r file; do
     [[ "$file" == "$TARGET_MIGRATION" ]] && break
