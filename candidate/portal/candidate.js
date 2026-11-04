@@ -66,6 +66,7 @@ function profileSaveFeedback(error,profileSaved){
  const detail=String(error?.message||'').toLowerCase(),code=String(error?.code||'').toLowerCase();
  const prefix=profileSaved?'Your profile was saved. WhatsApp alert choices were not saved. ':'Your profile update was not confirmed. ';
  if(code==='profile_session_changed'||/active candidate|authentication|session|jwt/.test(detail))return prefix+'Your login changed or expired. Sign in with your Candidate account and reopen My Profile.';
+ if(/verify the new whatsapp number before changing your candidate mobile number/.test(detail))return prefix+'Your mobile number is verified for Candidate Portal sign-in. Contact Aadhyant to change it after re-verification.';
  if(profileSaved&&/whatsapp stop/.test(detail))return prefix+'WhatsApp STOP is active for your number. Use Restart WhatsApp Alerts below to give new permission. Select No for both alert types and save again to keep alerts off.';
  if(profileSaved&&/identity requires review|mobile requires review/.test(detail))return prefix+'Your WhatsApp number needs review. Contact Aadhyant before enabling alerts.';
  if(profileSaved)return prefix+'Your entries are still here. Check your connection and try saving again. If this continues, contact Aadhyant.';
