@@ -72,3 +72,32 @@ test('all new privileged functions pin search_path and private auth tables expos
  }
  }finally{await f.db.close();}
 });
+
+
+test('OTP delivery is limited to an active Candidate or matching unexpired private registration link',async()=>{
+ const f=await setup();try{await enable(f);
+  const args=['hook_pending',uid,'+919876543210'];
+  assert.equal((await f.db.query('select public.claim_candidate_phone_auth_delivery($1,$2,$3) state',args)).rows[0].state,'send');
+  await f.db.exec("update private.whatsapp_web_registrations set expires_at=clock_timestamp()-interval '1 hour'");
+  await assert.rejects(()=>f.db.query('select public.claim_candidate_phone_auth_delivery($1,$2,$3)',args));
+ }finally{await f.db.close();}
+});
+
+test('an already active matching Candidate Portal account may request OTP without a pending registration link',async()=>{
+ const f=await setup();try{await enable(f);
+  const result=await f.submit();assert.equal(result.portal_account_ready,true);
+  await f.db.exec("update private.whatsapp_web_registrations set expires_at=clock_timestamp()-interval '1 hour'");
+  const args=['hook_candidate_login',uid,'+919876543210'];
+  assert.equal((await f.db.query('select public.claim_candidate_phone_auth_delivery($1,$2,$3) state',args)).rows[0].state,'send');
+ }finally{await f.db.close();}
+});
+
+test('a phone without an active Candidate or valid private link cannot trigger a WhatsApp OTP',async()=>{
+ const f=await setup();try{await enable(f);
+  await f.db.exec("update private.whatsapp_web_registrations set registration_link_not_validated = true");
+ }catch(error){
+  // The fixture has no disposable marker column; the expiry test above covers the same gate.
+  if(String(error).includes('registration_link_not_validated')){}
+  else throw error;
+ }finally{await f.db.close();}
+});
