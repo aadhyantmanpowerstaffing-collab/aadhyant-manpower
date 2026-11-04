@@ -1,0 +1,64 @@
+name: Candidate WhatsApp OTP validation
+
+on:
+  pull_request:
+    branches:
+      - web-platform-development
+    paths:
+      - '.github/workflows/candidate-otp-validation.yml'
+      - 'assets/js/candidate-phone-auth.js'
+      - 'candidate/apply/**'
+      - 'candidate/portal/**'
+      - 'supabase/functions/candidate-whatsapp-auth/**'
+      - 'supabase/migrations/20261104190000_candidate_whatsapp_otp_account.sql'
+      - 'scripts/build-production-artifact.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/candidate-phone-account.test.js'
+      - 'tests/candidate-phone-auth-ui.test.js'
+      - 'tests/candidate-whatsapp-auth.test.mts'
+      - 'tests/whatsapp-web-form-ui.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: candidate-otp-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Candidate OTP tests and non-deploy production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact reviewed revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Confirm runner Node and npm
+        run: |
+          node --version
+          npm --version
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run focused Candidate OTP database, UI and hook tests
+        run: npm run test:candidate-otp
+
+      - name: Build deterministic production artifact (no deploy)
+        run: npm run build:production
+
+      - name: Verify production artifact boundary
+        run: npm run test:artifact
+
+      - name: Run full frontend regression
+        run: npm test
+
+      - name: Rebuild and verify final artifact manifest
+        run: node scripts/build-production-artifact.js --verify
