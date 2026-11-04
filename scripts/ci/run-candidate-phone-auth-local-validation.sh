@@ -58,8 +58,8 @@ psql_file(){
   if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=verbose -v SHOW_CONTEXT=errors -f "$file" >"$RAW_OUTPUT" 2>&1; then
     # Expose only stable diagnostics, never SQL, row contents or raw DB error text.
     local sqlstate line
-    sqlstate="$(sed -nE 's/.*ERROR:[[:space:]]+([0-9A-Z]{5}):.*/\\1/p' "$RAW_OUTPUT" | tail -n 1 || true)"
-    line="$(sed -nE 's/^psql:[^:]+:([0-9]+):.*/\\1/p' "$RAW_OUTPUT" | tail -n 1 || true)"
+    sqlstate="$(awk 'match($0,/ERROR: [0-9A-Z]{5}:/){print substr($0,RSTART+7,5)}' "$RAW_OUTPUT" | tail -n 1 || true)"
+    line="$(awk 'match($0,/psql:[^:]+:[0-9]+:/){value=substr($0,RSTART,RLENGTH);sub(/^.*:/,"",value);sub(/:$/,"",value);print value}' "$RAW_OUTPUT" | tail -n 1 || true)"
     [[ "$sqlstate" =~ ^[0-9A-Z]{5}$ ]] || sqlstate="UNAVAILABLE"
     [[ "$line" =~ ^[0-9]+$ ]] || line="UNAVAILABLE"
     log "CANDIDATE_OTP_LOCAL_SQLSTATE=$sqlstate"
