@@ -152,6 +152,36 @@ References:
 - https://support.wati.io/en/articles/11463212-how-whatsapp-messaging-limits-work-and-how-to-increase-them
 
 
+### Ready-to-send Meta Business Support request
+
+Subject: WhatsApp Authentication template creation blocked for our WABA
+
+We manage our WhatsApp Business Account directly through WhatsApp Manager and
+use the WhatsApp Cloud API. On 3 November 2026, WhatsApp Manager rejected creation
+of an Authentication / Copy Code OTP template with this exact message:
+
+`This WhatsApp Business account does not have permission to create message template`
+
+Please confirm the exact eligibility condition currently blocking Authentication
+template creation for this WABA. In particular, please verify:
+- Business Portfolio verification / approved scaling-path status;
+- the current business-initiated messaging tier for the relevant sender phone number;
+- any WABA, sender, Business Portfolio or policy restriction;
+- whether this WABA is eligible to create AUTHENTICATION Copy Code templates, and
+  what specific action (if any) is required to unlock it.
+
+WABA ID: [enter WABA ID]
+Business Portfolio ID: [enter Business Portfolio ID]
+Phone Number ID: [enter Phone Number ID]
+Sender phone number: [enter business sender number]
+Attempt date/time and timezone: 3 November 2026, [enter local time and timezone]
+Screenshot: [attach the exact WhatsApp Manager error]
+
+Please do not close this as a System User role issue without confirming the
+account-level Authentication template eligibility. We have already reproduced
+the same error directly in WhatsApp Manager. We will keep OTP activation disabled
+until Meta confirms eligibility and approves the template.
+
 ## Latest branch integration — 4 November 2026
 
 Prepared against `web-platform-development` at `002e9a0ee39261e69a3d2ee7b4a5703fb0f3c5b5`. The additive OTP migration is timestamped after the current production migration range through `20261103113526`, so fresh databases apply this wrapper after the latest registration function changes. The latest target regression script and contact-import command are preserved, with three focused OTP tests added to the default regression suite. Full integrated regression and production-artifact checks must pass before merge/deployment.
