@@ -55,7 +55,10 @@
   const emailLogin=document.querySelector('[data-email-login]');if(emailLogin)emailLogin.open=false;
   mount(login,client,async()=>{
    const context=await client.rpc('get_candidate_portal_context',{});
-   if(context.error||!Array.isArray(context.data)||context.data.length!==1)throw new Error('Your number is verified, but your Candidate account needs review. Contact Aadhyant.');
+   if(context.error||!Array.isArray(context.data)||context.data.length!==1){
+    await client.auth.signOut();
+    throw new Error('Your number is verified, but no active Candidate Portal account was found. Sign-in was ended; contact Aadhyant for review.');
+   }
    location.replace('index.html');
   },false);
  }).catch(()=>{});
