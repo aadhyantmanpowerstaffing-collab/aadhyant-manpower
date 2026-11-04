@@ -1,3 +1,12 @@
+
+test('OTP-verified Candidate mobile is read-only in profile editing',()=>{
+ const source=fs.readFileSync('candidate/portal/candidate.js','utf8');
+ assert.match(source,/if\(d\.mobile_verified===true\)/);
+ assert.match(source,/mobileField\.readOnly=true/);
+ assert.match(source,/candidate-verified-mobile-note/);
+ assert.match(source,/Contact Aadhyant to change it after re-verification/);
+});
+
 'use strict';const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const script=fs.readFileSync('assets/js/candidate-phone-auth.js','utf8');
 function fixture(options={}){let time=100000;const calls=[];const client={rpc:async(...args)=>{calls.push(['ready',...args]);return {data:options.ready!==false};},auth:{signInWithOtp:async(args)=>{calls.push(['request',args]);return {error:options.sendError?{}:null};},verifyOtp:async(args)=>{calls.push(['verify',args]);return options.verifyError?{error:{}}:{data:{session:{},user:{phone:options.phone||'919876543210',phone_confirmed_at:options.unverified?null:'2099-01-01'}}};},signOut:async()=>{calls.push(['signOut']);return {error:null};}}};const window={};vm.runInNewContext(script,{window,document:{querySelector:()=>null},Date});const flow=window.AadhyantCandidatePhoneAuth.create(client,options.signup===true,()=>time);return {flow,calls,advance:()=>time+=61000};}
