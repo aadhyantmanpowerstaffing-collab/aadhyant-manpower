@@ -2,15 +2,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const script=fs.readFileSync('candidate/apply/form.js','utf8');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
-function fixture({token='a'.repeat(64),fail=false,hold=false,holdContext=false}={}){
+function fixture({token='a'.repeat(64),fail=false,hold=false,holdContext=false,phoneAccount=false,accountReady=true}={}){
+ const phoneAuth={verified:false};
  const calls=[],handlers={},events={},nodes={},values={full_name:' Sample Candidate ',age:'25',gender:'Male',state:'Gujarat',district:'Ahmedabad',current_village_city:'Sanand',highest_qualification:'ITI',candidate_type:'Fresher',interview_available:'Yes',pincode:'',previous_job_role:'',preferred_job_location:'',job_alert_consent:'no',same_day_alert_consent:'yes',current_job_location:'Sanand GIDC'};
- const node=()=>({textContent:'',hidden:true,className:'',value:'',focus(){this.focused=true}});
+ const node=()=>({textContent:'',hidden:true,className:'',value:'',focus(){this.focused=true},append(child){this.child=child}});
  const form=nodes['[data-application-form]']={...node(),elements:{registration_consent:{checked:true},job_alert_consent:{checked:false}},reportValidity:()=>true,addEventListener:(event,fn)=>handlers[event]=fn,querySelector:()=>button,reset(){this.resetCalled=true}};
  const button={disabled:false};let release,releaseContext;let reloads=0;
- const rpc=async(name,args)=>{calls.push({name,args});if(name==='get_whatsapp_registration_form'){if(holdContext)await new Promise(resolve=>releaseContext=resolve);return {data:{status:'ready',requirement_code:'AAD-2026-000003',job_role:'Associate',job_location:'Sanand',phone_masked:'+91XXXXXX5800'}};}
- if(hold)await new Promise(resolve=>release=resolve);return fail?{error:{message:'INTERNAL_SECRET_DETAIL'}}:{data:{status:'registered',job_alerts_selected:args.p_profile.job_alert_consent}};};
- const context={window:{aadhyantSupabase:{client:{rpc}},AadhyantRegistrationOptions:{sets:{states:['Gujarat']},districtsByState:{Gujarat:['Ahmedabad']},setupCandidateForm(){},setupStateDistrict(){},candidateSpecialization:()=>'',candidateExperience:()=>''}},document:{querySelector:s=>nodes[s]||(nodes[s]=node())},location:{hash:'#token='+token,reload(){reloads++}},URLSearchParams,FormData:class{get(k){return values[k]}},addEventListener(name,fn){events[name]=fn}};
- vm.runInNewContext(script,context);return {form,button,calls,nodes,handlers,values,release:()=>release?.(),releaseContext:()=>releaseContext?.(),changeLink:(value)=>{context.location.hash=value;events.hashchange();},get reloads(){return reloads},event:(name,value)=>events[name](value),submit:()=>handlers.submit({preventDefault(){}})};
+ const rpc=async(name,args)=>{calls.push({name,args});if(name==='get_whatsapp_registration_form'){if(holdContext)await new Promise(resolve=>releaseContext=resolve);return {data:{status:'ready',requirement_code:'AAD-2026-000003',job_role:'Associate',job_location:'Sanand',phone_masked:'+91XXXXXX5800',phone_account_enabled:phoneAccount}};}
+ if(hold)await new Promise(resolve=>release=resolve);return fail?{error:{message:'INTERNAL_SECRET_DETAIL'}}:{data:{status:'registered',job_alerts_selected:args.p_profile.job_alert_consent,portal_account_ready:phoneAccount&&accountReady}};};
+ const context={window:{AadhyantCandidatePhoneAuth:{mount:(_panel,_client,_callback,signup)=>{assert.equal(signup,true);return phoneAuth;}},aadhyantSupabase:{client:{rpc}},AadhyantRegistrationOptions:{sets:{states:['Gujarat']},districtsByState:{Gujarat:['Ahmedabad']},setupCandidateForm(){},setupStateDistrict(){},candidateSpecialization:()=>'',candidateExperience:()=>''}},document:{createElement:()=>node(),querySelector:s=>nodes[s]||(nodes[s]=node())},location:{hash:'#token='+token,reload(){reloads++}},URLSearchParams,FormData:class{get(k){return values[k]}},addEventListener(name,fn){events[name]=fn}};
+ vm.runInNewContext(script,context);return {phoneAuth,form,button,calls,nodes,handlers,values,release:()=>release?.(),releaseContext:()=>releaseContext?.(),changeLink:(value)=>{context.location.hash=value;events.hashchange();},get reloads(){return reloads},event:(name,value)=>events[name](value),submit:()=>handlers.submit({preventDefault(){}})};
 }
 test('single page collects dropdown choices and sends no editable phone/contact/job binding',async()=>{
  const f=fixture();await flush();assert.equal(f.form.hidden,false);await f.submit();const args=f.calls[1].args;
@@ -51,4 +52,13 @@ test('old submission response cannot display a receipt for a newly opened job li
 test('back-forward cache restores must revalidate the private link before submission',async()=>{
  const f=fixture();await flush();f.event('pagehide',{});await f.submit();assert.equal(f.calls.length,1);
  f.event('pageshow',{persisted:true});assert.equal(f.reloads,1);
+});
+
+
+test('account-enabled registration cannot submit until OTP verification and then confirms portal access',async()=>{
+ const f=fixture({phoneAccount:true});await flush();await f.submit();assert.equal(f.calls.length,1);assert.match(f.nodes['[data-status]'].textContent,/Verify your WhatsApp/);
+ f.phoneAuth.verified=true;await f.submit();assert.equal(f.calls.length,2);assert.equal(f.nodes['[data-receipt]'].child.href,'../portal/index.html');assert.equal(f.form.hidden,true);
+});
+test('profile-only receipt cannot be displayed as a completed phone account registration',async()=>{
+ const f=fixture({phoneAccount:true,accountReady:false});await flush();f.phoneAuth.verified=true;await f.submit();assert.equal(f.form.hidden,false);assert.equal(f.nodes['[data-receipt]'].hidden,true);assert.match(f.nodes['[data-status]'].textContent,/could not be confirmed/);
 });
