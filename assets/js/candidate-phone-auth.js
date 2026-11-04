@@ -28,14 +28,14 @@
      verified=true;return result.data.user;
     }finally{busy=false;}
    },
-   clear(){generation++;phone='';verified=false;},get verified(){return verified;}
+   async clear(signOut=false){generation++;phone='';verified=false;if(signOut){const result=await client.auth.signOut();if(result.error)throw new Error('Could not clear the previous WhatsApp sign-in. Reload this page before changing numbers.');}},get verified(){return verified;}
   };
  }
  function mount(root,client,onVerified,createUser=false){
   const flow=create(client,createUser),phone=root.querySelector('[data-phone-number]'),code=root.querySelector('[data-phone-code]'),request=root.querySelector('[data-phone-request]'),verify=root.querySelector('[data-phone-verify]'),status=root.querySelector('[data-phone-status]');
   const report=(text)=>{status.textContent=text;};
   const change=root.querySelector('[data-phone-change]');
-  change?.addEventListener('click',()=>{flow.clear();phone.disabled=false;code.value='';code.hidden=true;verify.hidden=true;report('Enter your WhatsApp mobile number.');phone.focus();});
+  change?.addEventListener('click',async()=>{try{await flow.clear(flow.verified);phone.disabled=false;code.value='';code.hidden=true;verify.hidden=true;report('Enter your WhatsApp mobile number.');phone.focus();}catch(_){report('Could not safely clear the previous sign-in. Reload this page before changing numbers.');}});
   request.addEventListener('click',async()=>{request.disabled=true;verify.disabled=true;code.value='';try{await flow.request(phone.value);phone.disabled=true;code.hidden=false;verify.hidden=false;verify.disabled=false;report('Enter the code sent to your WhatsApp number.');code.focus();}catch(error){report(error.message);}finally{request.disabled=false;}});
   verify.addEventListener('click',async()=>{verify.disabled=true;try{await flow.verify(code.value.trim());code.value='';code.hidden=true;verify.hidden=true;report('WhatsApp number verified.');await onVerified();}catch(error){report(error.message);verify.disabled=false;}});
   client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){flow.clear();code.value='';phone.disabled=false;report('Sign-in ended. Verify your WhatsApp number again.');}});
