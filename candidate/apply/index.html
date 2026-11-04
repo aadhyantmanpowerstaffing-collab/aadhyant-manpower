@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#102447">
-<title>Register &amp; Apply | Aadhyant</title><link rel="stylesheet" href="form.css">
-</head><body><header><a class="brand" href="../../">A<span>AADHYANT<small>MANPOWER &amp; STAFFING</small></span></a><span class="private-label">Candidate registration</span></header>
-<main><div class="intro"><p class="eyebrow">YOUR NEXT OPPORTUNITY</p><h1>Register &amp; Apply</h1><p>Fill one form. Submit your profile and application together.</p></div>
+<title>Register &amp; Apply | Aadhyant</title><link rel="stylesheet" href="../portal/candidate.css"><link rel="stylesheet" href="form.css">
+</head><body class="registration-page"><header class="registration-header"><a class="registration-brand" href="../../"><span aria-hidden="true">A</span><strong>AADHYANT<small>CANDIDATE PORTAL</small></strong></a><a class="registration-login-link" href="../portal/login.html">Sign In →</a></header>
+<main class="registration-layout"><aside class="registration-intro"><p class="registration-kicker">Candidate Portal</p><h2>Your next chapter<br>starts here.</h2><p>Register for your selected opportunity using one form.</p><ol class="registration-journey"><li>Complete your details</li><li>Verify your WhatsApp number when prompted</li><li>Submit your application</li></ol></aside><section class="auth-card registration-card"><div class="intro registration-form-heading"><p class="eyebrow">YOUR NEXT OPPORTUNITY</p><h1>Register &amp; Apply</h1><p>Fill one form. Submit your profile and application together.</p></div>
 <section class="job" aria-label="Selected job"><span data-job-code>Checking your private link…</span><h2 data-job-role></h2><p data-job-location></p></section>
 <p class="status" data-status role="status" aria-live="polite">Loading registration…</p>
 <form data-application-form hidden><p class="required-note"><b>*</b> Required. Fields marked Optional can be left blank.</p><fieldset><legend>Personal details</legend><div class="form-grid">
@@ -30,14 +30,15 @@
 <label>Most recent role <b>*</b><input name="previous_job_role" maxlength="160"></label>
 </div></fieldset>
 <fieldset><legend>Work preference</legend><label>Preferred work locations <em>Optional</em><input name="preferred_job_location" maxlength="160" placeholder="For example: Sanand, Ahmedabad, Kadi"></label></fieldset>
+<fieldset data-phone-registration hidden><legend>Verify WhatsApp &amp; create your account</legend><p>No email or password needed. Verify the same number that received this link.</p><label>Mobile number<input data-phone-number type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="10-digit mobile number"></label><button type="button" data-phone-request>Send WhatsApp OTP</button><label>Verification code<input data-phone-code inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" hidden></label><button type="button" data-phone-verify hidden>Verify number</button><button type="button" data-phone-change>Change number</button><p data-phone-status role="status" aria-live="polite"></p></fieldset>
 <fieldset class="permissions"><legend>Review &amp; submit</legend>
 <label class="check"><input name="registration_consent" type="checkbox" required><span>I agree to register my Candidate profile and be contacted about this application under the <a href="../../privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>. <b>*</b></span></label>
 <label>Receive WhatsApp Job Alerts? <b>*</b><select name="job_alert_consent" required><option value="">Choose Yes or No</option><option value="yes">Yes, send me job alerts</option><option value="no">No, thanks</option></select></label><label>Receive Same-Day Pay Job Alerts? <b>*</b><select name="same_day_alert_consent" required><option value="">Choose Yes or No</option><option value="yes">Yes, send me Same-Day Pay alerts</option><option value="no">No, thanks</option></select></label><label>Current Job Location <em>Optional</em><input name="current_job_location" maxlength="160" placeholder="Where you work now, or Not Working"></label><p>Choose separately for each alert type. No does not prevent registration or applications. Sanand GIDC shift alerts use where you live, work now or prefer to work. Reply STOP anytime to stop all WhatsApp alerts.</p>
 </fieldset>
 <button type="submit">Submit &amp; Apply <span aria-hidden="true">→</span></button>
-<p class="footnote">Your profile and application will be saved with Aadhyant. Candidate Portal sign-in is a separate account step; this form does not create a password or login.</p></form>
+<p class="footnote" data-account-note>Your profile and application will be saved with Aadhyant. Candidate Portal sign-in is a separate account step; this form does not create a password or login.</p></form>
 <section class="receipt" data-receipt hidden tabindex="-1"><span class="success-icon" aria-hidden="true">✓</span><h2>Registration submitted</h2><p>Your Candidate profile and application are saved with Aadhyant.</p><p data-alert-receipt></p><a href="../../jobs/">Explore current jobs →</a></section>
 <p class="help">Already have a Candidate account? <a href="../portal/login.html">Sign in</a>. Keep your registration link private.</p>
-</main><footer>Aadhyant Manpower &amp; Staffing · <a href="../../privacy/">Privacy Policy</a></footer>
+</section></main><footer>Aadhyant Manpower &amp; Staffing · <a href="../../privacy/">Privacy Policy</a></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script>
-<script src="../../config.js"></script><script src="../../supabase-client.js"></script><script src="../../assets/js/registration-options.js"></script><script src="form.js"></script></body></html>
+<script src="../../config.js"></script><script src="../../supabase-client.js"></script><script src="../../assets/js/registration-options.js"></script><script src="../../assets/js/candidate-phone-auth.js"></script><script src="form.js"></script></body></html>
