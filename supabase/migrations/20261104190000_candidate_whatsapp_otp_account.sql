@@ -25,7 +25,18 @@ declare outcome text;
 begin
  if not exists(select 1 from private.candidate_phone_auth_config where singleton and enabled)
  or p_hook_id is null or length(p_hook_id) not between 1 and 200 or p_phone !~ '^\+91[6-9][0-9]{9}$'
- or not exists(select 1 from auth.users where id=p_user_id and ltrim(phone,'+')=ltrim(p_phone,'+')) then raise exception 'Phone authentication unavailable';end if;
+ or not exists(select 1 from auth.users where id=p_user_id and ltrim(phone,'+')=ltrim(p_phone,'+'))
+ or not (
+  exists(select 1 from public.candidates c join public.platform_users pu on pu.user_id=c.user_id
+   where c.user_id=p_user_id and c.mobile=right(p_phone,10) and c.profile_status='active' and c.status<>'inactive'
+   and pu.account_type='candidate' and pu.account_status='active')
+  or exists(select 1 from private.whatsapp_web_registrations s
+   join public.whatsapp_outbound_messages o on o.id=s.reply_id
+   where o.destination=p_phone and o.registration_web_token is not null
+   and s.token_hash=sha256(convert_to(o.registration_web_token,'UTF8'))
+   and s.completed_at is null and s.expires_at>clock_timestamp()
+   and private.web_registration_context(o.registration_web_token) is not null)
+ ) then raise exception 'Phone authentication unavailable';end if;
  -- No raw code, payload, phone or provider URL is persisted in this ledger.
  insert into private.candidate_phone_auth_deliveries(hook_id,user_id,state) values(p_hook_id,p_user_id,'started') on conflict do nothing;
  if found then return 'send';end if;
