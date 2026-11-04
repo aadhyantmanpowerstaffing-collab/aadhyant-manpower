@@ -40,6 +40,7 @@ test('a verified phone without an active Candidate context is signed out',async(
  vm.runInNewContext(script,{window,document:{querySelector:s=>s==='[data-phone-login]'?login:s==='[data-email-login]'?email:null},Date,addEventListener(){}});
  await new Promise(resolve=>setImmediate(resolve));assert.equal(login.hidden,false);
  await handlers['[data-phone-request]'].call({});
+ elements['[data-phone-code]'].value='123456';
  await handlers['[data-phone-verify]'].call({});
  assert.equal(calls.filter(x=>x[0]==='signOut').length,1);
  assert.match(elements['[data-phone-status]'].textContent,/no active Candidate Portal account/);
