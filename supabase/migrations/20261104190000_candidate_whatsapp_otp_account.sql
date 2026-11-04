@@ -29,7 +29,7 @@ begin
  or not exists(select 1 from auth.users where id=p_user_id and ltrim(phone,'+')=ltrim(p_phone,'+'))
  or not (
   exists(select 1 from public.candidates c join public.platform_users pu on pu.user_id=c.user_id
-   where c.user_id=p_user_id and c.mobile=right(p_phone,10) and c.profile_status='active' and c.status<>'inactive'
+   where c.user_id=p_user_id and c.mobile=right(p_phone,10) and c.mobile_verified is true and c.profile_status='active' and c.status<>'inactive'
    and pu.account_type='candidate' and pu.account_status='active')
   or exists(select 1 from private.whatsapp_web_registrations s
    join public.whatsapp_outbound_messages o on o.id=s.reply_id
