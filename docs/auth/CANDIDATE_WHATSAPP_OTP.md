@@ -88,12 +88,15 @@ Current latest-base checks performed during integration:
 - Earlier focused synthetic Meta Hook checks passed 19/19 and earlier Candidate UI/session tests passed 9/9 before the latest database-only eligibility and cooldown additions.
 - Read-only Production schema comparison found no missing columns referenced by the additive migration.
 
-Not yet run against this latest integrated branch:
-- the PGlite database/migration suite (including the new Candidate-only eligibility and server-side cooldown cases);
-- complete `npm test` frontend/runtime regression;
-- `npm run build:production` and production artifact boundary verification;
-- a deployed Supabase Auth Hook test or real Meta delivery.
+Latest-base CI validation — 4 November 2026:
+- Focused Candidate OTP database, UI, hook and registration tests: **59/59 passed**.
+- Complete current platform frontend regression: **1,078/1,078 passed**.
+- Deterministic production artifact build: **passed**.
+- Production artifact boundary suite: **6/6 passed**.
+- Final artifact manifest verification: **passed**; 111 files, 1,307,815 bytes, digest `adb2ef400860d0140decc8cabc0683390c2b9585a10bcb450565e5a60210e881`.
+- Workflow: https://github.com/aadhyantmanpowerstaffing-collab/aadhyant-manpower/actions/runs/41852945820. This workflow has no deployment step.
 
+Still unverified: a deployed Supabase Auth Hook and controlled real Meta OTP delivery/login.
 No OTP migration, Auth hook, feature gate, Meta configuration or frontend deployment has been applied to Production.
 
 ## Direct Meta preparation — 3 November 2026
