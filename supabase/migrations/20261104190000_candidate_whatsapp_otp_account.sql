@@ -63,6 +63,7 @@ begin
  or exists(select 1 from public.platform_users where user_id=u.id and (account_type<>'candidate' or account_status<>'active'))
  or exists(select 1 from public.admin_users where user_id=u.id)
  or exists(select 1 from public.staff_profiles where user_id=u.id)
+ or exists(select 1 from public.staff_roles where user_id=u.id)
  or exists(select 1 from public.company_users where user_id=u.id)
  or exists(select 1 from public.contractor_users where user_id=u.id) then raise exception 'Candidate account needs review';end if;
  insert into public.platform_users(user_id,account_type,display_name,mobile,email,account_status)
