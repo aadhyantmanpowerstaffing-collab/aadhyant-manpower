@@ -92,12 +92,3 @@ test('an already active matching Candidate Portal account may request OTP withou
  }finally{await f.db.close();}
 });
 
-test('a phone without an active Candidate or valid private link cannot trigger a WhatsApp OTP',async()=>{
- const f=await setup();try{await enable(f);
-  await f.db.exec("update private.whatsapp_web_registrations set registration_link_not_validated = true");
- }catch(error){
-  // The fixture has no disposable marker column; the expiry test above covers the same gate.
-  if(String(error).includes('registration_link_not_validated')){}
-  else throw error;
- }finally{await f.db.close();}
-});
