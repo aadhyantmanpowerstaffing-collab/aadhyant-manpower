@@ -122,3 +122,6 @@ Security review update — 4 November 2026: The account-link guard also rejects 
 
 
 HTTP Auth Hook deadline review — 4 November 2026: Supabase documents a five-second execution budget for HTTP Auth Hooks. The Meta request therefore has a two-second abort timeout (rather than the ordinary recruitment sender's fifteen-second timeout), leaving time for the bounded claim/finish database RPCs and HTTP response. The implementation must fail closed when this deadline cannot be met; never queue a code for later or return success without confirmed provider acceptance.
+
+
+Identity collision review — 4 November 2026: An existing active Candidate `platform_users` row is now reusable only when the canonical Candidate row is already owned by that same Auth user. An orphaned Candidate portal row with no matching `candidates.user_id` is rejected for staff review rather than silently attached to a new WhatsApp registration.
