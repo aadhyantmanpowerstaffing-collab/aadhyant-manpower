@@ -92,3 +92,13 @@ test('an already active matching Candidate Portal account may request OTP withou
  }finally{await f.db.close();}
 });
 
+
+
+test('database claim enforces a 60-second cooldown even when a new Auth hook ID is used',async()=>{
+ const f=await setup();try{await enable(f);
+  await f.db.query("insert into private.candidate_phone_auth_deliveries(hook_id,user_id,state,created_at) values('hook_prior', $1,'accepted',clock_timestamp())",[uid]);
+  await assert.rejects(()=>f.db.query("select public.claim_candidate_phone_auth_delivery('hook_too_soon',$1,'+919876543210')",[uid]));
+  await f.db.exec("update private.candidate_phone_auth_deliveries set created_at=clock_timestamp()-interval '61 seconds' where hook_id='hook_prior'");
+  assert.equal((await f.db.query("select public.claim_candidate_phone_auth_delivery('hook_after_cooldown',$1,'+919876543210') state",[uid])).rows[0].state,'send');
+ }finally{await f.db.close();}
+});
