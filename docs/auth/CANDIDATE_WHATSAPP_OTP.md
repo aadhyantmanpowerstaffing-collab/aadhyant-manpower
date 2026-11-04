@@ -119,3 +119,6 @@ Prepared against `web-platform-development` at `002e9a0ee39261e69a3d2ee7b4a5703f
 
 
 Security review update — 4 November 2026: The account-link guard also rejects identities present in `public.staff_roles`, in addition to `staff_profiles`, `admin_users`, `company_users`, and `contractor_users`. Both staff role stores have separate regression cases.
+
+
+HTTP Auth Hook deadline review — 4 November 2026: Supabase documents a five-second execution budget for HTTP Auth Hooks. The Meta request therefore has a two-second abort timeout (rather than the ordinary recruitment sender's fifteen-second timeout), leaving time for the bounded claim/finish database RPCs and HTTP response. The implementation must fail closed when this deadline cannot be met; never queue a code for later or return success without confirmed provider acceptance.
