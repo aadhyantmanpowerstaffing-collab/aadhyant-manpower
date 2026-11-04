@@ -80,11 +80,21 @@ The cause of the account permission restriction has not been independently estab
 
 ## Validation
 
-Full regression at the initial implementation: 955/955 passed. After final audit
-and stale-verification protections, 86/86 focused database/auth/form/portal/artifact
-tests passed. Production artifact packaging and `git diff --check` pass. All local
-runtime tests use disposable PGlite fixtures and synthetic provider responses.
-The new migration and Auth settings have not been installed on production.
+Historical checks on the original feature branch are not evidence that this latest-base branch passed the full suite.
+
+Current latest-base checks performed during integration:
+- 12/12 direct Candidate phone OTP client behavior simulations passed, covering signup/login distinction, Indian-number normalization, activation gate, cooldown, invalid verification, cancellation and stale-session revocation.
+- 1/1 additional login-context check passed: a verified Auth session is signed out when no active Candidate Portal context exists.
+- Earlier focused synthetic Meta Hook checks passed 19/19 and earlier Candidate UI/session tests passed 9/9 before the latest database-only eligibility and cooldown additions.
+- Read-only Production schema comparison found no missing columns referenced by the additive migration.
+
+Not yet run against this latest integrated branch:
+- the PGlite database/migration suite (including the new Candidate-only eligibility and server-side cooldown cases);
+- complete `npm test` frontend/runtime regression;
+- `npm run build:production` and production artifact boundary verification;
+- a deployed Supabase Auth Hook test or real Meta delivery.
+
+No OTP migration, Auth hook, feature gate, Meta configuration or frontend deployment has been applied to Production.
 
 ## Direct Meta preparation — 3 November 2026
 
@@ -134,3 +144,6 @@ Abuse controls — 4 November 2026: The delivery ledger serializes requests per 
 
 
 Candidate login eligibility refinement — 4 November 2026: Existing portal OTP login also requires the canonical Candidate record to have `mobile_verified = true`; the user ID, Auth phone, Candidate mobile, active profile and active Candidate platform account must all match. New registrations set this flag only after a verified OTP session is linked transactionally.
+
+
+Meta eligibility follow-up — 4 November 2026: The direct Meta error indicates an account-level creation restriction, not a template-body issue. Third-party WhatsApp platform guidance commonly lists completed Meta Business Verification, an eligible WABA messaging tier (often 2,000 daily business-initiated conversations), and no active Business Portfolio/WABA restrictions as prerequisites. These are checks to verify in Meta Business Info, WhatsApp Manager → Account tools → Messaging limits, and Account Quality; they are not a confirmed diagnosis of this specific WABA. See https://api.support.vonage.com/hc/en-us/articles/30129084631068-Guidelines-and-Eligibility-Criteria-for-Creating-a-WhatsApp-Authentication-Template and https://respond.io/help/whatsapp/getting-ready-for-inbound-conversations.
