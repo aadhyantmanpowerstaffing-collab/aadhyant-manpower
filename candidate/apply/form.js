@@ -7,19 +7,20 @@
   const client = window.aadhyantSupabase?.client;
   // Fragment capabilities never go to the static host, referrers or analytics.
   const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
-  let busy = false, ready = false, leaving = false;
+  let busy = false, ready = false, leaving = false, phoneAccountEnabled = false, phoneAuth;
   const message = (text, error = false) => { status.textContent = text; status.className = error ? 'status error' : 'status'; };
   const call = async (name, args) => {
     const {data, error} = await client.rpc(name, args);
     if (error) throw new Error('Registration unavailable');
     return data;
   };
-  function submitted(alerts, sameDay = false) {
+  function submitted(alerts, sameDay = false, accountReady = false) {
     form.reset(); form.hidden = true; message(''); receipt.hidden = false;
     document.querySelector('[data-alert-receipt]').textContent = alerts
       ? 'You selected all future WhatsApp job alerts. Reply STOP anytime to stop alerts.'
       : 'General WhatsApp job alerts: No.';
     document.querySelector('[data-alert-receipt]').textContent += sameDay ? ' Same-Day Pay alerts: Yes (Sanand location rules apply).' : ' Same-Day Pay alerts: No.';
+    if (accountReady) { const link = document.createElement('a'); link.href = '../portal/index.html'; link.textContent = 'Open Candidate Portal →'; receipt.append(link); }
     receipt.focus();
   }
   async function start() {
@@ -37,6 +38,14 @@
       if (context.status === 'completed') {
         message('This registration has already been submitted. You do not need to fill it again.'); return;
       }
+      phoneAccountEnabled = context.phone_account_enabled === true;
+      if (phoneAccountEnabled) {
+        const panel = document.querySelector('[data-phone-registration]');
+        if (!panel || !window.AadhyantCandidatePhoneAuth) throw new Error('Phone verification unavailable');
+        panel.hidden = false;
+        document.querySelector('[data-account-note]').textContent = 'Verify your WhatsApp number, then submit once to create your Candidate Portal account and apply for this job. No email or password needed.';
+        phoneAuth = window.AadhyantCandidatePhoneAuth.mount(panel, client, async () => {}, true);
+      }
       options.setupCandidateForm(form); options.setupStateDistrict(form);
       ready = true; form.hidden = false; message('');
     } catch (_) {
@@ -47,6 +56,7 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!ready || leaving || busy || !form.reportValidity()) return;
+    if (phoneAccountEnabled && !phoneAuth?.verified) { message('Verify your WhatsApp number before submitting.', true); return; }
     const d = new FormData(form), get = name => String(d.get(name) || '').trim();
     if (!['yes','no'].includes(get('job_alert_consent')) || !['yes','no'].includes(get('same_day_alert_consent'))) { message('Choose Yes or No for both WhatsApp alert types.', true); return; }
     const state = get('state'), district = get('district');
@@ -69,9 +79,10 @@
     try {
       const result = await call('submit_whatsapp_registration_form',{p_token:token,p_profile,p_optional});
       if (leaving) return;
+      if (phoneAccountEnabled && result?.portal_account_ready !== true) throw new Error('Account not confirmed');
       if (result?.status !== 'registered' || typeof result.job_alerts_selected !== 'boolean') throw new Error('receipt');
       ready = false;
-      submitted(result.job_alerts_selected, result.same_day_alerts_selected);
+      submitted(result.job_alerts_selected, result.same_day_alerts_selected, result.portal_account_ready === true);
     } catch (_) {
       if (leaving) return;
       // Keep entered details only in this form; never store them in browser storage or logs.
