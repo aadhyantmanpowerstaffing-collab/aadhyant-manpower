@@ -124,6 +124,9 @@ test('OTP-linked Candidate mobile changes require the new phone to be confirmed 
   await f.db.exec("update public.candidates set mobile='9999999999' where user_id='"+uid+"'");
   const candidate=(await f.db.query("select mobile,mobile_verified from public.candidates where user_id=$1",[uid])).rows[0];
   assert.equal(candidate.mobile,'9999999999');assert.equal(candidate.mobile_verified,true);
+  await f.db.exec("update auth.users set phone='19876543210',phone_confirmed_at=clock_timestamp() where id='"+uid+"'");
+  await assert.rejects(()=>f.db.exec("update public.candidates set mobile='9876543210' where user_id='"+uid+"'"),/Verify the new WhatsApp number/);
+  assert.equal((await f.db.query("select mobile from public.candidates where user_id=$1",[uid])).rows[0].mobile,'9999999999');
  }finally{await f.db.close();}
 });
 
