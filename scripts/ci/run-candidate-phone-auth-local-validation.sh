@@ -55,7 +55,7 @@ assert_local_url(){
 
 psql_file(){
   local file="$1"
-  if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 "$@" -f "$file" >"$RAW_OUTPUT" 2>&1; then
+  if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -f "$file" >"$RAW_OUTPUT" 2>&1; then
     # Never echo SQL, row contents, credentials, or arbitrary database error text.
     fail "SQL_FILE_FAILED:$(basename "$file")"
   fi
@@ -73,7 +73,6 @@ main(){
   assert_no_hosted_environment
   require_command docker
   require_command psql
-  require_command sha256sum
   require_command supabase
   [[ "$(supabase --version)" == "$EXPECTED_SUPABASE_CLI_VERSION" ]] || fail "SUPABASE_CLI_VERSION_MISMATCH"
   docker info >/dev/null 2>&1 || fail "DOCKER_DAEMON_UNAVAILABLE"
@@ -130,7 +129,7 @@ main(){
   psql_assert "DELIVERY_CLAIM_SERVICE_ROLE_ONLY" "select has_function_privilege('service_role','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute') and not has_function_privilege('anon','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute') and not has_function_privilege('authenticated','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute');"
   psql_assert "DELIVERY_FINISH_SERVICE_ROLE_ONLY" "select has_function_privilege('service_role','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute') and not has_function_privilege('anon','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute') and not has_function_privilege('authenticated','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute');"
   psql_assert "REGISTRATION_WRAPPER_GRANTS_PRESERVED" "select has_function_privilege('anon','public.submit_whatsapp_registration_form(text,jsonb,jsonb)','execute') and has_function_privilege('authenticated','public.submit_whatsapp_registration_form(text,jsonb,jsonb)','execute');"
-  psql_assert "ALL_NEW_SECURITY_DEFINER_FUNCTIONS_PIN_SEARCH_PATH" "select count(*)=4 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='public' and p.proname in ('get_candidate_phone_auth_status','claim_candidate_phone_auth_delivery','finish_candidate_phone_auth_delivery','submit_whatsapp_registration_form') or n.nspname='private' and p.proname='bind_whatsapp_candidate_phone_account') and p.prosecdef and p.proconfig @> array['search_path=""'];"
+  psql_assert "ALL_NEW_SECURITY_DEFINER_FUNCTIONS_PIN_SEARCH_PATH" "select count(*)=5 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='public' and p.proname in ('get_candidate_phone_auth_status','claim_candidate_phone_auth_delivery','finish_candidate_phone_auth_delivery','submit_whatsapp_registration_form') or n.nspname='private' and p.proname='bind_whatsapp_candidate_phone_account') and p.prosecdef and p.proconfig @> array['search_path=""'];"
   psql_assert "PRIVATE_BIND_FUNCTION_NOT_CLIENT_EXECUTABLE" "select not has_function_privilege('anon','private.bind_whatsapp_candidate_phone_account(text)','execute') and not has_function_privilege('authenticated','private.bind_whatsapp_candidate_phone_account(text)','execute');"
   psql_assert "OTP_LEDGER_EMPTY" "select count(*)=0 from private.candidate_phone_auth_deliveries;"
 
