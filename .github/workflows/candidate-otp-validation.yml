@@ -43,7 +43,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: candidate-otp-validation-${{ github.event.pull_request.number || github.ref }}
+  group: candidate-otp-validation-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
