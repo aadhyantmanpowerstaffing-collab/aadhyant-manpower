@@ -116,3 +116,6 @@ Do not send bulk messages merely to attempt to unlock account eligibility.
 ## Latest branch integration — 4 November 2026
 
 Prepared against `web-platform-development` at `002e9a0ee39261e69a3d2ee7b4a5703fb0f3c5b5`. The additive OTP migration is timestamped after the current production migration range through `20261103113526`, so fresh databases apply this wrapper after the latest registration function changes. The latest target regression script and contact-import command are preserved, with three focused OTP tests added to the default regression suite. Full integrated regression and production-artifact checks must pass before merge/deployment.
+
+
+Security review update — 4 November 2026: The account-link guard also rejects identities present in `public.staff_roles`, in addition to `staff_profiles`, `admin_users`, `company_users`, and `contractor_users`. Both staff role stores have separate regression cases.
