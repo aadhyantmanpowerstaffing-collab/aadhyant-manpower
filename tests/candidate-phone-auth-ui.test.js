@@ -12,3 +12,9 @@ test('changing number while verification is in flight cannot unlock registration
 });
 
 test('clearing a verified phone session signs out before another number is used',async()=>{const f=fixture();await f.flow.request('9876543210');await f.flow.verify('654321');await f.flow.clear(true);assert.equal(f.flow.verified,false);assert.equal(f.calls.filter(c=>c[0]==='signOut').length,1);});
+
+
+test('changing mobile while activation status is loading prevents a stale OTP send',async()=>{
+ const window={};let release;const calls=[];const client={rpc:async()=>{await new Promise(resolve=>release=resolve);return {data:true};},auth:{signInWithOtp:async(args)=>{calls.push(args);return {error:null};},verifyOtp:async()=>({}),signOut:async()=>({error:null})}};
+ vm.runInNewContext(script,{window,document:{querySelector:()=>null},Date});const flow=window.AadhyantCandidatePhoneAuth.create(client,true);const work=flow.request('9876543210');await Promise.resolve();flow.clear();release();await assert.rejects(()=>work,/could not be confirmed/);assert.equal(calls.length,0);
+});
