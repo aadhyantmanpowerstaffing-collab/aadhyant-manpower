@@ -10,6 +10,7 @@ create table private.candidate_phone_auth_deliveries(
  user_id uuid not null references auth.users(id),
  state text not null check(state in ('started','accepted','review')),
  created_at timestamptz not null default clock_timestamp());
+create index candidate_phone_auth_deliveries_user_created_idx on private.candidate_phone_auth_deliveries(user_id,created_at desc);
 alter table private.candidate_phone_auth_deliveries enable row level security;
 revoke all on private.candidate_phone_auth_deliveries from public,anon,authenticated,service_role;
 
@@ -37,11 +38,17 @@ begin
    and s.completed_at is null and s.expires_at>clock_timestamp()
    and private.web_registration_context(o.registration_web_token) is not null)
  ) then raise exception 'Phone authentication unavailable';end if;
- -- No raw code, payload, phone or provider URL is persisted in this ledger.
- insert into private.candidate_phone_auth_deliveries(hook_id,user_id,state) values(p_hook_id,p_user_id,'started') on conflict do nothing;
- if found then return 'send';end if;
+ -- Serialize per-user claims so parallel Auth requests cannot bypass cooldown.
+ perform pg_advisory_xact_lock(hashtextextended('candidate-phone-otp:'||p_user_id::text,0));
  select state into outcome from private.candidate_phone_auth_deliveries where hook_id=p_hook_id and user_id=p_user_id;
- return case when outcome='accepted' then 'accepted' else 'review' end;
+ if found then return case when outcome='accepted' then 'accepted' else 'review' end;end if;
+ if exists(select 1 from private.candidate_phone_auth_deliveries
+   where user_id=p_user_id and created_at>clock_timestamp()-interval '60 seconds') then
+  raise exception 'Phone authentication cooldown active';
+ end if;
+ -- No raw code, payload, phone or provider URL is persisted in this ledger.
+ insert into private.candidate_phone_auth_deliveries(hook_id,user_id,state) values(p_hook_id,p_user_id,'started');
+ return 'send';
 end;$$;
 create function public.finish_candidate_phone_auth_delivery(p_hook_id text,p_user_id uuid,p_accepted boolean)
 returns boolean language plpgsql security definer set search_path='' as $$
