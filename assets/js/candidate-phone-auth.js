@@ -24,7 +24,11 @@
     if(busy||!phone||!/^\d{6}$/.test(String(code)))throw new Error('Enter the six-digit code from WhatsApp.');
     const current=generation;busy=true;verified=false;
     try{const result=await client.auth.verifyOtp({phone,token:String(code),type:'sms'});
-     if(current!==generation||result.error||!result.data?.session||!result.data?.user?.phone_confirmed_at||'+'+String(result.data.user.phone).replace(/^\+/,'')!==phone)throw new Error('The code is invalid or expired. Request a new code if needed.');
+     if(current!==generation){
+      await client.auth.signOut();
+      throw new Error('Verification was cancelled. Request a new code.');
+     }
+     if(result.error||!result.data?.session||!result.data?.user?.phone_confirmed_at||'+'+String(result.data.user.phone).replace(/^\+/,'')!==phone)throw new Error('The code is invalid or expired. Request a new code if needed.');
      verified=true;return result.data.user;
     }finally{busy=false;}
    },
