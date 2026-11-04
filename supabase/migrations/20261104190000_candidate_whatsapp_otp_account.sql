@@ -60,7 +60,7 @@ begin
  -- Never transfer an existing portal identity, or claim an imported profile by phone alone.
  if (c.user_id is not null and c.user_id<>u.id) or (c.user_id is null and c.acquisition_source_reference is distinct from 'whatsapp_web:'||s.inbound_id::text)
  or exists(select 1 from public.candidates where user_id=u.id and id<>c.id)
- or exists(select 1 from public.platform_users where user_id=u.id and (account_type<>'candidate' or account_status<>'active'))
+ or exists(select 1 from public.platform_users where user_id=u.id and (account_type<>'candidate' or account_status<>'active' or c.user_id is distinct from u.id))
  or exists(select 1 from public.admin_users where user_id=u.id)
  or exists(select 1 from public.staff_profiles where user_id=u.id)
  or exists(select 1 from public.staff_roles where user_id=u.id)
