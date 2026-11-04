@@ -16,7 +16,7 @@ insert into auth.users(id,phone,phone_confirmed_at) values('${uid}','91987654321
 async function enable(f){await f.db.exec(`update private.candidate_phone_auth_config set enabled=true;select set_config('test.uid','${uid}',false);`);}
 test('feature stays off until provider activation; existing registration behavior is preserved',async()=>{const f=await setup();try{assert.equal((await f.db.query('select public.get_candidate_phone_auth_status() as ready')).rows[0].ready,false);const result=await f.submit();assert.equal(result.status,'registered');assert.equal(result.portal_account_ready,undefined);assert.equal((await f.db.query('select count(*)::int n from public.platform_users')).rows[0].n,0);}finally{await f.db.close();}});
 test('verified matching phone atomically creates portal ownership and one application; replay stays idempotent',async()=>{const f=await setup();try{await enable(f);const result=await f.submit();assert.equal(result.portal_account_ready,true);const c=(await f.db.query('select user_id,mobile_verified from public.candidates')).rows[0];assert.equal(c.user_id,uid);assert.equal(c.mobile_verified,true);assert.equal((await f.submit()).portal_account_ready,true);assert.equal((await f.db.query('select count(*)::int n from public.platform_users')).rows[0].n,1);assert.equal((await f.db.query('select count(*)::int n from public.candidate_applications')).rows[0].n,1);}finally{await f.db.close();}});
-for(const mode of ['anonymous','unverified','wrong-number','banned','staff-profile','staff-role','company','claimed'])test('phone account fails closed without partial registration: '+mode,async()=>{const f=await setup();try{await enable(f);
+for(const mode of ['anonymous','unverified','wrong-number','banned','staff-profile','staff-role','company','orphan-portal','claimed'])test('phone account fails closed without partial registration: '+mode,async()=>{const f=await setup();try{await enable(f);
  if(mode==='anonymous')await f.db.exec("select set_config('test.uid','',false)");
  if(mode==='unverified')await f.db.exec(`update auth.users set phone_confirmed_at=null where id='${uid}'`);
  if(mode==='wrong-number')await f.db.exec(`update auth.users set phone='919999999999' where id='${uid}'`);
@@ -24,6 +24,7 @@ for(const mode of ['anonymous','unverified','wrong-number','banned','staff-profi
  if(mode==='staff-profile')await f.db.exec(`insert into public.staff_profiles values('${uid}')`);
  if(mode==='staff-role')await f.db.exec(`insert into public.staff_roles values('${uid}')`);
  if(mode==='company')await f.db.exec(`insert into public.platform_users(user_id,account_type,account_status) values('${uid}','company','active')`);
+ if(mode==='orphan-portal')await f.db.exec(`insert into public.platform_users(user_id,account_type,display_name,mobile,account_status) values('${uid}','candidate','Synthetic Candidate','9876543210','active')`);
  if(mode==='claimed'){await f.db.exec("update private.candidate_phone_auth_config set enabled=false");await f.submit();await f.db.exec(`update private.candidate_phone_auth_config set enabled=true;update public.candidates set user_id='00000000-0000-0000-0000-000000000001'`);}
  await assert.rejects(()=>f.submit());if(mode!=='claimed')assert.equal((await f.db.query('select count(*)::int n from public.candidate_applications')).rows[0].n,0);
  }finally{await f.db.close();}});
