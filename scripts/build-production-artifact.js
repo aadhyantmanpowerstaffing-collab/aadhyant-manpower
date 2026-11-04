@@ -53,6 +53,7 @@ const SOURCE_RUNTIME_FILES = Object.freeze([
   'assets/js/sharing-contact-import.js',
   'assets/js/excel-export.js',
   'assets/js/registration-next-steps.js',
+  'assets/js/candidate-phone-auth.js',
   'assets/css/registration-next-steps.css',
   'admin/admin.css',
   'admin/admin.js',
