@@ -18,3 +18,29 @@ test('changing mobile while activation status is loading prevents a stale OTP se
  const window={};let release;const calls=[];const client={rpc:async()=>{await new Promise(resolve=>release=resolve);return {data:true};},auth:{signInWithOtp:async(args)=>{calls.push(args);return {error:null};},verifyOtp:async()=>({}),signOut:async()=>({error:null})}};
  vm.runInNewContext(script,{window,document:{querySelector:()=>null},Date});const flow=window.AadhyantCandidatePhoneAuth.create(client,true);const work=flow.request('9876543210');await Promise.resolve();flow.clear();release();await assert.rejects(()=>work,/could not be confirmed/);assert.equal(calls.length,0);
 });
+
+
+test('a verified phone without an active Candidate context is signed out',async()=>{
+ const handlers={},calls=[],elements={
+  '[data-phone-number]':{value:'9876543210',disabled:false,focus(){}},
+  '[data-phone-code]':{value:'123456',hidden:false},
+  '[data-phone-request]':{disabled:false},
+  '[data-phone-verify]':{disabled:false,hidden:false},
+  '[data-phone-status]':{textContent:''},
+  '[data-phone-change]':{addEventListener:(event,fn)=>handlers.change=fn}
+ };
+ for(const selector of ['[data-phone-request]','[data-phone-verify]'])elements[selector].addEventListener=(event,fn)=>handlers[selector]=fn;
+ const login={hidden:true,querySelector:selector=>elements[selector]};
+ const email={open:true};
+ const client={rpc:async(name)=>{calls.push(['rpc',name]);return name==='get_candidate_phone_auth_status'?{data:true}:{error:{message:'no candidate'}};},
+  auth:{signInWithOtp:async()=>({error:null}),verifyOtp:async()=>({data:{session:{},user:{phone:'919876543210',phone_confirmed_at:'2099-01-01'}}}),
+   signOut:async()=>{calls.push(['signOut']);return {error:null};},onAuthStateChange:()=>{}}
+ };
+ const window={aadhyantSupabase:{client}};
+ vm.runInNewContext(script,{window,document:{querySelector:s=>s==='[data-phone-login]'?login:s==='[data-email-login]'?email:null},Date,addEventListener(){}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(login.hidden,false);
+ await handlers['[data-phone-request]'].call({});
+ await handlers['[data-phone-verify]'].call({});
+ assert.equal(calls.filter(x=>x[0]==='signOut').length,1);
+ assert.match(elements['[data-phone-status]'].textContent,/no active Candidate Portal account/);
+});
