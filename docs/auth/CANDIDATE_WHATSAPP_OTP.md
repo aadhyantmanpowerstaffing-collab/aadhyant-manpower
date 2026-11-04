@@ -74,9 +74,7 @@ The cause of the account permission restriction has not been independently estab
    code, matching private link, single profile/application/account, replay,
    logout/login, cross-number and pre-owned candidate denial, STOP/job closure.
    Local tests do not prove provider delivery or a deployed Auth session.
-7. Public activation follows successful live verification. Roll back activation
-   by turning the private config and hook gates off while retaining canonical
-   identity/application history; do not delete users or transfer ownership.
+7. The code may be merged into `web-platform-development` while all three gates remain OFF; merging alone does not enable OTP. Do not deploy the migration, Edge Function or frontend, and do not enable Supabase Auth/Meta settings, until the Authentication template is approved and a controlled live OTP/login test is authorized and passes. Public activation follows successful live verification. Roll back activation by turning the private config and hook gates off while retaining canonical identity/application history; do not delete users or transfer ownership.
 
 ## Validation
 
