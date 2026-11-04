@@ -14,6 +14,31 @@ create index candidate_phone_auth_deliveries_user_created_idx on private.candida
 alter table private.candidate_phone_auth_deliveries enable row level security;
 revoke all on private.candidate_phone_auth_deliveries from public,anon,authenticated,service_role;
 
+-- Keep an OTP-linked Candidate profile mobile bound to the Auth-verified phone.
+-- A profile edit cannot silently desynchronize future OTP login eligibility.
+create function private.guard_candidate_phone_auth_mobile_change()
+returns trigger language plpgsql security definer set search_path='' as $
+declare verified_phone text;
+begin
+ if old.user_id is null or old.mobile_verified is distinct from true or new.mobile is not distinct from old.mobile then
+  return new;
+ end if;
+ select right(regexp_replace(coalesce(u.phone,''),'[^0-9]','','g'),10) into verified_phone
+ from auth.users u
+ where u.id=old.user_id and u.phone_confirmed_at is not null
+   and not coalesce(u.is_anonymous,false)
+   and (u.banned_until is null or u.banned_until<=clock_timestamp());
+ if verified_phone is distinct from new.mobile then
+  raise exception 'Verify the new WhatsApp number before changing your Candidate mobile number' using errcode='42501';
+ end if;
+ return new;
+end;$;
+revoke all on function private.guard_candidate_phone_auth_mobile_change() from public,anon,authenticated,service_role;
+create trigger candidates_guard_candidate_phone_auth_mobile_change
+before update of mobile on public.candidates
+for each row execute function private.guard_candidate_phone_auth_mobile_change();
+
+
 create function public.get_candidate_phone_auth_status() returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from private.candidate_phone_auth_config where singleton and enabled);
 $$;
