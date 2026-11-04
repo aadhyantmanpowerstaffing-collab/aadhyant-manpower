@@ -65,7 +65,7 @@ psql_assert(){
   local label="$1" sql="$2" result
   if ! psql "$LOCAL_DB_URL" -X -q -At -v ON_ERROR_STOP=1 -c "$sql" >"$RAW_OUTPUT" 2>&1; then fail "SQL_ASSERTION_QUERY_FAILED:$label"; fi
   result="$(tr -d '[:space:]' <"$RAW_OUTPUT")"
-  [[ "$result" == "t" ]] || fail "SQL_ASSERTION_FAILED:$label"
+  [[ "$result" == "t" ]] || { log "CANDIDATE_OTP_LOCAL_ASSERTION_VALUE=$label:$result"; fail "SQL_ASSERTION_FAILED:$label"; }
 }
 
 main(){
@@ -137,7 +137,10 @@ main(){
   psql_assert "DELIVERY_CLAIM_SERVICE_ROLE_ONLY" "select has_function_privilege('service_role','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute') and not has_function_privilege('anon','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute') and not has_function_privilege('authenticated','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute');"
   psql_assert "DELIVERY_FINISH_SERVICE_ROLE_ONLY" "select has_function_privilege('service_role','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute') and not has_function_privilege('anon','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute') and not has_function_privilege('authenticated','public.finish_candidate_phone_auth_delivery(text,uuid,boolean)','execute');"
   psql_assert "REGISTRATION_WRAPPER_GRANTS_PRESERVED" "select has_function_privilege('anon','public.submit_whatsapp_registration_form(text,jsonb,jsonb)','execute') and has_function_privilege('authenticated','public.submit_whatsapp_registration_form(text,jsonb,jsonb)','execute');"
-  psql_assert "GET_PHONE_AUTH_STATUS_SEARCH_PATH" "select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
+  psql_assert "GET_PHONE_AUTH_STATUS_FUNCTION_EXISTS" "select to_regprocedure('public.get_candidate_phone_auth_status()') is not null;"
+  psql_assert "GET_PHONE_AUTH_STATUS_IS_SECURITY_DEFINER" "select prosecdef from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
+  psql_assert "GET_PHONE_AUTH_STATUS_HAS_CONFIG" "select proconfig is not null from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
+  psql_assert "GET_PHONE_AUTH_STATUS_EMPTY_SEARCH_PATH" "select proconfig @> array['search_path=""']::text[] from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
   psql_assert "CLAIM_DELIVERY_SEARCH_PATH" "select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid=to_regprocedure('public.claim_candidate_phone_auth_delivery(text,uuid,text)');"
   psql_assert "FINISH_DELIVERY_SEARCH_PATH" "select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid=to_regprocedure('public.finish_candidate_phone_auth_delivery(text,uuid,boolean)');"
   psql_assert "PRIVATE_BIND_SEARCH_PATH" "select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid=to_regprocedure('private.bind_whatsapp_candidate_phone_account(text)');"
