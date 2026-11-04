@@ -42,7 +42,7 @@ export async function handleAuthHook(req:Request,get:Get,rpc:Rpc,fetcher:typeof 
   // Never fall back to a marketing template or a second provider for an OTP.
   const response=await fetcher('https://graph.facebook.com/v25.0/'+phoneId+'/messages',{
    method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},
-   body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(2000)
+   body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(15000)
   });
   const result=await response.json(),receipt=result?.messages?.[0]?.id;
   if(!response.ok||result?.error||!Array.isArray(result?.messages)||result.messages.length!==1
