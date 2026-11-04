@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {setup:base}=require('./fixtures/web-registration-runtime-setup');
 const migration=fs.readFileSync('supabase/migrations/20261104190000_candidate_whatsapp_otp_account.sql','utf8');
 const uid='00000000-0000-0000-0000-000000000099';
-const other='00000000-0000-0000-0000-000000000001';
+const other='00000000-0000-0000-0000-000000000098';
 async function setup(){
  const f=await base();
  await f.db.exec(
