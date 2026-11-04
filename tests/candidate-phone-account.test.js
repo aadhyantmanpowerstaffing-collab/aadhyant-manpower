@@ -9,6 +9,7 @@ async function setup(){
  await f.db.exec(
   "alter table auth.users add column phone text,add column phone_confirmed_at timestamptz,add column is_anonymous boolean not null default false,add column banned_until timestamptz;" +
   "alter table public.candidates add column user_id uuid references auth.users(id),add column mobile_verified boolean not null default false;" +
+  "alter table public.candidates alter column status set default 'new',alter column status set not null,alter column profile_status set default 'registered',alter column profile_status set not null;" +
   "create table public.platform_users(" +
   "user_id uuid primary key references auth.users(id)," +
   "account_type text not null check(account_type in ('company','contractor','candidate'))," +
