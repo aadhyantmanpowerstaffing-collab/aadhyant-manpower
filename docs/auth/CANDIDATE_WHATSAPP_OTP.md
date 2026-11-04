@@ -131,3 +131,6 @@ OTP send eligibility — 4 November 2026: The service-only delivery-claim RPC no
 
 
 Abuse controls — 4 November 2026: The delivery ledger serializes requests per Auth user with a transaction advisory lock and enforces a 60-second server-side cooldown even when an attacker sends a new Auth hook ID. The browser cooldown is only an additional UX layer. Supabase Auth provider rate limits must still be configured before activation.
+
+
+Candidate login eligibility refinement — 4 November 2026: Existing portal OTP login also requires the canonical Candidate record to have `mobile_verified = true`; the user ID, Auth phone, Candidate mobile, active profile and active Candidate platform account must all match. New registrations set this flag only after a verified OTP session is linked transactionally.
