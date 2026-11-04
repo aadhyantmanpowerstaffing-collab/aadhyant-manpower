@@ -115,6 +115,8 @@ main(){
   # the following production migration's hash assertion remains unchanged.
   psql_file "tests/fixtures/sharing-send-guard-baseline.sql"
   psql_assert "HISTORICAL_SEND_GUARD_BASELINE" "select md5(pg_get_functiondef('private.whatsapp_vacancy_send_eligible(uuid)'::regprocedure))='aa855103a4239ea9c453a343fd2e7175';"
+  psql_file "tests/fixtures/candidate-whatsapp-preferences-baseline.sql"
+  psql_assert "HISTORICAL_CANDIDATE_PREFERENCE_RPC_BASELINE" "select to_regprocedure('public.get_candidate_whatsapp_alert_preference()') is not null and to_regprocedure('public.set_candidate_whatsapp_alert_preference(boolean,timestamp with time zone,text,text)') is not null;"
 
   # Reconstruct the current application schema in filename order, without hosted history. in filename order, without hosted history.
   local applied_date_count=0
