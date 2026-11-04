@@ -123,6 +123,34 @@ is not evidence of resolving template-category eligibility. Keep all Auth activa
 gates off until Meta accepts the Authentication template and approval is verified.
 Do not send bulk messages merely to attempt to unlock account eligibility.
 
+### Meta account eligibility diagnosis
+
+Before retrying template creation, inspect the exact WABA and phone number used by the
+Aadhyant sender:
+1. Business Settings → Business Info: record whether the Business Portfolio is verified
+   or whether verification is pending/rejected.
+2. WhatsApp Manager → Account tools → Phone numbers / Limits: record the sender's
+   current daily business-initiated messaging tier and quality/status shown by Meta.
+3. Business Support Home / Account Quality: check for active restrictions, disabled assets,
+   policy issues or pending reviews on both the Business Portfolio and WABA.
+4. Confirm the selected WABA and sender phone number are the same assets used by the
+   existing Cloud API token and Phone Number ID. Full System User access alone does not
+   override account-level category eligibility.
+5. If Meta still rejects Authentication template creation after the above checks, open
+   a Meta Business Support case. Include the exact error screenshot, WABA ID, Business
+   Portfolio ID, Phone Number ID, the local timestamp and any Graph API `code`,
+   `error_subcode` and `fbtrace_id`. Ask Meta to identify which eligibility gate
+   blocks `AUTHENTICATION` Copy Code template creation for this WABA.
+
+Provider support documentation currently cites a 2,000-per-day business-initiated
+conversation tier together with Business Verification / an approved scaling path and
+good account standing. These are third-party explanations of Meta eligibility, not a
+live reading of this WABA's account state; record the actual tier shown in WhatsApp
+Manager rather than assuming the cause or sending unsolicited volume to reach a target.
+References:
+- https://api.support.vonage.com/hc/en-us/articles/30129084631068-Guidelines-and-Eligibility-Criteria-for-Creating-a-WhatsApp-Authentication-Template
+- https://support.wati.io/en/articles/11463212-how-whatsapp-messaging-limits-work-and-how-to-increase-them
+
 
 ## Latest branch integration — 4 November 2026
 
