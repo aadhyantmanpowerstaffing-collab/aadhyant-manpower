@@ -102,3 +102,12 @@ test('database claim enforces a 60-second cooldown even when a new Auth hook ID 
   assert.equal((await f.db.query("select public.claim_candidate_phone_auth_delivery('hook_after_cooldown',$1,'+919876543210') state",[uid])).rows[0].state,'send');
  }finally{await f.db.close();}
 });
+
+
+test('an existing Candidate account without verified-mobile status cannot request OTP',async()=>{
+ const f=await setup();try{await enable(f);
+  const result=await f.submit();assert.equal(result.portal_account_ready,true);
+  await f.db.exec("update private.whatsapp_web_registrations set expires_at=clock_timestamp()-interval '1 hour';update public.candidates set mobile_verified=false where user_id='00000000-0000-0000-0000-000000000099'");
+  await assert.rejects(()=>f.db.query("select public.claim_candidate_phone_auth_delivery('hook_unverified_candidate',$1,'+919876543210')",[uid]));
+ }finally{await f.db.close();}
+});
