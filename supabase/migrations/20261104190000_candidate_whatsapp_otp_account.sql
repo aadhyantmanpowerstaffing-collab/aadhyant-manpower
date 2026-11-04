@@ -17,18 +17,46 @@ revoke all on private.candidate_phone_auth_deliveries from public,anon,authentic
 -- Keep an OTP-linked Candidate profile mobile bound to the Auth-verified phone.
 -- A profile edit cannot silently desynchronize future OTP login eligibility.
 create function private.guard_candidate_phone_auth_mobile_change()
-returns trigger language plpgsql security definer set search_path='' as $mobile_guard$
-declare verified_phone text;
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $mobile_guard$
+declare
+ normalized_phone text;
+ verified_phone text;
 begin
- if old.user_id is null or old.mobile_verified is distinct from true or new.mobile is not distinct from old.mobile then
+ if old.user_id is null
+    or old.mobile_verified is distinct from true
+    or new.mobile is not distinct from old.mobile then
   return new;
  end if;
- select case when regexp_replace(coalesce(u.phone,''),'[^0-9]','','g') ~ '^91[6-9][0-9]{9}
+
+ select regexp_replace(coalesce(u.phone, ''), '[^0-9]', '', 'g')
+ into normalized_phone
+ from auth.users u
+ where u.id = old.user_id
+   and u.phone_confirmed_at is not null
+   and not coalesce(u.is_anonymous, false)
+   and (u.banned_until is null or u.banned_until <= clock_timestamp());
+
+ if normalized_phone is not null
+    and length(normalized_phone) = 12
+    and left(normalized_phone, 2) = '91'
+    and substring(normalized_phone from 3 for 1) in ('6', '7', '8', '9') then
+  verified_phone := right(normalized_phone, 10);
+ else
+  verified_phone := null;
+ end if;
+
  if verified_phone is distinct from new.mobile then
-  raise exception 'Verify the new WhatsApp number before changing your Candidate mobile number' using errcode='42501';
+  raise exception 'Verify the new WhatsApp number before changing your Candidate mobile number'
+    using errcode = '42501';
  end if;
  return new;
-end;$mobile_guard$;
+end;
+$mobile_guard$;
+
 revoke all on function private.guard_candidate_phone_auth_mobile_change() from public,anon,authenticated,service_role;
 create trigger candidates_guard_candidate_phone_auth_mobile_change
 before update of mobile on public.candidates
