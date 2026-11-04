@@ -125,3 +125,6 @@ HTTP Auth Hook deadline review — 4 November 2026: Supabase documents a five-se
 
 
 Identity collision review — 4 November 2026: An existing active Candidate `platform_users` row is now reusable only when the canonical Candidate row is already owned by that same Auth user. An orphaned Candidate portal row with no matching `candidates.user_id` is rejected for staff review rather than silently attached to a new WhatsApp registration.
+
+
+OTP send eligibility — 4 November 2026: The service-only delivery-claim RPC now sends only for either (1) an active, non-inactive Candidate Portal identity whose Auth user, Candidate mobile and account type/status all match, or (2) the exact phone on a currently valid, unexpired, incomplete private WhatsApp registration link. A generic phone-auth OTP request cannot use this hook to send to an unrelated number.
