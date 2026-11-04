@@ -152,6 +152,11 @@ References:
 - https://support.wati.io/en/articles/11463212-how-whatsapp-messaging-limits-work-and-how-to-increase-them
 
 
+Meta support entry points (sign in with the Business Portfolio owner account):
+- Account Quality: https://business.facebook.com/accountquality/
+- Business Support Home: https://www.facebook.com/business-support-home/
+- Contact Support (when offered for this account): https://www.facebook.com/business-support-home/contact-support/
+
 ### Ready-to-send Meta Business Support request
 
 Subject: WhatsApp Authentication template creation blocked for our WABA
