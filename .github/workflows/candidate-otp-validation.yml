@@ -1,6 +1,23 @@
 name: Candidate WhatsApp OTP validation
 
 on:
+  push:
+    branches:
+      - web-platform-development
+    paths:
+      - '.github/workflows/candidate-otp-validation.yml'
+      - 'assets/js/candidate-phone-auth.js'
+      - 'candidate/apply/**'
+      - 'candidate/portal/**'
+      - 'supabase/functions/candidate-whatsapp-auth/**'
+      - 'supabase/migrations/20261104190000_candidate_whatsapp_otp_account.sql'
+      - 'scripts/build-production-artifact.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/candidate-phone-account.test.js'
+      - 'tests/candidate-phone-auth-ui.test.js'
+      - 'tests/candidate-whatsapp-auth.test.mts'
+      - 'tests/whatsapp-web-form-ui.test.js'
   pull_request:
     branches:
       - web-platform-development
