@@ -110,7 +110,13 @@ main(){
   done
   shopt -u nullglob
 
-  # Reconstruct the current application schema in filename order, without hosted history.
+  # The historical WhatsApp baseline is a test-only fixture already used by
+  # the PGlite regression suite. It restores the exact expected send-guard body;
+  # the following production migration's hash assertion remains unchanged.
+  psql_file "tests/fixtures/sharing-send-guard-baseline.sql"
+  psql_assert "HISTORICAL_SEND_GUARD_BASELINE" "select md5(pg_get_functiondef('private.whatsapp_vacancy_send_eligible(uuid)'::regprocedure))='aa855103a4239ea9c453a343fd2e7175';"
+
+  # Reconstruct the current application schema in filename order, without hosted history. in filename order, without hosted history.
   local applied_date_count=0
   while IFS= read -r file; do
     [[ "$file" == "$TARGET_MIGRATION" ]] && break
