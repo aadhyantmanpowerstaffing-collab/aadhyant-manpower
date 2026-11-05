@@ -33,8 +33,8 @@ begin
   raise exception 'Video job summary is unavailable or exceeds limits';
  end if;
  return jsonb_build_object('message',m,'media_id',p_media_id,'template_name',t.name,
-  'job_id',p_requirement_id,'ready_for_sending',false,
-  'notice','This is a private media preview; campaign sending requires a separate approved binding.');
+  'job_id',p_requirement_id,'requires_admin_approval',true,
+  'notice','Private media was validated; preparing a campaign still requires eligible recipients, Admin approval and an explicit send.');
 end;$$;
 revoke all on function public.admin_console_preview_saved_job_video(uuid,uuid,uuid)
  from public,anon,authenticated,service_role;
