@@ -27,13 +27,6 @@ async function digest(secret: string, phone: string, otp: string) {
   );
   return Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-function constantTimeEqual(a: string, b: string) {
-  const aa = encoder.encode(a), bb = encoder.encode(b);
-  if (aa.length !== bb.length) return false;
-  let diff = 0;
-  for (let i = 0; i < aa.length; i++) diff |= aa[i] ^ bb[i];
-  return diff === 0;
-}
 function randomOtp() {
   const bytes = new Uint32Array(1);
   crypto.getRandomValues(bytes);
@@ -66,7 +59,7 @@ Deno.serve(async (req) => {
   }
   let body: Record<string, unknown>;
   try {
-    if (Number(req.headers.get("content-length") || "0") > 2048) throw Error();
+    if (Number(req.headers.get("content-length") || "0") > 16384) throw Error();
     body = await req.json();
   } catch {
     return json({ error: "Invalid request" }, 400, origin);
