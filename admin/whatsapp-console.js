@@ -249,6 +249,22 @@
     grid.append(field('Contact List',list),field('Contact Tag',tag),field('Campaign Name',title),field('Job',job),field('Message Template',template),field('Audience',source),field('Matching Suggestions',view));content.append(grid);
     source.addEventListener('change',()=>{d.source=source.value;d.view=d.source==='contacts'?'all':'suggested';d.selected.clear();render();});view.addEventListener('change',()=>d.view=view.value);
     job.addEventListener('change',()=>{d.job=jobs.find(j=>j.id===job.value);d.selected.clear();});const preview=make('div','','wa-selected-template');if(d.template)preview.append(messageCard(d.template,d.job));content.append(preview);template.addEventListener('change',()=>{d.template=templates.find(t=>t.id===template.value);preview.replaceChildren();if(d.template)preview.append(messageCard(d.template,d.job));render();});
+    if(['aadhyant_registered_job_video_hi_v1','aadhyant_registered_job_video_en_v1'].includes(d.template?.name)){
+     content.append(make('h4','Saved MP4 · Private preview'),make('p','Choose an uploaded video for this published job. Sending with uploaded MP4s stays disabled until the reviewed server-side campaign binding is completed. Existing generated job Reels keep their original workflow.','wa-help'));
+     content.append(button('Load Saved MP4s',()=>run(async()=>{d.videoData=await call(client,'admin_console_promotion_media');})));
+     if(d.videoData){
+      const select=make('select');select.append(new Option('Choose a saved MP4',''));
+      (d.videoData.videos||[]).forEach(v=>select.append(new Option(new Date(v.created_at).toLocaleString()+' · '+(v.byte_size/1000000).toFixed(1)+' MB',v.id)));
+      select.value=d.videoMedia||'';select.addEventListener('change',()=>{d.videoMedia=select.value||null;render();});
+      content.append(field('Saved MP4 video',select));
+      if(d.videoMedia)content.append(button('Preview Saved Video & Job Message',()=>run(async()=>{
+       if(!d.job)throw Error('Select a published job first.');
+       await call(client,'admin_console_preview_saved_job_video',{p_requirement_id:d.job.id,p_template_id:d.template.id,p_media_id:d.videoMedia});
+       await previewPromotion(d.videoMedia);
+       notice('Private job-video preview validated. No campaign created or message sent.');
+      })));
+     }
+    }
     if(d.template?.name==='aadhyant_registered_job_image_hi_v1'){
      const image=make('input');image.type='file';image.accept='image/jpeg,image/png';image.addEventListener('change',()=>{d.imageFile=image.files?.[0];});
      content.append(field('Job Image · JPEG or PNG, maximum 5 MB',image),button(d.imageMedia?'Replace Job Image':'Upload Job Image',()=>run(async()=>{
@@ -260,7 +276,7 @@
      })));
      if(d.imageUrl){const previewImage=make('img');previewImage.src=d.imageUrl;previewImage.alt='Selected job image';previewImage.style.maxWidth='100%';previewImage.style.maxHeight='360px';content.append(previewImage);}
     }
-    content.append(button('Choose Recipients',()=>run(async()=>{if(d.template?.name==='aadhyant_registered_job_image_hi_v1'&&!d.imageMedia)throw Error('Upload a job image first.');if(labelLoadError)throw new Error('Refresh to load saved lists and tags before choosing recipients.');if(!d.job||!d.template||!d.name.trim())throw new Error('Choose a job, approved template and campaign name.');await getAudience();d.stage='audience';}),true));
+    content.append(button('Choose Recipients',()=>run(async()=>{if(d.videoMedia&&['aadhyant_registered_job_video_hi_v1','aadhyant_registered_job_video_en_v1'].includes(d.template?.name))throw Error('Uploaded MP4 job sending is not yet enabled. This video is available for private preview only.');if(d.template?.name==='aadhyant_registered_job_image_hi_v1'&&!d.imageMedia)throw Error('Upload a job image first.');if(labelLoadError)throw new Error('Refresh to load saved lists and tags before choosing recipients.');if(!d.job||!d.template||!d.name.trim())throw new Error('Choose a job, approved template and campaign name.');await getAudience();d.stage='audience';}),true));
    }
    if(d.stage==='audience'){
     content.append(make('p','Matching is a suggestion. Only contacts with message permission can be selected.','wa-help'));const count=make('strong',d.selected.size+' selected');content.append(count,button('Select Eligible on This Page',()=>{audience.filter(r=>r.eligible).forEach(r=>{if(d.selected.size<500)d.selected.set(r.contact_id,r);});render();}));
