@@ -1,28 +1,25 @@
-# Candidate WhatsApp OTP — staged foundation (not live)
+# Candidate WhatsApp OTP — staged implementation (not live)
 
-## Goal
-Candidate opens the existing registration form directly, fills the fields, receives an official WhatsApp Authentication OTP, verifies it within five minutes, and only then completes one account/profile registration.
+## Implemented on draft PR #49
+- Disabled-by-default `candidateOtpEnabled` registration feature flag.
+- Candidate form remains a direct one-page form; staged UI requests a WhatsApp OTP on its review screen, verifies the six-digit code, then sends candidate registration using a one-use server-issued proof.
+- RLS-protected OTP table with server-only access. No plaintext OTP is saved.
+- Atomic server-side OTP issuance and verification (60-second resend cooldown, three sends per rolling 24 hours, five-minute OTP validity, five attempts).
+- Verification issues a random one-use registration proof, valid for ten minutes. The registration RPC locks the OTP row, consumes proof in the same database transaction as the registration/interest operation, and marks the candidate mobile verified. The direct general and vacancy-specific candidate paths remain compatible.
+- Safe failure behavior when WhatsApp provider secrets or approved Authentication template config are unavailable.
+- Static safety regression tests in `tests/candidate-whatsapp-otp-foundation.test.js`.
 
-## Added in this branch
-- RLS-protected service-role-only `candidate_phone_otp` data store.
-- Separate edge transport for requesting an OTP (60-second cooldown; 3 sends / 24-hour window) and checking it (five-minute expiry; up to five verification attempts).
-- A required server-side secret for keyed OTP digests. No plaintext code is saved or returned from the endpoint.
-- All WhatsApp sends are disabled until environment variables are configured for an approved Meta Authentication template.
+## Production blockers (do not merge/deploy yet)
+1. Confirm Meta Authentication template approval and exact message component language/format; the Supabase template catalog previously did not show any matching OTP/Authentication template.
+2. Configure the designated WhatsApp Business API token, sender phone ID and approved Authentication template name securely. Set `CANDIDATE_OTP_HASH_SECRET` using a long random server-only value. Never place secrets in `config.js`.
+3. Complete threat review: IP/device-wide abuse defense and business-level spending limits, security testing, actual Meta response verification and template compatibility.
+4. Confirm account auto-creation/sign-in requirements. The current OTP registration marks the `candidates` profile as verified but does not create an `auth.users` account.
+5. Migrate away from legacy public direct candidate insert/RPC access for OTP-required registrations, only after the fully tested alternative is ready. A browser feature flag is not an authorization boundary.
+6. Validate database migration in non-production and test valid/incorrect/expired/replayed OTP, resend race, matching candidate duplicates, vacancy interest links, provider failure, accessibility, and consented test number delivery. Review existing project deployment requirements.
+7. Only then merge, deploy backend, turn on feature flag and test production end-to-end.
 
-## Must complete before deployment
-1. Confirm Meta has approved **Authentication**, not Marketing, template with OTP-copy button and exact expected language/components. Do not bypass Meta approval or substitute a marketing message.
-2. Independently review security. The current edge function is a **foundation**: rate-limit writes use read–modify–write operations that must become atomic database operations to resist concurrent requests. Add IP/abuse defenses and message-cost controls before enabling it.
-3. Implement an atomic server-side OTP-to-registration handoff: verification must mint a short-lived one-use proof tied to the mobile number and the final candidate submission endpoint must consume it. Do **not** rely on a client-side boolean or `verified:true` API response. Disable anonymous direct candidate insertion for the OTP-enforced route only when the replacement registration endpoint has been tested and activated.
-4. Preserve the existing requirement-specific interest flow, duplicate handling, explicit messaging consent, and registration without a separate Create Account step.
-5. Add integration tests for correct code, wrong code, expired code, reused code, resend race, duplicate candidate, Meta failure and return URL; test in staging, then production with a consenting test number.
-6. Review existing project deployment instructions and obtain any required approval before a production deployment.
+## Current verification
+The staged JavaScript controller and the Node regression test file passed JavaScript syntax parsing. Static checks found RLS, server-role checks, locked OTP row and one-use proof consumption. End-to-end tests and production database migration have **not** been run.
 
-## Required secrets (server-only)
-- `CANDIDATE_OTP_HASH_SECRET`: long random secret, distinct from Meta access token.
-- `META_WA_ACCESS_TOKEN`, `META_WA_PHONE_NUMBER_ID`, `META_WA_OTP_TEMPLATE_NAME`: use only after Meta Authentication template approval.
-- Standard Supabase edge environment: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-
-Never place any secret in `config.js` or browser JavaScript.
-
-## Current operational state
-The previous Supabase template catalog check returned **no** Authentication or OTP template matching name, and provider approval was not independently confirmed. Accordingly, this branch is isolated, **not merged**, and does not change live registration or send messages. The scaffold is not production-ready.
+## Costs and rollout
+No WhatsApp messages were triggered while preparing this branch. No production database schema or live registration behavior has been changed. Meta may charge for actual Authentication template deliveries when testing and rollout are authorized.
