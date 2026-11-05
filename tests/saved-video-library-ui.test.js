@@ -1,0 +1,84 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const source=fs.readFileSync('admin/whatsapp-console.js','utf8');
+test('Campaigns exposes Saved Videos without creating or sending a campaign on upload',()=>{
+ assert.match(source,/button\('Saved Videos',newMediaLibrary\)/);
+ assert.match(source,/draft=\{kind:'media-library'/);
+ assert.match(source,/choose an approved VIDEO template, load a saved MP4 during campaign setup/i);
+ assert.doesNotMatch(source,/Job video campaigns still require a current generated job Reel/);
+ const media=source.slice(source.indexOf('const newMediaLibrary='),source.indexOf('const renderPromotion='));
+ assert.match(media,/uploadSavedVideo\(d\.file\)/);
+ assert.match(media,/previewPromotion\(d\.media\)/);
+ assert.doesNotMatch(media,/admin_console_prepare|admin_console_queue|whatsapp-outbox-worker/);
+});
+test('private uploads use the existing authenticated bounded MP4 endpoint',()=>{
+ const media=source.slice(source.indexOf('const uploadSavedVideo='),source.indexOf('const newMediaLibrary='));
+ assert.match(media,/file\.type!=='video\/mp4'/);
+ assert.match(media,/file\.size>16000000/);
+ assert.match(media,/client\.auth\.getSession\(\)/);
+ assert.match(media,/functions\/v1\/whatsapp-campaign-media/);
+ assert.match(media,/authorization:'Bearer '/);
+ assert.doesNotMatch(media,/service_role|SUPABASE_SERVICE_ROLE_KEY|graph\.facebook\.com/);
+});
+test('existing registration upload reuses the authenticated media helper and job campaign guard stays intact',()=>{
+ assert.match(source,/const id=await uploadSavedVideo\(d\.file\)/);
+ assert.match(source,/if\(!d\.videoMedia&&!preview\.reel_ready\)throw new Error\('A current job video is required/);
+ assert.match(source,/admin_console_prepare_job_image/);
+ assert.match(source,/await call\(client,'admin_console_prepare',args\)/);
+});
+
+test('saved MP4 can be selected with a fresh job-video preview and canonical review flow',()=>{
+ assert.match(source,/Load Saved MP4s/);
+ assert.match(source,/admin_console_preview_saved_job_video/);
+ assert.match(source,/Preview Saved Video & Job Message/);
+ assert.match(source,/admin_console_prepare_saved_job_video/);
+ assert.match(source,/Preview Attached MP4/);
+ assert.match(source,/Save Campaign for Approval/);
+ assert.match(source,/if\(!d\.videoMedia&&!preview\.reel_ready\)/);
+});
+test('job video preview SQL checks Admin, private VIDEO metadata, published vacancy and template freshness',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105043000_saved_video_job_preview.sql','utf8');
+ for(const required of ['public.admin_console_access()','auth.uid()','private.whatsapp_console_media',"media_format='VIDEO'",'private.vacancy_is_application_eligible','private.manual_video_render','private.whatsapp_safe_flat_json',"status='APPROVED'",'compatible','synced_at>clock_timestamp()'])assert.ok(sql.includes(required),required);
+ assert.match(sql,/requires_admin_approval',true/);
+ assert.doesNotMatch(sql,/insert\s+into\s+public\.whatsapp_campaign|enqueue_whatsapp_outbound_message|graph\.facebook\.com/i);
+ assert.match(sql,/grant execute on function public\.admin_console_preview_saved_job_video\(uuid,uuid,uuid\) to authenticated/);
+});
+
+test('saved-job-video binding never bypasses Admin approval, recipient consent or the canonical outbox',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105044500_saved_job_video_campaign_binding.sql','utf8');
+ for(const required of [
+  'public.admin_console_prepare_before_manual_video',
+  'public.admin_console_preview_saved_job_video',
+  'private.console_template_valid_before_saved_video',
+  'private.whatsapp_vacancy_send_eligible',
+  'private.whatsapp_console_media',
+  'private.vacancy_is_application_eligible',
+  'private.whatsapp_safe_flat_json',
+  'console_template_snapshot',
+  "status='APPROVED'",
+  "media_format='VIDEO'",
+  "c.campaign_status<>'audience_ready'",
+  "o.send_phase='claimed'",
+  'o.lease_owner=p_worker_id'
+ ])assert.ok(sql.includes(required),required);
+ assert.match(sql,/c\.template_language<>\(case when c\.template_name='aadhyant_registered_job_video_hi_v1'/);
+ assert.doesNotMatch(sql,/create\s+table\s+public\.whatsapp_campaigns|insert\s+into\s+public\.whatsapp_outbound_messages|https:\/\/graph\.facebook\.com/i);
+ assert.match(sql,/grant execute on function public\.admin_console_prepare_saved_job_video\(uuid,uuid,uuid,uuid\[\],text,uuid,timestamptz\) to authenticated/);
+});
+
+test('registration promotion accepts only canonical MP4 media after images share the private library',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105050000_promotion_video_media_guard.sql','utf8');
+ for(const required of [
+  'admin_console_prepare_promotion_before_video_media_guard',
+  "m.media_format='VIDEO'",
+  "m.object_path=m.id::text||'/'||m.id::text||'.mp4'",
+  'console_template_valid_before_promotion_media_guard',
+  'console_promotion_media_object',
+  'Upload a valid MP4 video first'
+ ])assert.ok(sql.includes(required),required);
+ assert.doesNotMatch(sql,/\b(create|alter|drop)\s+table\b/i);
+ assert.match(sql,/grant execute on function public\.admin_console_prepare_promotion\(uuid,uuid\[\],text,uuid\) to authenticated/);
+ assert.match(sql,/grant execute on function public\.console_promotion_media_object\(uuid\) to service_role/);
+});

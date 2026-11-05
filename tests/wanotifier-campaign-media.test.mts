@@ -12,3 +12,32 @@ for(const p of ['../../private.mp4','https://attacker.invalid/video.mp4',id+'/..
 for(const options of [{type:'text/html',size:'1000'},{type:'video/mp4',size:'16000001'},{type:'video/mp4',size:''}])test('invalid media never obtains a provider URL '+JSON.stringify(options),async()=>{let calls=0;await assert.rejects(()=>campaignMediaUrl(row,'worker',base,'synthetic-service',async()=>path,async()=>{calls++;return new Response(null,{headers:{'content-type':options.type,'content-length':options.size}});}));assert.equal(calls,1);});
 test('signed URL cannot point at another bucket or external host',async()=>{await assert.rejects(()=>campaignMediaUrl(row,'worker',base,'synthetic-service',async()=>path,async(_,init)=>init?.method==='HEAD'?new Response(null,{headers:{'content-type':'video/mp4','content-length':'1000'}}):Response.json({signedURL:'https://attacker.invalid/video.mp4'})));});
 for(const format of ['PNG','JPEG'])test('job image uses a canonical private '+format+' object and exact image header',async()=>{const ext=format==='PNG'?'.png':'.jpg',p=id+'/'+id+ext,r={...row,template_name:'aadhyant_registered_job_image_hi_v1',template_language:'hi'};const url=await campaignMediaUrl(r,'worker',base,'synthetic-service',async(name,args)=>{assert.equal(name,'console_claimed_image_object');assert.equal(args.p_worker_id,'worker');return{path:p,format};},async(input,init)=>init?.method==='HEAD'?new Response(null,{headers:{'content-type':format==='PNG'?'image/png':'image/jpeg','content-length':'1000'}}):Response.json({signedURL:'/object/sign/whatsapp-campaign-media/'+p+'?token=synthetic'}));const payload=selectedVacancyPayload(r,url);assert.equal(payload.data.header_image_url,url);assert.equal(payload.data.header_video_url,undefined);assert.deepEqual(payload.data.body_variables,Object.values(vars).slice(0,10));});
+
+test('claimed uploaded job MP4 is read only from the approved private campaign bucket',async()=>{
+ const uploaded='whatsapp-campaign-media/'+path;
+ let calls=0;
+ const url=await campaignMediaUrl(row,'worker',base,'synthetic-service',async(name,args)=>{
+  assert.equal(name,'console_claimed_reel_object');
+  assert.deepEqual(args,{p_message_id:id,p_worker_id:'worker'});
+  return uploaded;
+ },async(input,init)=>{
+  calls++;
+  const u=new URL(String(input));assert.equal(u.origin,base);
+  assert.equal(init.redirect,'error');
+  if(init.method==='HEAD'){
+   assert.equal(u.pathname,'/storage/v1/object/authenticated/whatsapp-campaign-media/'+path);
+   return new Response(null,{headers:{'content-type':'video/mp4','content-length':'3926679'}});
+  }
+  assert.equal(u.pathname,'/storage/v1/object/sign/whatsapp-campaign-media/'+path);
+  return Response.json({signedURL:'/object/sign/whatsapp-campaign-media/'+path+'?token=synthetic'});
+ });
+ assert.equal(url,base+'/storage/v1/object/sign/whatsapp-campaign-media/'+path+'?token=synthetic');
+ assert.equal(calls,2);
+});
+for(const unsafe of ['whatsapp-campaign-media/../private.mp4','whatsapp-campaign-media/'+id+'/other.mp4','whatsapp-campaign-media/https://evil.invalid']){
+ test('bad uploaded job video path is rejected before storage access '+unsafe,async()=>{
+  let calls=0;
+  await assert.rejects(()=>campaignMediaUrl(row,'worker',base,'synthetic-service',async()=>unsafe,async()=>{calls++;return new Response(null)}));
+  assert.equal(calls,0);
+ });
+}

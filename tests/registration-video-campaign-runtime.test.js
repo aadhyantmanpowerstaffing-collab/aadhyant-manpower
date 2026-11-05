@@ -18,3 +18,15 @@ test('only exact VIDEO header, fixed body and static registration URL are compat
 for(const role of ['anon','authenticated'])assert.equal((await value(db,"select has_function_privilege($1,'public.console_register_promotion_media(uuid,uuid,integer)','execute') ok",[role])).ok,false);
 assert.equal((await value(db,"select public from storage.buckets where id='whatsapp-campaign-media'")).public,false);await db.exec("select set_config('test.admin','no',false)");await assert.rejects(db.query('select public.admin_console_promotion_media()'),/Admin access/);
 });
+test('shared image media cannot be prepared or signed as a registration video',async t=>{const{db,media}=await setup();t.after(()=>db.close());
+ for(const file of ['20261102113326_whatsapp_job_image_campaign.sql','20261105043000_saved_video_job_preview.sql','20261105044500_saved_job_video_campaign_binding.sql','20261105050000_promotion_video_media_guard.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+ const contact=await importOne(db);await subscribe(db,contact);
+ const image='10000000-0000-0000-0000-000000000002';
+ await db.query("select public.console_register_campaign_image($1,auth.uid(),1200,'JPEG')",[image]);
+ await assert.rejects(prepare(db,image,[contact],'20000000-0000-0000-0000-000000000003'),/valid MP4 video/);
+ const c=await prepare(db,media,[contact],'20000000-0000-0000-0000-000000000004');
+ assert.equal((await value(db,'select private.console_template_valid($1) ok',[c])).ok,true);
+ assert.equal((await value(db,'select public.console_promotion_media_object($1) path',[image])).path,null);
+ const rows=(await value(db,'select public.admin_console_promotion_media() data')).data.videos;
+ assert.ok(rows.some(x=>x.id===media));assert.ok(!rows.some(x=>x.id===image));
+});

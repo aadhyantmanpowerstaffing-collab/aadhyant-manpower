@@ -13,10 +13,11 @@ const fresh=new Date().toISOString();assert.equal(ui.availableTemplate({name:'aa
 const src=fs.readFileSync('admin/whatsapp-console.js','utf8');assert.match(src,/admin_console_preview_hindi_contact_alert/);
 });
 
-test('manual video preview uses canonical server values and requires a ready reel',()=>{
+test('manual video preview uses canonical server values and requires a ready reel only without a saved MP4',()=>{
   const source=fs.readFileSync('admin/whatsapp-console.js','utf8');
   assert.match(source,/admin_console_preview_manual_video/);
-  assert.match(source,/if\(!preview\.reel_ready\)/);
+  assert.match(source,/admin_console_preview_saved_job_video/);
+  assert.match(source,/if\(!d\.videoMedia&&!preview\.reel_ready\)/);
 });
 
 test('delivery labels never call Sent delivered or leave a finished dispatch marked Queued',()=>{
