@@ -211,3 +211,58 @@ Candidate login eligibility refinement — 4 November 2026: Existing portal OTP 
 
 
 Meta eligibility follow-up — 4 November 2026: The direct Meta error indicates an account-level creation restriction, not a template-body issue. Third-party WhatsApp platform guidance commonly lists completed Meta Business Verification, an eligible WABA messaging tier (often 2,000 daily business-initiated conversations), and no active Business Portfolio/WABA restrictions as prerequisites. These are checks to verify in Meta Business Info, WhatsApp Manager → Account tools → Messaging limits, and Account Quality; they are not a confirmed diagnosis of this specific WABA. See https://api.support.vonage.com/hc/en-us/articles/30129084631068-Guidelines-and-Eligibility-Criteria-for-Creating-a-WhatsApp-Authentication-Template and https://respond.io/help/whatsapp/getting-ready-for-inbound-conversations.
+
+
+## Meta support case — prepared with current Production sender IDs (5 November 2026)
+
+The Production WhatsApp sender configuration was checked read-only. The configured
+sender is marked ready in the existing private console configuration. The IDs below
+are taken from that configuration and the currently selected Meta Business Portfolio;
+they are identifiers, not access tokens or secrets.
+
+- Business Portfolio ID shown in WhatsApp Manager URL: `895135970320982`
+- WhatsApp Business Account (WABA) ID: `1386833723249335`
+- Cloud API Phone Number ID: `1415347881659158`
+- WhatsApp Manager messaging-limit screenshot: 5 November 2026, 09:10 IST
+- Displayed business-initiated conversation tier: 2,000 per rolling 24 hours
+- Displayed next-tier qualification progress: 599 unique customers out of 1,000
+- Exact creation error previously reproduced directly in Meta:
+  `This WhatsApp Business account does not have permission to create message template`
+
+Ready-to-send support request (attach the 5 November Messaging limits screenshot and
+the earlier Authentication template creation error screenshot):
+
+**Subject:** Authentication Copy Code template creation permission blocked for WABA 1386833723249335
+
+We manage our WhatsApp Business Account through WhatsApp Manager and use the
+WhatsApp Cloud API. On 3 November 2026, Meta WhatsApp Manager rejected creation of
+an Authentication / Copy Code OTP template with this exact message:
+
+`This WhatsApp Business account does not have permission to create message template`
+
+Please identify the exact account-level eligibility condition preventing this WABA
+from creating an AUTHENTICATION Copy Code template. Please verify the Business
+Portfolio verification / approved scaling-path status, WABA and sender restrictions,
+current Authentication-template eligibility, and the specific action required to
+unlock template creation. Please confirm whether the displayed 2,000 business-initiated
+conversation tier is relevant to this restriction or whether a separate account-level
+eligibility gate applies.
+
+Business Portfolio ID: `895135970320982`
+WABA ID: `1386833723249335`
+Phone Number ID: `1415347881659158`
+Messaging-limit screenshot timestamp: 5 November 2026, 09:10 IST
+Authentication template rejection date: 3 November 2026
+Sender phone number: [confirm the full business sender number in WhatsApp Manager]
+
+Please do not treat this as a System User role issue without confirming the
+WABA-level Authentication template eligibility. The same rejection was reproduced
+directly in WhatsApp Manager, independently of WANotifier.
+
+**Next operational step:** submit this case from Business Support Home while signed
+in as the Business Portfolio owner, attach both screenshots, and retain the case ID.
+No additional messaging volume should be sent merely to try to unlock eligibility.
+
+**Current implementation state:** no Production migration, Send SMS Hook, Auth
+configuration, template approval, OTP delivery, or activation gate was changed by
+this diagnostic. Candidate OTP remains OFF.
