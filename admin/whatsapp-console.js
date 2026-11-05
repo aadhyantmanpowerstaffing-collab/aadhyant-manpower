@@ -197,7 +197,7 @@
    content.append(field('Saved MP4 Videos',saved));
    const preview=button('Preview Selected Video',()=>run(async()=>{if(!d.media)throw Error('Choose a saved video first.');await previewPromotion(d.media);}));
    preview.disabled=!d.media;content.append(preview);
-   content.append(make('p','Job video campaigns still require a current generated job Reel. Selecting an uploaded MP4 for a job campaign needs additional server-side validation; this library does not bypass it.','wa-help'));
+   content.append(make('p','For a job video campaign, choose an approved VIDEO template, load a saved MP4 during campaign setup, preview the job message, then save it for separate approval. Uploading or previewing never sends a message.','wa-help'));
    content.append(button('Refresh Saved Videos',()=>run(async()=>{d.data=await call(client,'admin_console_promotion_media');})),button('Back to Campaigns',()=>{draft=null;render();}));
   };
   const renderPromotion=()=>{

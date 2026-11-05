@@ -44,7 +44,7 @@ begin
  if c.template_name not in ('aadhyant_registered_job_video_hi_v1','aadhyant_registered_job_video_en_v1')
    or c.requirement_id is null or c.audience_mode<>'selected_contacts'
    or c.template_version<>'1'
-   or c.template_language<>case when c.template_name='aadhyant_registered_job_video_hi_v1' then 'hi' else 'en' end
+   or c.template_language<>(case when c.template_name='aadhyant_registered_job_video_hi_v1' then 'hi' else 'en' end)
    or c.promotion_media_id is not null
    or not private.vacancy_is_application_eligible(c.requirement_id)
    or exists(select 1 from private.whatsapp_campaign_reels where campaign_id=c.id) then return false;end if;

@@ -6,6 +6,8 @@ const source=fs.readFileSync('admin/whatsapp-console.js','utf8');
 test('Campaigns exposes Saved Videos without creating or sending a campaign on upload',()=>{
  assert.match(source,/button\('Saved Videos',newMediaLibrary\)/);
  assert.match(source,/draft=\{kind:'media-library'/);
+ assert.match(source,/choose an approved VIDEO template, load a saved MP4 during campaign setup/i);
+ assert.doesNotMatch(source,/Job video campaigns still require a current generated job Reel/);
  const media=source.slice(source.indexOf('const newMediaLibrary='),source.indexOf('const renderPromotion='));
  assert.match(media,/uploadSavedVideo\(d\.file\)/);
  assert.match(media,/previewPromotion\(d\.media\)/);
@@ -61,6 +63,22 @@ test('saved-job-video binding never bypasses Admin approval, recipient consent o
   "o.send_phase='claimed'",
   'o.lease_owner=p_worker_id'
  ])assert.ok(sql.includes(required),required);
+ assert.match(sql,/c\.template_language<>\(case when c\.template_name='aadhyant_registered_job_video_hi_v1'/);
  assert.doesNotMatch(sql,/create\s+table\s+public\.whatsapp_campaigns|insert\s+into\s+public\.whatsapp_outbound_messages|https:\/\/graph\.facebook\.com/i);
  assert.match(sql,/grant execute on function public\.admin_console_prepare_saved_job_video\(uuid,uuid,uuid,uuid\[\],text,uuid,timestamptz\) to authenticated/);
+});
+
+test('registration promotion accepts only canonical MP4 media after images share the private library',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105050000_promotion_video_media_guard.sql','utf8');
+ for(const required of [
+  'admin_console_prepare_promotion_before_video_media_guard',
+  "m.media_format='VIDEO'",
+  "m.object_path=m.id::text||'/'||m.id::text||'.mp4'",
+  'console_template_valid_before_promotion_media_guard',
+  'console_promotion_media_object',
+  'Upload a valid MP4 video first'
+ ])assert.ok(sql.includes(required),required);
+ assert.doesNotMatch(sql,/\b(create|alter|drop)\s+table\b/i);
+ assert.match(sql,/grant execute on function public\.admin_console_prepare_promotion\(uuid,uuid\[\],text,uuid\) to authenticated/);
+ assert.match(sql,/grant execute on function public\.console_promotion_media_object\(uuid\) to service_role/);
 });
