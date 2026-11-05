@@ -22,17 +22,19 @@ test('private uploads use the existing authenticated bounded MP4 endpoint',()=>{
 });
 test('existing registration upload reuses the authenticated media helper and job campaign guard stays intact',()=>{
  assert.match(source,/const id=await uploadSavedVideo\(d\.file\)/);
- assert.match(source,/if\(!preview\.reel_ready\)throw new Error\('A current job video is required/);
+ assert.match(source,/if\(!d\.videoMedia&&!preview\.reel_ready\)throw new Error\('A current job video is required/);
  assert.match(source,/admin_console_prepare_job_image/);
  assert.match(source,/await call\(client,'admin_console_prepare',args\)/);
 });
 
-test('saved MP4 in a job video campaign is read-only until backend sending is approved',()=>{
+test('saved MP4 can be selected with a fresh job-video preview and canonical review flow',()=>{
  assert.match(source,/Load Saved MP4s/);
  assert.match(source,/admin_console_preview_saved_job_video/);
  assert.match(source,/Preview Saved Video & Job Message/);
- assert.match(source,/Uploaded MP4 job sending is not yet enabled/);
- assert.match(source,/if\(!preview\.reel_ready\)/);
+ assert.match(source,/admin_console_prepare_saved_job_video/);
+ assert.match(source,/Preview Attached MP4/);
+ assert.match(source,/Save Campaign for Approval/);
+ assert.match(source,/if\(!d\.videoMedia&&!preview\.reel_ready\)/);
 });
 test('job video preview SQL checks Admin, private VIDEO metadata, published vacancy and template freshness',()=>{
  const sql=fs.readFileSync('supabase/migrations/20261105043000_saved_video_job_preview.sql','utf8');
@@ -40,4 +42,25 @@ test('job video preview SQL checks Admin, private VIDEO metadata, published vaca
  assert.match(sql,/ready_for_sending',false/);
  assert.doesNotMatch(sql,/insert\s+into\s+public\.whatsapp_campaign|enqueue_whatsapp_outbound_message|graph\.facebook\.com/i);
  assert.match(sql,/grant execute on function public\.admin_console_preview_saved_job_video\(uuid,uuid,uuid\) to authenticated/);
+});
+
+test('saved-job-video binding never bypasses Admin approval, recipient consent or the canonical outbox',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105044500_saved_job_video_campaign_binding.sql','utf8');
+ for(const required of [
+  'public.admin_console_prepare_before_manual_video',
+  'public.admin_console_preview_saved_job_video',
+  'private.console_template_valid_before_saved_video',
+  'private.whatsapp_vacancy_send_eligible',
+  'private.whatsapp_console_media',
+  'private.vacancy_is_application_eligible',
+  'private.whatsapp_safe_flat_json',
+  'console_template_snapshot',
+  "status='APPROVED'",
+  "media_format='VIDEO'",
+  "c.campaign_status<>'audience_ready'",
+  "o.send_phase='claimed'",
+  'o.lease_owner=p_worker_id'
+ ])assert.ok(sql.includes(required),required);
+ assert.doesNotMatch(sql,/create\s+table\s+public\.whatsapp_campaigns|insert\s+into\s+public\.whatsapp_outbound_messages|https:\/\/graph\.facebook\.com/i);
+ assert.match(sql,/grant execute on function public\.admin_console_prepare_saved_job_video\(uuid,uuid,uuid,uuid\[\],text,uuid,timestamptz\) to authenticated/);
 });
