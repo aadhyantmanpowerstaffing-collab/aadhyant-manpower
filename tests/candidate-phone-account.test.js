@@ -76,12 +76,13 @@ test('auth hook ledger claims once, never stores OTPs, and is service-only',asyn
   assert.equal(await call(),'accepted');
   assert.equal((await f.db.query("select has_function_privilege('anon','public.claim_candidate_phone_auth_delivery(text,uuid,text)','execute') allowed")).rows[0].allowed,false);
   assert.equal((await f.db.query("select has_function_privilege('authenticated','private.bind_whatsapp_candidate_phone_account(text)','execute') allowed")).rows[0].allowed,false);
+  assert.equal((await f.db.query("select has_function_privilege('authenticated','private.guard_candidate_phone_auth_mobile_change()','execute') allowed")).rows[0].allowed,false);
  }finally{await f.db.close();}
 });
 test('all new privileged functions pin search_path and private auth tables expose no browser access',async()=>{
  const f=await setup();try{
-  const functions=(await f.db.query("select proname,proconfig from pg_proc join pg_namespace n on n.oid=pronamespace where proname in ('get_candidate_phone_auth_status','claim_candidate_phone_auth_delivery','finish_candidate_phone_auth_delivery','bind_whatsapp_candidate_phone_account','submit_whatsapp_registration_form')")).rows;
-  assert.equal(functions.length,5);for(const fn of functions)assert.ok(fn.proconfig.some(value=>value==='search_path=\"\"'),fn.proname);
+  const functions=(await f.db.query("select proname,proconfig from pg_proc join pg_namespace n on n.oid=pronamespace where proname in ('get_candidate_phone_auth_status','claim_candidate_phone_auth_delivery','finish_candidate_phone_auth_delivery','bind_whatsapp_candidate_phone_account','guard_candidate_phone_auth_mobile_change','submit_whatsapp_registration_form')")).rows;
+  assert.equal(functions.length,6);for(const fn of functions)assert.ok(fn.proconfig.some(value=>value==='search_path=\"\"'),fn.proname);
   for(const role of ['anon','authenticated'])for(const table of ['candidate_phone_auth_config','candidate_phone_auth_deliveries']){
    const row=(await f.db.query("select has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE') allowed",[role,'private.'+table])).rows[0];
    assert.equal(row.allowed,false);
@@ -113,6 +114,22 @@ test('database claim enforces a 60-second cooldown even when a new Auth hook ID 
   assert.equal((await f.db.query("select public.claim_candidate_phone_auth_delivery('hook_after_cooldown',$1,'+919876543210') state",[uid])).rows[0].state,'send');
  }finally{await f.db.close();}
 });
+
+test('OTP-linked Candidate mobile changes require the new phone to be confirmed by Auth',async()=>{
+ const f=await setup();try{
+  await enable(f);const result=await f.submit();assert.equal(result.portal_account_ready,true);
+  await assert.rejects(()=>f.db.exec("update public.candidates set mobile='9999999999' where user_id='"+uid+"'"),/Verify the new WhatsApp number/);
+  assert.equal((await f.db.query("select mobile from public.candidates where user_id=$1",[uid])).rows[0].mobile,'9876543210');
+  await f.db.exec("update auth.users set phone='919999999999',phone_confirmed_at=clock_timestamp() where id='"+uid+"'");
+  await f.db.exec("update public.candidates set mobile='9999999999' where user_id='"+uid+"'");
+  const candidate=(await f.db.query("select mobile,mobile_verified from public.candidates where user_id=$1",[uid])).rows[0];
+  assert.equal(candidate.mobile,'9999999999');assert.equal(candidate.mobile_verified,true);
+  await f.db.exec("update auth.users set phone='19876543210',phone_confirmed_at=clock_timestamp() where id='"+uid+"'");
+  await assert.rejects(()=>f.db.exec("update public.candidates set mobile='9876543210' where user_id='"+uid+"'"),/Verify the new WhatsApp number/);
+  assert.equal((await f.db.query("select mobile from public.candidates where user_id=$1",[uid])).rows[0].mobile,'9999999999');
+ }finally{await f.db.close();}
+});
+
 test('an existing Candidate account without verified-mobile status cannot request OTP',async()=>{
  const f=await setup();try{
   await enable(f);const result=await f.submit();assert.equal(result.portal_account_ready,true);

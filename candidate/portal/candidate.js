@@ -66,6 +66,7 @@ function profileSaveFeedback(error,profileSaved){
  const detail=String(error?.message||'').toLowerCase(),code=String(error?.code||'').toLowerCase();
  const prefix=profileSaved?'Your profile was saved. WhatsApp alert choices were not saved. ':'Your profile update was not confirmed. ';
  if(code==='profile_session_changed'||/active candidate|authentication|session|jwt/.test(detail))return prefix+'Your login changed or expired. Sign in with your Candidate account and reopen My Profile.';
+ if(/verify the new whatsapp number before changing your candidate mobile number/.test(detail))return prefix+'Your mobile number is verified for Candidate Portal sign-in. Contact Aadhyant to change it after re-verification.';
  if(profileSaved&&/whatsapp stop/.test(detail))return prefix+'WhatsApp STOP is active for your number. Use Restart WhatsApp Alerts below to give new permission. Select No for both alert types and save again to keep alerts off.';
  if(profileSaved&&/identity requires review|mobile requires review/.test(detail))return prefix+'Your WhatsApp number needs review. Contact Aadhyant before enabling alerts.';
  if(profileSaved)return prefix+'Your entries are still here. Check your connection and try saving again. If this continues, contact Aadhyant.';
@@ -76,6 +77,16 @@ async function profile(){if(!await gate())return;
  const profileUserId=(await session())?.user?.id;
  const f=document.querySelector('[data-profile-form]'),d=first(await call(rpc.profile));
  Object.entries(d).forEach(([k,v])=>{const n=f.elements[k];if(!n)return;const value=Array.isArray(v)?v.join(', '):v??'';if(n.type==='checkbox')n.checked=v===true;else if(n.tagName==='SELECT')options?.setValue(n,value);else n.value=value});
+if(d.mobile_verified===true){
+ const mobileField=f.elements.mobile;
+ if(mobileField){
+  mobileField.readOnly=true;
+  mobileField.setAttribute('aria-describedby','candidate-verified-mobile-note');
+  const note=make('small','field-help','This number is verified for Candidate Portal sign-in. Contact Aadhyant to change it after re-verification.');
+  note.id='candidate-verified-mobile-note';
+  mobileField.closest('label')?.append(note);
+ }
+}
  options?.setupCandidateForm(f,{specialization:d.specialization,totalExperience:d.total_experience});
  options?.setupStateDistrict(f,{state:d.state,district:d.district});f.elements.aadhaar.value='';
  const confirmProfileSession=async()=>{const active=await session();if(!profileUserId||active?.user?.id!==profileUserId){const error=new Error('Candidate session changed');error.code='profile_session_changed';throw error}return profileUserId};

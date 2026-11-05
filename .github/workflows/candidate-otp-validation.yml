@@ -43,13 +43,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: candidate-otp-validation-${{ github.event.pull_request.number || github.ref }}
+  group: candidate-otp-validation-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
   validate:
     name: Candidate OTP tests and non-deploy production build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
       contents: read

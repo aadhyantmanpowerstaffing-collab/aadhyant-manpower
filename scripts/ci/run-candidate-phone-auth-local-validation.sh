@@ -55,8 +55,15 @@ assert_local_url(){
 
 psql_file(){
   local file="$1"
-  if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -f "$file" >"$RAW_OUTPUT" 2>&1; then
-    # Never echo SQL, row contents, credentials, or arbitrary database error text.
+  if ! psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=verbose -v SHOW_CONTEXT=errors -f "$file" >"$RAW_OUTPUT" 2>&1; then
+    # Expose only stable diagnostics, never SQL, row contents or raw DB error text.
+    local sqlstate line
+    sqlstate="$(awk 'match($0,/ERROR: [0-9A-Z]{5}:/){print substr($0,RSTART+7,5)}' "$RAW_OUTPUT" | tail -n 1 || true)"
+    line="$(awk 'match($0,/psql:[^:]+:[0-9]+:/){value=substr($0,RSTART,RLENGTH);sub(/:$/,"",value);sub(/^.*:/,"",value);print value}' "$RAW_OUTPUT" | tail -n 1 || true)"
+    [[ "$sqlstate" =~ ^[0-9A-Z]{5}$ ]] || sqlstate="UNAVAILABLE"
+    [[ "$line" =~ ^[0-9]+$ ]] || line="UNAVAILABLE"
+    log "CANDIDATE_OTP_LOCAL_SQLSTATE=$sqlstate"
+    log "CANDIDATE_OTP_LOCAL_SQL_LINE=$line"
     fail "SQL_FILE_FAILED:$(basename "$file")"
   fi
 }
@@ -118,7 +125,7 @@ main(){
   psql_file "tests/fixtures/candidate-whatsapp-preferences-baseline.sql"
   psql_assert "HISTORICAL_CANDIDATE_PREFERENCE_RPC_BASELINE" "select to_regprocedure('public.get_candidate_whatsapp_alert_preference()') is not null and to_regprocedure('public.set_candidate_whatsapp_alert_preference(boolean,timestamp with time zone,text,text)') is not null;"
 
-  # Reconstruct the current application schema in filename order, without hosted history. in filename order, without hosted history.
+  # Reconstruct the current application schema in filename order, without hosted history.
   local applied_date_count=0
   while IFS= read -r file; do
     [[ "$file" == "$TARGET_MIGRATION" ]] && break
@@ -140,12 +147,16 @@ main(){
   psql_assert "GET_PHONE_AUTH_STATUS_FUNCTION_EXISTS" "select to_regprocedure('public.get_candidate_phone_auth_status()') is not null;"
   psql_assert "GET_PHONE_AUTH_STATUS_IS_SECURITY_DEFINER" "select prosecdef from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
   psql_assert "GET_PHONE_AUTH_STATUS_HAS_CONFIG" "select proconfig is not null from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
-  psql_assert "GET_PHONE_AUTH_STATUS_EMPTY_SEARCH_PATH" "select prosecdef and proconfig is not null and exists(select 1 from unnest(proconfig) setting where split_part(setting,'=',1)='search_path') and strpos(pg_get_functiondef(oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc where oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
-  psql_assert "CLAIM_DELIVERY_SEARCH_PATH" "select prosecdef and proconfig is not null and exists(select 1 from unnest(proconfig) setting where split_part(setting,'=',1)='search_path') and strpos(pg_get_functiondef(oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc where oid=to_regprocedure('public.claim_candidate_phone_auth_delivery(text,uuid,text)');"
-  psql_assert "FINISH_DELIVERY_SEARCH_PATH" "select prosecdef and proconfig is not null and exists(select 1 from unnest(proconfig) setting where split_part(setting,'=',1)='search_path') and strpos(pg_get_functiondef(oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc where oid=to_regprocedure('public.finish_candidate_phone_auth_delivery(text,uuid,boolean)');"
-  psql_assert "PRIVATE_BIND_SEARCH_PATH" "select prosecdef and proconfig is not null and exists(select 1 from unnest(proconfig) setting where split_part(setting,'=',1)='search_path') and strpos(pg_get_functiondef(oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc where oid=to_regprocedure('private.bind_whatsapp_candidate_phone_account(text)');"
-  psql_assert "REGISTRATION_WRAPPER_SEARCH_PATH" "select prosecdef and proconfig is not null and exists(select 1 from unnest(proconfig) setting where split_part(setting,'=',1)='search_path') and strpos(pg_get_functiondef(oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc where oid=to_regprocedure('public.submit_whatsapp_registration_form(text,jsonb,jsonb)');"
+  psql_assert "GET_PHONE_AUTH_STATUS_EMPTY_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('public.get_candidate_phone_auth_status()');"
+  psql_assert "CLAIM_DELIVERY_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('public.claim_candidate_phone_auth_delivery(text,uuid,text)');"
+  psql_assert "FINISH_DELIVERY_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('public.finish_candidate_phone_auth_delivery(text,uuid,boolean)');"
+  psql_assert "PRIVATE_BIND_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('private.bind_whatsapp_candidate_phone_account(text)');"
+  # PostgreSQL may serialize the empty setting differently in proconfig; validate the DDL's explicit empty SET clause instead.
+  psql_assert "REGISTRATION_WRAPPER_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('public.submit_whatsapp_registration_form(text,jsonb,jsonb)');"
+  psql_assert "MOBILE_GUARD_SEARCH_PATH" "select p.prosecdef and p.proconfig is not null and exists(select 1 from unnest(p.proconfig) as settings(setting) where split_part(settings.setting,'=',1)='search_path') and strpos(pg_get_functiondef(p.oid),'SET search_path TO '||chr(39)||chr(39))>0 from pg_proc p where p.oid=to_regprocedure('private.guard_candidate_phone_auth_mobile_change()');"
   psql_assert "PRIVATE_BIND_FUNCTION_NOT_CLIENT_EXECUTABLE" "select not has_function_privilege('anon','private.bind_whatsapp_candidate_phone_account(text)','execute') and not has_function_privilege('authenticated','private.bind_whatsapp_candidate_phone_account(text)','execute');"
+  psql_assert "MOBILE_GUARD_NOT_CLIENT_EXECUTABLE" "select not has_function_privilege('anon','private.guard_candidate_phone_auth_mobile_change()','execute') and not has_function_privilege('authenticated','private.guard_candidate_phone_auth_mobile_change()','execute');"
+  psql_assert "MOBILE_CHANGE_TRIGGER_INSTALLED" "select exists(select 1 from pg_trigger where tgname='candidates_guard_candidate_phone_auth_mobile_change' and tgrelid='public.candidates'::regclass and not tgisinternal);"
   psql_assert "OTP_LEDGER_EMPTY" "select count(*)=0 from private.candidate_phone_auth_deliveries;"
 
   local postgres_version
