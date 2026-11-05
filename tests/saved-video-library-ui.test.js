@@ -26,3 +26,18 @@ test('existing registration upload reuses the authenticated media helper and job
  assert.match(source,/admin_console_prepare_job_image/);
  assert.match(source,/await call\(client,'admin_console_prepare',args\)/);
 });
+
+test('saved MP4 in a job video campaign is read-only until backend sending is approved',()=>{
+ assert.match(source,/Load Saved MP4s/);
+ assert.match(source,/admin_console_preview_saved_job_video/);
+ assert.match(source,/Preview Saved Video & Job Message/);
+ assert.match(source,/Uploaded MP4 job sending is not yet enabled/);
+ assert.match(source,/if\(!preview\.reel_ready\)/);
+});
+test('job video preview SQL checks Admin, private VIDEO metadata, published vacancy and template freshness',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261105043000_saved_video_job_preview.sql','utf8');
+ for(const required of ['public.admin_console_access()','auth.uid()','private.whatsapp_console_media',"media_format='VIDEO'",'private.vacancy_is_application_eligible','private.manual_video_render','private.whatsapp_safe_flat_json',"status='APPROVED'",'compatible','synced_at>clock_timestamp()'])assert.ok(sql.includes(required),required);
+ assert.match(sql,/ready_for_sending',false/);
+ assert.doesNotMatch(sql,/insert\s+into\s+public\.whatsapp_campaign|enqueue_whatsapp_outbound_message|graph\.facebook\.com/i);
+ assert.match(sql,/grant execute on function public\.admin_console_preview_saved_job_video\(uuid,uuid,uuid\) to authenticated/);
+});
