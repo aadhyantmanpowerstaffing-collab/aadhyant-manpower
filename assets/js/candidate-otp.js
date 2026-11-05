@@ -36,6 +36,8 @@
   let sending = false;
   let phoneAtSend = null;
   let completed = false;
+  let pendingProof = null;
+  let proofExpiresAt = 0;
   const phone = () => '91' + String(phoneInput.value || '').trim();
   const show = (message) => { notice.textContent = message; };
   const api = async (payload) => {
@@ -68,6 +70,8 @@
     sending = true;
     send.disabled = true;
     verify.disabled = true;
+    pendingProof = null;
+    proofExpiresAt = 0;
     show('Requesting WhatsApp OTP…');
     try {
       await api({ action: 'request', phone: currentPhone });
@@ -91,7 +95,7 @@
       return;
     }
     const otp = input.value.trim();
-    if (!/^[0-9]{6}$/.test(otp)) {
+    if (!/^[0-9]{6}$/.test(otp) && !(pendingProof && proofExpiresAt > Date.now())) {
       show('Enter the 6-digit OTP.');
       return;
     }
@@ -100,9 +104,16 @@
     send.disabled = true;
     show('Verifying OTP…');
     try {
-      const verification = await api({ action: 'verify', phone: phoneAtSend, otp });
-      if (!verification.verified || !verification.proof) {
-        throw Error('OTP verification failed.');
+      if (!pendingProof || proofExpiresAt <= Date.now()) {
+        pendingProof = null;
+        const verification = await api({ action: 'verify', phone: phoneAtSend, otp });
+        if (!verification.verified || !verification.proof) {
+          throw Error('OTP verification failed.');
+        }
+        pendingProof = verification.proof;
+        proofExpiresAt = Date.now() + Math.min(
+          Number(verification.proofExpiresInSeconds || 600), 600,
+        ) * 1000;
       }
       const data = new FormData(form);
       const nullable = (name) => String(data.get(name) || '').trim() || null;
@@ -132,12 +143,14 @@
       const result = await api({
         action: 'register',
         phone: phoneAtSend,
-        proof: verification.proof,
+        proof: pendingProof,
         candidate,
         requirementCode,
       });
       if (!result.registered) throw Error('Registration was not completed.');
       completed = true;
+      pendingProof = null;
+      proofExpiresAt = 0;
       input.disabled = true;
       send.hidden = true;
       verify.hidden = true;
@@ -148,7 +161,7 @@
     } catch (error) {
       show(error.message || 'Verification or registration failed. You can retry the verification while the OTP is valid.');
       verify.disabled = false;
-      // OTP proof may already be consumed on the backend after a successful registration.
+      // A verified proof can be retried within ten minutes if registration fails.
     } finally {
       sending = false;
       if (!completed) send.disabled = false;
