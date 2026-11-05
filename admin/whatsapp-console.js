@@ -237,7 +237,7 @@
   });
   const getAudience=async()=>{audience=await call(client,'admin_console_audience',{p_requirement_id:draft.job.id,p_source:draft.source,p_view:draft.view,p_offset:draft.offset,p_list:draft.list||null,p_tag:draft.tag||null});};
   const renderDraft=()=>{
-   const d=draft;const steps=make('ol','','wa-campaign-steps');[['setup','Job & template'],['audience','Audience'],['preview','Preview & save']].forEach(([value,label],i)=>{const step=make('li',(i+1)+'. '+label);if(d.stage===value)step.setAttribute('aria-current','step');steps.append(step);});content.append(steps);if(d.kind==='promotion'){renderPromotion();return;}if(d.kind==='media-library'){renderMediaLibrary();return;}content.append(make('h3','Create Job Campaign'));const grid=make('div','','wa-grid');
+   const d=draft;if(d.kind==='media-library'){renderMediaLibrary();return;}const steps=make('ol','','wa-campaign-steps');[['setup','Job & template'],['audience','Audience'],['preview','Preview & save']].forEach(([value,label],i)=>{const step=make('li',(i+1)+'. '+label);if(d.stage===value)step.setAttribute('aria-current','step');steps.append(step);});content.append(steps);if(d.kind==='promotion'){renderPromotion();return;}content.append(make('h3','Create Job Campaign'));const grid=make('div','','wa-grid');
    if(d.stage==='setup'){
     const title=input('Campaign name');title.maxLength=160;title.value=d.name;title.addEventListener('input',()=>d.name=title.value);
     const job=make('select');job.append(new Option('Select a published job',''));jobs.forEach(j=>job.append(new Option(j.requirement_code+' · '+j.job_role,j.id)));job.value=d.job?.id||'';
