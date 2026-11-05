@@ -1,6 +1,5 @@
 // Candidate WhatsApp OTP transport foundation.
-// Not a registration authorization endpoint: downstream registration MUST also
-// enforce a server-side proof before making OTP mandatory.
+// Requires one-use verified proof for the registration endpoint.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
 const allowedOrigins = new Set([
@@ -74,38 +73,25 @@ Deno.serve(async (req) => {
   }
   const phone = String(body.phone || "").replace(/^\+/, "");
   const action = body.action;
-  if (!phoneFormat.test(phone) || (action !== "request" && action !== "verify")) {
+  if (!phoneFormat.test(phone) || !["request", "verify", "register"].includes(String(action))) {
     return json({ error: "Invalid phone or action" }, 400, origin);
   }
   const db = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: record, error: readError } = await db.from("candidate_phone_otp")
-    .select("otp_hash,expires_at,last_sent_at,window_started_at,sends_in_window,verify_attempts,verified_at")
-    .eq("phone", phone).maybeSingle();
-  if (readError) return json({ error: "OTP service unavailable" }, 503, origin);
-  const now = Date.now();
   if (action === "request") {
-    if (record && now - Date.parse(record.last_sent_at) < 60_000) {
-      return json({ error: "Please retry after 60 seconds" }, 429, origin);
-    }
-    const sameWindow = record && now - Date.parse(record.window_started_at) < 86_400_000;
-    if (sameWindow && record.sends_in_window >= 3) {
-      return json({ error: "OTP request limit reached" }, 429, origin);
-    }
     const otp = randomOtp();
     const hash = await digest(secret, phone, otp);
-    const { error: saveError } = await db.from("candidate_phone_otp").upsert({
-      phone, otp_hash: hash,
-      expires_at: new Date(now + 300_000).toISOString(),
-      last_sent_at: new Date(now).toISOString(),
-      window_started_at: sameWindow ? record.window_started_at : new Date(now).toISOString(),
-      sends_in_window: sameWindow ? record.sends_in_window + 1 : 1,
-      verify_attempts: 0,
-      verified_at: null,
-    }, { onConflict: "phone" });
-    if (saveError) return json({ error: "OTP service unavailable" }, 503, origin);
-
+    const { data: issue, error: issueError } = await db.rpc("candidate_otp_issue", {
+      p_phone: phone,
+      p_hash: hash,
+    });
+    if (issueError) return json({ error: "OTP service unavailable" }, 503, origin);
+    if (issue !== "issued") {
+      return json({
+        error: issue === "cooldown" ? "Please retry after 60 seconds" : "OTP request limit reached",
+      }, 429, origin);
+    }
     const response = await fetch(
       "https://graph.facebook.com/v23.0/" + encodeURIComponent(senderId) + "/messages",
       {
@@ -132,33 +118,44 @@ Deno.serve(async (req) => {
     ).catch(() => null);
     if (!response?.ok) {
       // The challenge is not usable when delivery request fails. Never return OTP.
-      await db.from("candidate_phone_otp").update({
-        expires_at: new Date(0).toISOString(),
-      }).eq("phone", phone).eq("otp_hash", hash);
+      await db.rpc("candidate_otp_cancel", { p_phone: phone, p_hash: hash });
       return json({ error: "WhatsApp OTP could not be sent" }, 503, origin);
     }
     return json({ sent: true, expiresInSeconds: 300 }, 200, origin);
   }
 
-  const supplied = String(body.otp || "");
-  if (!otpFormat.test(supplied)) return json({ verified: false }, 400, origin);
-  if (!record || record.verified_at || Date.parse(record.expires_at) <= now
-    || record.verify_attempts >= 5) {
-    return json({ verified: false }, 400, origin);
+  if (action === "verify") {
+    const supplied = String(body.otp || "");
+    if (!otpFormat.test(supplied)) return json({ verified: false }, 400, origin);
+    const proofBytes = new Uint8Array(32);
+    crypto.getRandomValues(proofBytes);
+    const proof = Array.from(proofBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const { data: verified, error } = await db.rpc("candidate_otp_verify", {
+      p_phone: phone,
+      p_hash: await digest(secret, phone, supplied),
+      p_proof_hash: await digest(secret, phone, proof),
+    });
+    if (error) return json({ error: "OTP service unavailable" }, 503, origin);
+    if (!verified) return json({ verified: false }, 400, origin);
+    return json({ verified: true, proof, proofExpiresInSeconds: 600 }, 200, origin);
   }
-  // Failed attempts are counted without leaking whether the number exists.
-  const { error: attemptsError } = await db.from("candidate_phone_otp")
-    .update({ verify_attempts: record.verify_attempts + 1 })
-    .eq("phone", phone).eq("otp_hash", record.otp_hash)
-    .eq("verify_attempts", record.verify_attempts);
-  if (attemptsError) return json({ error: "OTP service unavailable" }, 503, origin);
-  const verified = constantTimeEqual(await digest(secret, phone, supplied), record.otp_hash);
-  if (!verified) return json({ verified: false }, 400, origin);
-  const { error: verifyError } = await db.from("candidate_phone_otp")
-    .update({ verified_at: new Date(now).toISOString() })
-    .eq("phone", phone).eq("otp_hash", record.otp_hash);
-  if (verifyError) return json({ error: "OTP service unavailable" }, 503, origin);
-  // Intentionally no registration token yet; a separate atomic proof handoff
-  // must be completed before connecting this endpoint to public registration.
-  return json({ verified: true }, 200, origin);
+  if (action === "register") {
+    const proof = String(body.proof || "");
+    const candidate = body.candidate;
+    const requirement = String(body.requirementCode || "").trim().toUpperCase();
+    if (!/^[a-f0-9]{64}$/.test(proof) || !candidate || Array.isArray(candidate)
+      || typeof candidate !== "object"
+      || (requirement && !/^AAD-[0-9]{4}-[0-9]{6}$/.test(requirement))) {
+      return json({ error: "Invalid registration request" }, 400, origin);
+    }
+    const { data, error } = await db.rpc("candidate_otp_register", {
+      p_phone: phone,
+      p_proof_hash: await digest(secret, phone, proof),
+      p_candidate: candidate,
+      p_requirement_code: requirement || null,
+    });
+    if (error) return json({ error: "Registration failed or OTP proof expired" }, 400, origin);
+    return json({ registered: true, result: data }, 200, origin);
+  }
+  return json({ error: "Invalid action" }, 400, origin);
 });
