@@ -171,16 +171,43 @@
   const newPromotion=()=>run(async()=>{await loadContactLabels();const data=await call(client,'admin_console_promotion_media');draft={kind:'promotion',name:'Sanand Job Alert Registration',media:null,data,stage:'setup',list:'',tag:'',offset:0,selected:new Map(),operation:crypto.randomUUID()};audience=[];});
   const promotionAudience=async()=>{audience=await call(client,'admin_console_promotion_audience',{p_offset:draft.offset,p_list:draft.list||null,p_tag:draft.tag||null});};
   const previewPromotion=async id=>{const result=await invoke('whatsapp-campaign-media',{media_id:id}),url=new URL(result.url);if(url.origin!==window.AADHYANT_CONFIG.supabaseUrl||!url.pathname.startsWith('/storage/v1/object/sign/whatsapp-campaign-media/'))throw Error('Invalid private preview');const dialog=make('dialog','','wa-dialog'),video=make('video');video.controls=true;video.src=url.href;video.style.width='100%';video.style.maxHeight='65vh';dialog.append(video,button('Close',()=>dialog.close()));dialog.addEventListener('close',()=>{video.pause();video.removeAttribute('src');dialog.remove();});main.append(dialog);dialog.showModal();};
+  // Private saved videos use the existing authenticated Edge upload and metadata RPC.
+  // Uploading never creates a campaign or queues a message.
+  const uploadSavedVideo=async file=>{
+   if(!file||file.type!=='video/mp4'||file.size<100||file.size>16000000)throw Error('Choose an MP4 video up to 16 MB.');
+   const session=await client.auth.getSession(),token=session.data?.session?.access_token;if(!token)throw Error('Sign in again.');
+   const config=window.AADHYANT_CONFIG,r=await fetch(config.supabaseUrl+'/functions/v1/whatsapp-campaign-media',{method:'POST',headers:{authorization:'Bearer '+token,apikey:config.supabasePublishableKey,'content-type':'video/mp4'},body:file}),data=await r.json();
+   if(!r.ok)throw Error(data.error||'Video upload not confirmed. Refresh Saved Videos before retrying.');
+   return data.id;
+  };
+  const newMediaLibrary=()=>run(async()=>{
+   const data=await call(client,'admin_console_promotion_media');
+   draft={kind:'media-library',stage:'setup',data,media:null,file:null};
+  });
+  const renderMediaLibrary=()=>{
+   const d=draft;
+   content.append(make('h3','Saved Videos · Private Media Library'),make('p','Upload MP4 files once, keep them privately saved and preview them. Uploading does not send any WhatsApp message.','wa-help'));
+   const video=make('input');video.type='file';video.accept='video/mp4';video.setAttribute('aria-label','Choose MP4 for private media library');video.addEventListener('change',()=>{d.file=video.files?.[0]||null;});
+   content.append(field('Select MP4 video (maximum 16 MB)',video),button('Upload to Saved Videos',()=>run(async()=>{
+    const id=await uploadSavedVideo(d.file);d.data=await call(client,'admin_console_promotion_media');d.media=id;d.file=null;notice('Video saved privately. No campaign created or message sent.');
+   }),true));
+   const saved=make('select');saved.append(new Option('Choose a saved video',''));
+   (d.data?.videos||[]).forEach(v=>saved.append(new Option(new Date(v.created_at).toLocaleString()+' · '+(v.byte_size/1000000).toFixed(1)+' MB',v.id)));
+   saved.value=d.media||'';saved.addEventListener('change',()=>{d.media=saved.value;render();});
+   content.append(field('Saved MP4 Videos',saved));
+   const preview=button('Preview Selected Video',()=>run(async()=>{if(!d.media)throw Error('Choose a saved video first.');await previewPromotion(d.media);}));
+   preview.disabled=!d.media;content.append(preview);
+   content.append(make('p','Job video campaigns still require a current generated job Reel. Selecting an uploaded MP4 for a job campaign needs additional server-side validation; this library does not bypass it.','wa-help'));
+   content.append(button('Refresh Saved Videos',()=>run(async()=>{d.data=await call(client,'admin_console_promotion_media');})),button('Back to Campaigns',()=>{draft=null;render();}));
+  };
   const renderPromotion=()=>{
    const d=draft;content.append(make('h3','Registration Video Campaign'),make('p','Share your registration Reel with contacts who agreed to receive Aadhyant job messages. This campaign is separate from vacancy alerts.','wa-help'));
    if(d.stage==='setup'){
     const name=input('Campaign name');name.value=d.name;name.maxLength=160;name.addEventListener('input',()=>d.name=name.value);
     const video=make('input');video.type='file';video.accept='video/mp4';video.addEventListener('change',()=>d.file=video.files?.[0]);
     content.append(field('Campaign Name',name),field('Upload MP4 Video (maximum 16 MB)',video),button('Upload Video',()=>run(async()=>{
-     const file=d.file;if(!file||file.type!=='video/mp4'||file.size<100||file.size>16000000)throw Error('Choose an MP4 video up to 16 MB.');
-     const session=await client.auth.getSession(),token=session.data?.session?.access_token;if(!token)throw Error('Sign in again.');
-     const config=window.AADHYANT_CONFIG,r=await fetch(config.supabaseUrl+'/functions/v1/whatsapp-campaign-media',{method:'POST',headers:{authorization:'Bearer '+token,apikey:config.supabasePublishableKey,'content-type':'video/mp4'},body:file}),data=await r.json();if(!r.ok)throw Error(data.error||'Upload not confirmed. Refresh before retrying.');
-     d.data=await call(client,'admin_console_promotion_media');d.media=data.id;d.file=null;notice('Video uploaded privately. Preview before creating a campaign. No message was sent.');
+     const id=await uploadSavedVideo(d.file);
+     d.data=await call(client,'admin_console_promotion_media');d.media=id;d.file=null;notice('Video uploaded privately. Preview before creating a campaign. No message was sent.');
     })));
     const saved=make('select');saved.append(new Option('Choose an uploaded video',''));d.data.videos.forEach(v=>saved.append(new Option(new Date(v.created_at).toLocaleString()+' · '+(v.byte_size/1000000).toFixed(1)+' MB',v.id)));saved.value=d.media||'';saved.addEventListener('change',()=>{d.media=saved.value;render();});content.append(field('Saved Video',saved));
     if(d.media)content.append(button('Preview Selected Video',()=>run(()=>previewPromotion(d.media))));
@@ -210,7 +237,7 @@
   });
   const getAudience=async()=>{audience=await call(client,'admin_console_audience',{p_requirement_id:draft.job.id,p_source:draft.source,p_view:draft.view,p_offset:draft.offset,p_list:draft.list||null,p_tag:draft.tag||null});};
   const renderDraft=()=>{
-   const d=draft;const steps=make('ol','','wa-campaign-steps');[['setup','Job & template'],['audience','Audience'],['preview','Preview & save']].forEach(([value,label],i)=>{const step=make('li',(i+1)+'. '+label);if(d.stage===value)step.setAttribute('aria-current','step');steps.append(step);});content.append(steps);if(d.kind==='promotion'){renderPromotion();return;}content.append(make('h3','Create Job Campaign'));const grid=make('div','','wa-grid');
+   const d=draft;const steps=make('ol','','wa-campaign-steps');[['setup','Job & template'],['audience','Audience'],['preview','Preview & save']].forEach(([value,label],i)=>{const step=make('li',(i+1)+'. '+label);if(d.stage===value)step.setAttribute('aria-current','step');steps.append(step);});content.append(steps);if(d.kind==='promotion'){renderPromotion();return;}if(d.kind==='media-library'){renderMediaLibrary();return;}content.append(make('h3','Create Job Campaign'));const grid=make('div','','wa-grid');
    if(d.stage==='setup'){
     const title=input('Campaign name');title.maxLength=160;title.value=d.name;title.addEventListener('input',()=>d.name=title.value);
     const job=make('select');job.append(new Option('Select a published job',''));jobs.forEach(j=>job.append(new Option(j.requirement_code+' · '+j.job_role,j.id)));job.value=d.job?.id||'';
@@ -252,7 +279,7 @@
   const sendAndRefresh=async c=>{try{if(!c.scheduled_for||new Date(c.scheduled_for).getTime()<=Date.now())await deliver(c.id);}finally{await loadCampaigns();}const d=campaigns.find(row=>row.id===c.id)?.delivery;if(d)notice(d.delivered+' delivered · '+d.awaiting+' awaiting delivery · '+d.failed+' failed · '+d.pending+' pending. Open View Report for live results.');};
   const scheduleReportRefresh=()=>{if(reportRefreshTimer!==null&&typeof window.clearTimeout==='function')window.clearTimeout(reportRefreshTimer);reportRefreshTimer=null;if(typeof window.setTimeout!=='function'||section!=='Reports'||!report||panel.hidden||document.hidden)return;const target=report;reportRefreshTimer=window.setTimeout(async()=>{reportRefreshTimer=null;if(busy){scheduleReportRefresh();return;}if(report!==target||section!=='Reports'||panel.hidden||document.hidden)return;try{const data=await refreshReport(target);if(report!==target||section!=='Reports')return;Object.assign(target,data);render();}catch{notice('Could not refresh delivery status. Use Refresh Report.',true);scheduleReportRefresh();}},10000);};
   const renderCampaigns=()=>{
-   if(draft){renderDraft();return;}content.append(make('h3','Campaigns'),button('Create Campaign',newCampaign,true),button('Registration Video Campaign',newPromotion,true));if(!campaigns.length)content.append(make('p','No campaigns yet. Create your first job campaign.','wa-empty'));
+   if(draft){renderDraft();return;}content.append(make('h3','Campaigns'),button('Create Campaign',newCampaign,true),button('Registration Video Campaign',newPromotion,true),button('Saved Videos',newMediaLibrary));if(!campaigns.length)content.append(make('p','No campaigns yet. Create your first job campaign.','wa-empty'));
    const search=input('Campaign name or job code');search.value=campaignQuery;const state=make('select');[['','All campaign states'],['audience_ready','Awaiting approval'],['approved','Ready to send'],['queued','Queued'],['sending','Sending'],['completed','Completed'],['cancelled','Cancelled']].forEach(([v,l])=>state.append(new Option(l,v)));state.value=campaignState;const filters=make('div','','wa-template-filters');filters.append(field('Search loaded campaigns',search),field('Campaign state',state),button('Filter Campaigns',()=>{campaignQuery=search.value.trim();campaignState=state.value;render();}));content.append(filters);
    const visible=campaigns.filter(c=>(!campaignState||c.campaign_status===campaignState)&&(!campaignQuery||(c.campaign_name+' '+c.requirement_code).toLowerCase().includes(campaignQuery.toLowerCase())));content.append(make('p',visible.length+' of '+campaigns.length+' campaigns on this page.','wa-help'));
    content.append(table(['Campaign','Job','Status','Scheduled','Audience','Actions'],visible.map(c=>{
