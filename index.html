@@ -105,6 +105,39 @@
       <div class="container public-jobs-teaser"><div><p class="eyebrow">Workforce opportunities</p><h2 id="jobs-title">Looking for your next opportunity?</h2><p>Register your profile to share your qualification, trade, experience, and preferred work location with Aadhyant.</p></div><a class="public-button public-button--primary" href="candidate/register/">Register as a Candidate</a></div>
     </section>
 
+    <!-- TATA apprenticeship campaign video: player activates only after the MP4 is uploaded to the public media path. -->
+    <section class="public-home-section" id="tata-apprenticeship-video" aria-labelledby="tata-video-title">
+      <div class="container" style="max-width:920px">
+        <p class="eyebrow">Candidate opportunities · Sanand, Gujarat</p>
+        <h2 id="tata-video-title">TATA Motors PV &amp; EV – Apprenticeship Opportunities</h2>
+        <p>Watch our Hindi introduction to the apprenticeship opportunity, including the diploma learning option. Eligibility and recruitment details are subject to confirmation for each opening.</p>
+        <div id="tata-video-player" hidden>
+          <video controls playsinline preload="metadata" style="display:block;width:100%;max-height:520px;border-radius:16px;background:#102447" aria-label="TATA Motors apprenticeship Hindi recruitment video">
+            <source src="assets/videos/Aadhyant_TATA_Apprentice_Hindi.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+          </video>
+        </div>
+        <p id="tata-video-pending" role="status">The video is being prepared for publication. You can register your interest below.</p>
+        <a class="public-button public-button--primary" href="candidate/register/">Register as a Candidate</a>
+      </div>
+      <script>
+        (function () {
+          const video = document.querySelector('#tata-video-player video');
+          const player = document.getElementById('tata-video-player');
+          const pending = document.getElementById('tata-video-pending');
+          if (!video || !player || !pending) return;
+          video.addEventListener('loadedmetadata', function () {
+            player.hidden = false;
+            pending.hidden = true;
+          }, { once: true });
+          video.addEventListener('error', function () {
+            player.hidden = true;
+            pending.hidden = false;
+          });
+        }());
+      </script>
+    </section>
+
     <section class="public-final-cta" id="contact" aria-labelledby="final-cta-title">
       <div class="container"><div class="public-home-heading"><p class="eyebrow">Start with Aadhyant</p><h2 id="final-cta-title">Choose the workforce pathway for you</h2></div><div class="public-final-cta__actions"><a href="hire-manpower/"><span>Need workforce?</span><strong>Hire Manpower →</strong></a><a href="candidate/"><span>Looking for work?</span><strong>Explore Candidate Options →</strong></a><a href="staffing-partner/"><span>Staffing agency?</span><strong>Become a Staffing Partner →</strong></a></div><p>Prefer to talk? <a href="contact/">Contact Aadhyant</a> · <a href="tel:+919586785800">+91 95867 85800</a></p></div>
     </section>
