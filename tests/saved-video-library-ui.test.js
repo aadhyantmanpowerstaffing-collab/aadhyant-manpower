@@ -39,7 +39,7 @@ test('saved MP4 can be selected with a fresh job-video preview and canonical rev
 test('job video preview SQL checks Admin, private VIDEO metadata, published vacancy and template freshness',()=>{
  const sql=fs.readFileSync('supabase/migrations/20261105043000_saved_video_job_preview.sql','utf8');
  for(const required of ['public.admin_console_access()','auth.uid()','private.whatsapp_console_media',"media_format='VIDEO'",'private.vacancy_is_application_eligible','private.manual_video_render','private.whatsapp_safe_flat_json',"status='APPROVED'",'compatible','synced_at>clock_timestamp()'])assert.ok(sql.includes(required),required);
- assert.match(sql,/ready_for_sending',false/);
+ assert.match(sql,/requires_admin_approval',true/);
  assert.doesNotMatch(sql,/insert\s+into\s+public\.whatsapp_campaign|enqueue_whatsapp_outbound_message|graph\.facebook\.com/i);
  assert.match(sql,/grant execute on function public\.admin_console_preview_saved_job_video\(uuid,uuid,uuid\) to authenticated/);
 });
