@@ -16,16 +16,6 @@ test('OTP remains disabled until explicit production readiness', () => {
   assert.match(client, /candidateOtpEnabled !== true/);
 });
 
-test('candidate OTP proof is consumed in a server-side transaction', () => {
-  const sql = read('supabase/migrations/20261105094500_candidate_otp_atomic_registration.sql');
-  assert.match(sql, /create or replace function public\.candidate_otp_register/);
-  assert.match(sql, /where phone = p_phone for update/);
-  assert.match(sql, /proof_hash is distinct from p_proof_hash/);
-  assert.match(sql, /consumed_at = now\(\)/);
-  assert.match(sql, /grant execute on function public\.candidate_otp_register.*to service_role/);
-  assert.match(sql, /revoke all on function public\.candidate_otp_register.*from public, anon, authenticated/);
-});
-
 test('client register action does not call the anonymous direct insert', () => {
   const js = read('assets/js/candidate-otp.js');
   assert.match(js, /action: 'verify'/);
@@ -34,19 +24,29 @@ test('client register action does not call the anonymous direct insert', () => {
   assert.doesNotMatch(js, /\.from\(['"]candidates['"]\)\.insert/);
 });
 
-test('server never returns OTP and does not operate without approved provider config', () => {
-  const edge = read('supabase/functions/candidate-whatsapp-otp/index.ts');
-  assert.match(edge, /CANDIDATE_OTP_HASH_SECRET/);
-  assert.match(edge, /META_WA_OTP_TEMPLATE_NAME/);
-  assert.match(edge, /await db\.rpc\("candidate_otp_issue"/);
-  assert.match(edge, /await db\.rpc\("candidate_otp_verify"/);
-  assert.match(edge, /await db\.rpc\("candidate_otp_register"/);
-  assert.doesNotMatch(edge, /json\(\{[^\n]*otp\s*[,}]/);
+
+test('Meta WhatsApp hook verifies signed Supabase Auth request', () => {
+  const hook = read('supabase/functions/candidate-auth-whatsapp-hook/index.ts');
+  assert.match(hook, /standardwebhooks/);
+  assert.match(hook, /\.verify\(payload, Object\.fromEntries\(req\.headers\)\)/);
+  assert.match(hook, /META_WA_OTP_TEMPLATE_NAME/);
+  assert.match(hook, /graph\.facebook\.com/);
+  assert.doesNotMatch(hook, /console\.log\(.*otp/);
 });
 
-test('OTP database is inaccessible to public and authenticated users', () => {
-  const sql = read('supabase/migrations/20261105090000_candidate_phone_otp_foundation.sql');
-  assert.match(sql, /enable row level security/);
-  assert.match(sql, /revoke all on public\.candidate_phone_otp from public, anon, authenticated/);
-  assert.match(sql, /grant select, insert, update, delete on public\.candidate_phone_otp to service_role/);
+test('verified phone session authorizes candidate profile registration', () => {
+  const sql = read('supabase/migrations/20261105111500_authenticated_candidate_registration.sql');
+  assert.match(sql, /auth\.uid\(\)/);
+  assert.match(sql, /phone_confirmed_at is not null/);
+  assert.match(sql, /v_phone <> '91' \|\| v_mobile/);
+  assert.match(sql, /grant execute on function public\.register_authenticated_candidate.*?\n\s*to authenticated/);
+  assert.match(sql, /user_id = v_user_id/);
+});
+
+test('public candidate page performs Supabase OTP verify and authorized RPC', () => {
+  const page = read('assets/js/candidate-otp.js');
+  assert.match(page, /auth\.signInWithOtp/);
+  assert.match(page, /auth\.verifyOtp/);
+  assert.match(page, /register_authenticated_candidate/);
+  assert.match(read('supabase-client.js'), /candidateOtpEnabled === true/);
 });
