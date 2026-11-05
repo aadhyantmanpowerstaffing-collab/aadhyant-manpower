@@ -41,18 +41,36 @@
   const phone = () => '91' + String(phoneInput.value || '').trim();
   const show = (message) => { notice.textContent = message; };
   const api = async (payload) => {
-    const response = await fetch(config.supabaseUrl + '/functions/v1/candidate-whatsapp-otp', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'apikey': config.supabasePublishableKey,
-      },
-      body: JSON.stringify(payload),
-    });
-    let data;
-    try { data = await response.json(); } catch { throw Error('Verification service unavailable'); }
-    if (!response.ok) throw Error(data.error || 'Verification service unavailable');
-    return data;
+    // Supabase's signed Send SMS hook delivers its own OTP via Meta WhatsApp.
+    // A confirmed Supabase Auth session is required for the registration RPC.
+    if (payload.action === 'request') {
+      const { error } = await client.auth.signInWithOtp({
+        phone: '+' + payload.phone,
+        options: { shouldCreateUser: true },
+      });
+      if (error) throw Error('WhatsApp OTP request failed. Please try again.');
+      return { sent: true };
+    }
+    if (payload.action === 'verify') {
+      const { data, error } = await client.auth.verifyOtp({
+        phone: '+' + payload.phone,
+        token: payload.otp,
+        type: 'sms',
+      });
+      if (error || !data?.session || !data?.user?.phone_confirmed_at) {
+        throw Error('Incorrect or expired OTP.');
+      }
+      return { verified: true, proof: 'verified-auth-session', proofExpiresInSeconds: 600 };
+    }
+    if (payload.action === 'register') {
+      const { data, error } = await client.rpc('register_authenticated_candidate', {
+        p_candidate: payload.candidate,
+        p_requirement_code: payload.requirementCode || null,
+      });
+      if (error) throw Error('Verified registration failed. Please retry.');
+      return { registered: true, result: data };
+    }
+    throw Error('Invalid verification request.');
   };
   // Blocking the legacy direct insertion is essential when the OTP flag is active.
   button.addEventListener('click', (event) => {
