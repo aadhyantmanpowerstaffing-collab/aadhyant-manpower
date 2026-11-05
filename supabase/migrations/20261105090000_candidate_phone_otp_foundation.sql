@@ -13,6 +13,7 @@ create table if not exists public.candidate_phone_otp (
 );
 alter table public.candidate_phone_otp enable row level security;
 revoke all on public.candidate_phone_otp from public, anon, authenticated;
+grant select, insert, update, delete on public.candidate_phone_otp to service_role;
 create index if not exists candidate_phone_otp_expiry_idx
   on public.candidate_phone_otp (expires_at);
 comment on table public.candidate_phone_otp is
