@@ -38,6 +38,9 @@ begin
  if not (c.criteria ? 'custom_job_video_media_id') then
   return private.console_template_valid_before_saved_video(p_campaign_id);
  end if;
+ -- Preserve the original canonical Meta template approval/snapshot validation.
+ -- Only the generated-Reel-existence branch may be replaced for saved MP4s.
+ if not private.console_template_valid_before_video(p_campaign_id) then return false;end if;
  if c.template_name not in ('aadhyant_registered_job_video_hi_v1','aadhyant_registered_job_video_en_v1')
    or c.requirement_id is null or c.audience_mode<>'selected_contacts'
    or c.template_version<>'1'
