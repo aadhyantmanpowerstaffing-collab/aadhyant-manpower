@@ -2,6 +2,22 @@
 
 Status: implementation prepared and locally tested; not deployed or activated.
 
+## Current provider state — 6 November 2026
+
+The configured Aadhyant WhatsApp Manager account has an active Authentication
+Copy Code template:
+
+- Template: `aadhyant_candidate_otp_v1`
+- Language: English
+- Status: Active – Quality pending
+- Body: `{{1}} is your verification code. For your security, do not share this code.`
+- Copy Code button and five-minute expiry: confirmed in WhatsApp Manager
+
+The previous implementation referred to a stale template name,
+`aadhyant_candidate_login_otp_en_v1`. The handler and its exact-payload test now
+use the active template name. This observation is read-only: no candidate OTP,
+campaign, or other WhatsApp message was sent.
+
 The private Interested registration form keeps the selected job and all profile
 fields in one page. When phone authentication is enabled, the candidate verifies
 the WhatsApp number that received the private link, then submits once. Supabase
@@ -32,7 +48,7 @@ allows Auth signup. No synthetic email addresses or generated passwords are used
 - Provider acceptance is not a delivery receipt. Neither a fabricated wamid nor a
   marketing template may replace the approved Authentication template.
 
-## Observed provider blocker — 2 November 2026
+## Historical provider blocker — 2 November 2026
 
 Signed in to the verified Aadhyant WANotifier account, selected Authentication /
 One-time Passcode / English / Copy code, with the standard security recommendation,
@@ -40,17 +56,19 @@ and attempted `aadhyant_candidate_login_otp_en_v1`. Submission returned:
 
 > Cannot create message template - This WhatsApp Business account does not have permission to create message template
 
-The template was not submitted for review. Do not claim it is pending or approved.
-No real candidate OTP or other message was sent. No provider endpoint was saved.
-The cause of the account permission restriction has not been independently established.
+The template was not submitted for review at that time. This historical result is
+superseded by the active `aadhyant_candidate_otp_v1` Authentication template
+confirmed on 6 November 2026. No real candidate OTP or other message was sent
+during the earlier attempt.
 
 ## Activation prerequisites
 
-1. Obtain approval for `aadhyant_candidate_login_otp_en_v1` directly on the
-   configured Meta WABA. Required category AUTHENTICATION, language en, Copy Code,
-   security recommendation and five-minute expiry. The old WANotifier error is
-   historical evidence only; current direct Meta template permission is unverified.
-2. The hook sends the OTP twice: body text and URL button index 0. It uses the
+1. Reconfirm the exact active Meta contract for `aadhyant_candidate_otp_v1` on the
+   configured WABA before enabling the server gate: AUTHENTICATION, language en,
+   Copy Code, security recommendation and five-minute expiry. The historical
+   WANotifier error is no longer evidence of the current template state.
+2. The hook sends the OTP through `aadhyant_candidate_otp_v1` twice: body text and
+   URL button index 0. It uses the
    existing server-only `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and
    `WHATSAPP_BUSINESS_ACCOUNT_ID`; no WANotifier URL/key is used. A successful
    single `wamid.` response is required; malformed, rejected and uncertain calls
@@ -74,7 +92,7 @@ The cause of the account permission restriction has not been independently estab
    code, matching private link, single profile/application/account, replay,
    logout/login, cross-number and pre-owned candidate denial, STOP/job closure.
    Local tests do not prove provider delivery or a deployed Auth session.
-7. The code may be merged into `web-platform-development` while all three gates remain OFF; merging alone does not enable OTP. Do not deploy the migration, Edge Function or frontend, and do not enable Supabase Auth/Meta settings, until the Authentication template is approved and a controlled live OTP/login test is authorized and passes. Public activation follows successful live verification. Roll back activation by turning the private config and hook gates off while retaining canonical identity/application history; do not delete users or transfer ownership.
+7. The code may be merged into `web-platform-development` while all three gates remain OFF; merging alone does not enable OTP. Do not enable Supabase Auth/Meta settings until a controlled live OTP/login test is explicitly authorized and passes. Public activation follows successful live verification. Roll back activation by turning the private config and hook gates off while retaining canonical identity/application history; do not delete users or transfer ownership.
 
 ## Validation
 
