@@ -29,5 +29,5 @@ jobs:
           node-version: '22'
       - run: node --check assets/js/candidate-otp.js
       - run: node --check tests/candidate-whatsapp-otp-foundation.test.js
-      - run: node --test tests/candidate-whatsapp-otp-foundation.test.js tests/staging-artifact.test.js tests/production-artifact.test.js
+      - run: npm test
       - run: npm run build

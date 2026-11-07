@@ -53,6 +53,15 @@ test('Meta hook verifies a signed Auth request and keeps within the hook budget'
   assert.doesNotMatch(hook, /META_WA_ACCESS_TOKEN/);
 });
 
+test('Meta Authentication delivery remains a direct Copy Code flow without WANotifier', () => {
+  const hook = read('supabase/functions/candidate-auth-whatsapp-hook/index.ts');
+  assert.match(hook, /type: "template"/);
+  assert.match(hook, /name: templateName/);
+  assert.match(hook, /type: "body", parameters: \[\{ type: "text", text: otp \}\]/);
+  assert.match(hook, /sub_type: "url",[\s\S]*?parameters: \[\{ type: "text", text: otp \}\]/);
+  assert.doesNotMatch(hook, /wanotifier/i);
+});
+
 test('dispatch guard keeps only hashes private and is callable only by service role', () => {
   const sql = read('supabase/migrations/20261105120000_candidate_otp_dispatch_guard.sql');
   assert.match(sql, /create table if not exists private\.candidate_whatsapp_otp_dispatches/);
