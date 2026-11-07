@@ -5,8 +5,15 @@ on:
       - 'assets/js/candidate-otp.js'
       - 'candidate/register/index.html'
       - 'config.js'
-      - 'supabase/functions/candidate-whatsapp-otp/**'
+      - 'supabase/functions/candidate-auth-whatsapp-hook/**'
       - 'supabase/migrations/20261105*'
+      - 'supabase/tests/20261105_candidate_otp_security_test.sql'
+      - 'scripts/build-*-artifact.js'
+      - 'tests/staging-artifact.test.js'
+      - 'tests/production-artifact.test.js'
+      - 'package.json'
+      - '.gitignore'
+      - 'docs/otp/CANDIDATE_WHATSAPP_OTP_READINESS.md'
       - 'tests/candidate-whatsapp-otp-foundation.test.js'
       - '.github/workflows/candidate-otp-foundation.yml'
   workflow_dispatch:
@@ -22,4 +29,5 @@ jobs:
           node-version: '22'
       - run: node --check assets/js/candidate-otp.js
       - run: node --check tests/candidate-whatsapp-otp-foundation.test.js
-      - run: node --test tests/candidate-whatsapp-otp-foundation.test.js
+      - run: node --test tests/candidate-whatsapp-otp-foundation.test.js tests/staging-artifact.test.js tests/production-artifact.test.js
+      - run: npm run build

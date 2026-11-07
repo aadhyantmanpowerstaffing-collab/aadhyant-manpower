@@ -13,10 +13,12 @@ declare
   v_user_id uuid := auth.uid();
   v_phone text;
   v_mobile text;
+  v_whatsapp text;
   v_name text;
   v_age int;
   v_record public.candidates%rowtype;
-  v_matches int;
+  v_mobile_matches int;
+  v_sanitized_candidate jsonb;
   v_result text;
 begin
   if v_user_id is null then raise exception 'Sign in with OTP before registering'; end if;
@@ -36,6 +38,7 @@ begin
     from auth.users u
     where u.id = v_user_id and u.phone_confirmed_at is not null;
   v_mobile := regexp_replace(coalesce(p_candidate ->> 'mobile',''),'[^0-9]','','g');
+  v_whatsapp := regexp_replace(coalesce(p_candidate ->> 'whatsapp_number',''),'[^0-9]','','g');
   v_name := btrim(coalesce(p_candidate ->> 'full_name',''));
   begin
     v_age := (p_candidate ->> 'age')::int;
@@ -44,6 +47,7 @@ begin
   end;
   if v_phone is null or v_phone <> '91' || v_mobile
     or v_mobile !~ '^[6-9][0-9]{9}$'
+    or (v_whatsapp <> '' and v_whatsapp <> v_mobile)
     or length(v_name) not between 1 and 160
     or v_age not between 16 and 75
     or coalesce((p_candidate ->> 'consent')::boolean, false) <> true
@@ -60,35 +64,45 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('r11-candidate:' || v_mobile, 0)
   );
-  select count(*) into v_matches
+  v_sanitized_candidate := p_candidate || jsonb_build_object(
+    'full_name', v_name,
+    'mobile', v_mobile,
+    'whatsapp_number', nullif(v_whatsapp,'')
+  );
+
+  select count(*) into v_mobile_matches
     from public.candidates c
-    where c.mobile = v_mobile
-      and lower(btrim(c.full_name)) = lower(v_name)
-      and c.age = v_age;
-  if v_matches > 1 then raise exception 'Candidate identity requires review'; end if;
-  if v_matches = 1 then
+    where c.mobile = v_mobile;
+  if v_mobile_matches > 1 then raise exception 'Candidate identity requires review'; end if;
+  if v_mobile_matches = 1 then
     select * into v_record from public.candidates c
-      where c.mobile = v_mobile
-        and lower(btrim(c.full_name)) = lower(v_name)
-        and c.age = v_age for update;
-    if v_record.user_id is not null and v_record.user_id <> v_user_id then
+      where c.mobile = v_mobile for update;
+    if lower(btrim(v_record.full_name)) is distinct from lower(v_name)
+      or v_record.age is distinct from v_age
+      or (v_record.user_id is not null and v_record.user_id <> v_user_id) then
       raise exception 'Candidate account requires manual review';
     end if;
   end if;
 
   if nullif(btrim(coalesce(p_requirement_code,'')), '') is not null then
-    v_result := public.register_candidate_requirement_interest(p_requirement_code,p_candidate);
+    v_result := public.register_candidate_requirement_interest(p_requirement_code,v_sanitized_candidate);
     if v_result not in ('registered','already_registered') then
       raise exception 'Candidate interest could not be registered';
     end if;
+    select count(*) into v_mobile_matches
+      from public.candidates c
+      where c.mobile = v_mobile;
+    if v_mobile_matches <> 1 then
+      raise exception 'Candidate identity requires review';
+    end if;
     select * into v_record from public.candidates c
-      where c.mobile = v_mobile
-        and lower(btrim(c.full_name)) = lower(v_name)
-        and c.age = v_age for update;
-    if not found or (v_record.user_id is not null and v_record.user_id <> v_user_id) then
+      where c.mobile = v_mobile for update;
+    if lower(btrim(v_record.full_name)) is distinct from lower(v_name)
+      or v_record.age is distinct from v_age
+      or (v_record.user_id is not null and v_record.user_id <> v_user_id) then
       raise exception 'Candidate account requires manual review';
     end if;
-  elsif v_matches = 1 then
+  elsif v_mobile_matches = 1 then
     v_result := 'already_registered';
   else
     insert into public.candidates (
@@ -98,7 +112,7 @@ begin
       additional_information,consent,user_id,mobile_verified,verified_at
     ) values (
       v_name,v_age,p_candidate ->> 'gender',v_mobile,
-      nullif(btrim(p_candidate ->> 'whatsapp_number'),''),
+      nullif(v_whatsapp,''),
       btrim(p_candidate ->> 'current_location'),btrim(p_candidate ->> 'district'),
       btrim(p_candidate ->> 'state'),p_candidate ->> 'highest_qualification',
       nullif(btrim(p_candidate ->> 'specialization'),''),

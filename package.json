@@ -1,0 +1,14 @@
+{
+  "name": "aadhyant-manpower-static-site",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build-preview-artifact.js",
+    "build:production": "node scripts/build-production-artifact.js",
+    "build:staging": "node scripts/build-staging-artifact.js",
+    "test": "node --test tests/*.test.js"
+  }
+}
