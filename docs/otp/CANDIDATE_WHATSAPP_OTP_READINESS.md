@@ -74,9 +74,11 @@ token, a service-role key, or a Turnstile secret to this repository.
 Do not merge, deploy, enable the flag, or send a real OTP until the repository
 production checklist has explicit approval.
 
-1. Meta review for `aadhyant_candidate_otp_v1` was submitted on 5 November
-   2026. Wait for Meta's confirmed approval before configuring the live hook
-   or sending a test code.
+1. `aadhyant_candidate_otp_v1` was verified in WhatsApp Manager on 7 November
+   2026 as **Active – Quality pending**, Authentication / English, with a
+   Copy code button and a five-minute expiry. It has zero deliveries so far.
+   Do not configure the live hook or send a test code until the remaining
+   rollout safeguards below have been completed and explicitly approved.
 2. Create the free Turnstile widget for `aadhyantmanpower.in`, configure the
    matching secret in Supabase Auth, and put only its public site key in
    `config.js`.
@@ -123,8 +125,7 @@ and the production artifact rejects server-secret references and symlinks.
 ## Current status
 
 PR #49 is still a draft and `candidateOtpEnabled` is still `false`. The Meta
-template is now visible in WhatsApp Manager as `Active – Quality pending` after
-submission for review, but no production migration, Auth hook, browser
-enablement, or WhatsApp OTP delivery has occurred from this implementation.
-This keeps the live registration flow unchanged until the final security and
-deployment approval.
+template is active and has the required five-minute Copy code configuration,
+but no production migration, Auth hook, browser enablement, or WhatsApp OTP
+delivery has occurred from this implementation. This keeps the live
+registration flow unchanged until the final security and deployment approval.
