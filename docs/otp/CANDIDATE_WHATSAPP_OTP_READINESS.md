@@ -19,8 +19,10 @@ database.
 5. The Candidate enters the six-digit code. `verifyOtp()` creates the signed
    Supabase session.
 6. Only that verified session may call
-   `register_authenticated_candidate()`, which links or creates the Candidate
-   profile and marks the mobile as verified.
+   `register_authenticated_candidate()`, which first creates the Candidate's
+   `platform_users` account when required, then links or creates the Candidate
+   profile and marks the mobile as verified. A Company or Contractor account
+   cannot silently become a Candidate account.
 
 The browser never receives a service key, Meta token, hook secret, or a
 database proof token.
