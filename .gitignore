@@ -1,0 +1,3 @@
+dist/
+dist-staging/
+.tmp-pages-artifact-*/
