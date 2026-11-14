@@ -84,7 +84,9 @@ production checklist has explicit approval.
 2. Create one free CAPTCHA site for `aadhyantmanpower.in`: Cloudflare
    Turnstile or hCaptcha Basic. Restrict it to the production hostname(s),
    configure the matching secret in Supabase Auth, and put only its public
-   site key and matching provider name in `config.js`.
+   site key and matching provider name in `config.js`. Do not use a paid
+   CAPTCHA plan or a trial that could introduce billing without separate
+   commercial approval.
 3. In a disposable environment, apply and test
    `20261105111500_authenticated_candidate_registration.sql` and
    `20261105120000_candidate_otp_dispatch_guard.sql`; do not use a paid branch
