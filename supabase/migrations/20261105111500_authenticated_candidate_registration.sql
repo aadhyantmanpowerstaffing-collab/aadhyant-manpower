@@ -87,7 +87,10 @@ begin
     insert into public.platform_users (
       user_id, account_type, display_name, mobile, email, account_status
     ) values (
-      v_user_id, 'candidate', v_name, v_mobile, v_email, 'pending'
+      -- A phone-confirmed Candidate may access only their own account. Unlike
+      -- employer/contractor onboarding, no third-party business approval is
+      -- needed to activate this self-service role.
+      v_user_id, 'candidate', v_name, v_mobile, v_email, 'active'
     );
   end if;
   v_sanitized_candidate := p_candidate || jsonb_build_object(
@@ -105,6 +108,8 @@ begin
       where c.mobile = v_mobile for update;
     if lower(btrim(v_record.full_name)) is distinct from lower(v_name)
       or v_record.age is distinct from v_age
+      or v_record.profile_status in ('inactive','archived')
+      or v_record.status = 'inactive'
       or (v_record.user_id is not null and v_record.user_id <> v_user_id) then
       raise exception 'Candidate account requires manual review';
     end if;
@@ -125,6 +130,8 @@ begin
       where c.mobile = v_mobile for update;
     if lower(btrim(v_record.full_name)) is distinct from lower(v_name)
       or v_record.age is distinct from v_age
+      or v_record.profile_status in ('inactive','archived')
+      or v_record.status = 'inactive'
       or (v_record.user_id is not null and v_record.user_id <> v_user_id) then
       raise exception 'Candidate account requires manual review';
     end if;
@@ -135,7 +142,7 @@ begin
       full_name,age,gender,mobile,whatsapp_number,current_location,district,state,
       highest_qualification,specialization,candidate_type,total_experience,
       previous_job_role,interview_available,preferred_job_location,
-      additional_information,consent,user_id,mobile_verified,verified_at
+      additional_information,consent,user_id,mobile_verified,verified_at,profile_status
     ) values (
       v_name,v_age,p_candidate ->> 'gender',v_mobile,
       nullif(v_whatsapp,''),
@@ -148,13 +155,14 @@ begin
       p_candidate ->> 'interview_available',
       nullif(btrim(p_candidate ->> 'preferred_job_location'),''),
       nullif(btrim(p_candidate ->> 'additional_information'),''),
-      true,v_user_id,true,now()
+      true,v_user_id,true,now(),'active'
     ) returning * into v_record;
     v_result := 'registered';
   end if;
   update public.candidates
     set user_id = v_user_id, mobile_verified = true,
-        verified_at = coalesce(verified_at,now())
+        verified_at = coalesce(verified_at,now()),
+        profile_status = case when profile_status = 'registered' then 'active' else profile_status end
     where id = v_record.id and (user_id is null or user_id = v_user_id);
   if not found then raise exception 'Candidate account was not linked'; end if;
   return v_result;
