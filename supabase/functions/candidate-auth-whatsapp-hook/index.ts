@@ -4,6 +4,10 @@ import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const encoder = new TextEncoder();
 const env = (key: string) => Deno.env.get(key)?.trim() || "";
+// This handler is dedicated to the reviewed Authentication / Copy Code
+// contract. Fail closed if a deployment is pointed at a different template.
+const approvedTemplateName = "aadhyant_candidate_otp_v1";
+const approvedTemplateLanguage = "en_US";
 const json = (status: number, retryAfterSeconds?: number) => new Response(JSON.stringify({}), {
   status,
   headers: {
@@ -79,10 +83,11 @@ Deno.serve(async (req) => {
   const metaToken = env("WHATSAPP_ACCESS_TOKEN");
   const senderId = env("WHATSAPP_PHONE_NUMBER_ID");
   const templateName = env("META_WA_OTP_TEMPLATE_NAME");
-  const templateLanguage = env("META_WA_OTP_TEMPLATE_LANGUAGE") || "en_US";
+  const templateLanguage = env("META_WA_OTP_TEMPLATE_LANGUAGE");
   const databaseUrl = env("SUPABASE_URL");
   const databaseKey = runtimeServerKey();
-  if (!hookSecret || !metaToken || !senderId || !templateName || !databaseUrl || !databaseKey) {
+  if (!hookSecret || !metaToken || !senderId || !templateName || !databaseUrl || !databaseKey
+    || templateName !== approvedTemplateName || templateLanguage !== approvedTemplateLanguage) {
     return json(503, 30);
   }
 
