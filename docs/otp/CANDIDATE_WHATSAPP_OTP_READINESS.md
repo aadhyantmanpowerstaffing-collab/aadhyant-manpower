@@ -8,7 +8,9 @@ database.
 
 1. A Candidate completes the one-page registration form and consents to a
    WhatsApp verification code.
-2. A free Cloudflare Turnstile check protects the OTP request.
+2. A free CAPTCHA check protects the OTP request. The staged browser supports
+   Cloudflare Turnstile and hCaptcha Basic; the chosen provider must be the
+   one configured in Supabase Auth.
 3. `signInWithOtp()` asks Supabase Auth to create or sign in to the phone
    account. Supabase creates the Auth account when needed.
 4. Supabase Auth calls the signed `candidate-auth-whatsapp-hook`. The hook
@@ -62,7 +64,7 @@ These settings are intentionally not changed by this PR.
 | Auth OTP expiry | `300` seconds (5 minutes) |
 | Auth resend interval | At least `60` seconds |
 | Auth project SMS limit for first rollout | At most `30` per hour |
-| CAPTCHA | Configure Cloudflare Turnstile in Supabase Auth and set its public site key in `config.js` |
+| CAPTCHA | Configure either free Cloudflare Turnstile or hCaptcha Basic in Supabase Auth. Set the matching public site key and `candidateOtpCaptchaProvider` in `config.js`. |
 | Send SMS HTTP Hook | `candidate-auth-whatsapp-hook`, signed with `SEND_SMS_HOOK_SECRET`, JWT verification disabled because the hook verifies the Standard Webhooks signature |
 | Hook secrets | `SEND_SMS_HOOK_SECRET`, `META_WA_OTP_TEMPLATE_NAME=aadhyant_candidate_otp_v1`, `META_WA_OTP_TEMPLATE_LANGUAGE=en_US`; retain the existing WhatsApp token and sender secrets |
 
@@ -79,9 +81,10 @@ production checklist has explicit approval.
    Copy code button and a five-minute expiry. It has zero deliveries so far.
    Do not configure the live hook or send a test code until the remaining
    rollout safeguards below have been completed and explicitly approved.
-2. Create the free Turnstile widget for `aadhyantmanpower.in`, configure the
-   matching secret in Supabase Auth, and put only its public site key in
-   `config.js`.
+2. Create one free CAPTCHA site for `aadhyantmanpower.in`: Cloudflare
+   Turnstile or hCaptcha Basic. Restrict it to the production hostname(s),
+   configure the matching secret in Supabase Auth, and put only its public
+   site key and matching provider name in `config.js`.
 3. In a disposable environment, apply and test
    `20261105111500_authenticated_candidate_registration.sql` and
    `20261105120000_candidate_otp_dispatch_guard.sql`; do not use a paid branch
@@ -111,7 +114,8 @@ and the production artifact rejects server-secret references and symlinks.
 - Incorrect, expired, replayed, and changed-phone OTP: denied.
 - Same OTP hook retry: no second Meta delivery; three requests in 24 hours:
   fourth is rate limited; a stale idempotency record can safely be recycled.
-- CAPTCHA absent, invalid, expired, or failed: OTP request is denied.
+- CAPTCHA absent, invalid, expired, failed, or configured for a different
+  provider than Supabase Auth: OTP request is denied.
 - Direct anonymous Candidate INSERT and direct
   `register_candidate_requirement_interest()` call: denied after cutover.
 - Authenticated user cannot register a different phone, read another
@@ -125,7 +129,8 @@ and the production artifact rejects server-secret references and symlinks.
 ## Current status
 
 PR #49 is still a draft and `candidateOtpEnabled` is still `false`. The Meta
-template is active and has the required five-minute Copy code configuration,
-but no production migration, Auth hook, browser enablement, or WhatsApp OTP
-delivery has occurred from this implementation. This keeps the live
-registration flow unchanged until the final security and deployment approval.
+template is active and has the required five-minute Copy code configuration.
+The staged browser supports both free CAPTCHA providers, but no CAPTCHA secret,
+production migration, Auth hook, browser enablement, or WhatsApp OTP delivery
+has occurred from this implementation. This keeps the live registration flow
+unchanged until the final security and deployment approval.
