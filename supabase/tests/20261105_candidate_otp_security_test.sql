@@ -146,8 +146,17 @@ begin
       and account_type = 'candidate'
       and display_name = 'OTP Test Candidate'
       and mobile = '9876543210'
+      and account_status = 'active'
   ) then
     raise exception 'Verified Candidate platform account was not created';
+  end if;
+  if not exists (
+    select 1 from public.candidates
+    where mobile = '9876543210'
+      and user_id = '51000000-0000-0000-0000-000000000001'
+      and profile_status = 'active'
+  ) then
+    raise exception 'Verified Candidate profile was not activated';
   end if;
 end;
 $$;
@@ -189,6 +198,58 @@ begin
   end;
   if not role_conflict_denied then
     raise exception 'Non-candidate platform user obtained a Candidate profile';
+  end if;
+end;
+$$;
+reset role;
+
+insert into auth.users (
+  id, instance_id, aud, role, phone, phone_confirmed_at, encrypted_password,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '51000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated', 'authenticated', '+919876543212', now(), 'x', '{}', '{}', now(), now()
+);
+
+insert into public.platform_users (
+  user_id, account_type, display_name, mobile, account_status
+) values (
+  '51000000-0000-0000-0000-000000000003',
+  'candidate', 'Inactive Candidate', '9876543212', 'active'
+);
+
+insert into public.candidates (
+  full_name, age, gender, mobile, current_location, district, state,
+  highest_qualification, candidate_type, interview_available, consent,
+  user_id, profile_status, status
+) values (
+  'Inactive Candidate', 24, 'Female', '9876543212', 'Kadi', 'Mahesana', 'Gujarat',
+  'ITI', 'Fresher', 'Yes', true,
+  '51000000-0000-0000-0000-000000000003', 'inactive', 'inactive'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '51000000-0000-0000-0000-000000000003', true);
+do $$
+declare
+  candidate_payload jsonb := jsonb_build_object(
+    'full_name','Inactive Candidate','age',24,'gender','Female','mobile','9876543212',
+    'whatsapp_number','9876543212','current_location','Kadi','district','Mahesana',
+    'state','Gujarat','highest_qualification','ITI','specialization','Fitter',
+    'candidate_type','Fresher','total_experience',null,'previous_job_role',null,
+    'interview_available','Yes','preferred_job_location','Sanand',
+    'additional_information',null,'consent',true
+  );
+  inactive_profile_denied boolean := false;
+begin
+  begin
+    perform public.register_authenticated_candidate(candidate_payload, null);
+  exception when raise_exception then
+    inactive_profile_denied := true;
+  end;
+  if not inactive_profile_denied then
+    raise exception 'Inactive Candidate profile was silently reactivated';
   end if;
 end;
 $$;
