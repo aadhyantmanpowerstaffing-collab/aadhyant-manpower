@@ -48,6 +48,7 @@
   let captchaWidgetId = null;
   const captchaHost = control.querySelector('[data-candidate-otp-captcha]');
   const captchaSiteKey = String(otpConfig.candidateOtpCaptchaSiteKey || '').trim();
+  const captchaProvider = String(otpConfig.candidateOtpCaptchaProvider || 'turnstile').trim().toLowerCase();
 
   const digits = (value) => String(value || '').replace(/\D/g, '');
   const mobile = () => digits(phoneInput.value);
@@ -77,55 +78,82 @@
     return `91${candidateMobile}`;
   };
 
+  const captchaOptions = () => ({
+    sitekey: captchaSiteKey,
+    callback: (token) => { captchaToken = String(token || ''); },
+    'expired-callback': () => { captchaToken = ''; },
+    'error-callback': () => {
+      captchaToken = '';
+      show('Security check could not load. Please refresh and try again.');
+    },
+  });
+
+  // Keep the provider allowlist local and static. The public configuration may
+  // choose only the provider that Supabase Auth is configured to verify.
+  const captchaAdapters = Object.freeze({
+    turnstile: Object.freeze({
+      global: 'turnstile',
+      scriptUrl: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+      render: (api) => api.render(captchaHost, {
+        ...captchaOptions(),
+        'response-field': false,
+      }),
+    }),
+    hcaptcha: Object.freeze({
+      global: 'hcaptcha',
+      scriptUrl: 'https://js.hcaptcha.com/1/api.js?render=explicit&recaptchacompat=off',
+      render: (api) => api.render(captchaHost, captchaOptions()),
+    }),
+  });
+  const captchaAdapter = captchaAdapters[captchaProvider] || null;
+
   const resetCaptcha = () => {
     captchaToken = '';
-    if (captchaWidgetId !== null && window.turnstile?.reset) {
-      window.turnstile.reset(captchaWidgetId);
+    const captchaApi = captchaAdapter ? window[captchaAdapter.global] : null;
+    if (captchaWidgetId !== null && captchaApi?.reset) {
+      captchaApi.reset(captchaWidgetId);
     }
   };
 
   const prepareCaptcha = () => {
-    if (!captchaSiteKey || !captchaHost) {
+    if (!captchaAdapter || !captchaSiteKey || !captchaHost) {
       send.disabled = true;
       show('Registration is temporarily unavailable while its security check is configured.');
       return false;
     }
 
     const render = () => {
-      if (!window.turnstile?.render || captchaWidgetId !== null) return;
-      captchaWidgetId = window.turnstile.render(captchaHost, {
-        sitekey: captchaSiteKey,
-        callback: (token) => { captchaToken = token; },
-        'expired-callback': () => { captchaToken = ''; },
-        'error-callback': () => {
-          captchaToken = '';
-          show('Security check could not load. Please refresh and try again.');
-        },
-        'response-field': false,
-      });
+      const captchaApi = window[captchaAdapter.global];
+      if (!captchaApi?.render || captchaWidgetId !== null) return;
+      try {
+        captchaWidgetId = captchaAdapter.render(captchaApi);
+      } catch {
+        captchaToken = '';
+        show('Security check could not load. Please refresh and try again.');
+      }
     };
 
-    if (window.turnstile?.render) {
+    if (window[captchaAdapter.global]?.render) {
       render();
       return true;
     }
-    const attachTurnstileListeners = (script) => {
+    const attachCaptchaListeners = (script) => {
       script.addEventListener('load', render, { once: true });
       script.addEventListener('error', () => {
         show('Security check could not load. Please refresh and try again.');
       }, { once: true });
     };
-    let script = document.querySelector('script[data-aadhyant-turnstile]');
+    let script = document.querySelector(`script[data-aadhyant-captcha-provider="${captchaProvider}"]`);
     if (!script) {
       script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.src = captchaAdapter.scriptUrl;
       script.async = true;
       script.defer = true;
-      script.dataset.aadhyantTurnstile = 'true';
-      attachTurnstileListeners(script);
+      script.dataset.aadhyantCaptchaProvider = captchaProvider;
+      attachCaptchaListeners(script);
       document.head.append(script);
     } else {
-      attachTurnstileListeners(script);
+      attachCaptchaListeners(script);
     }
     return true;
   };
