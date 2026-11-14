@@ -140,7 +140,58 @@ begin
   ) then
     raise exception 'Verified Candidate account was not linked';
   end if;
+  if not exists (
+    select 1 from public.platform_users
+    where user_id = '51000000-0000-0000-0000-000000000001'
+      and account_type = 'candidate'
+      and display_name = 'OTP Test Candidate'
+      and mobile = '9876543210'
+  ) then
+    raise exception 'Verified Candidate platform account was not created';
+  end if;
 end;
 $$;
+
+insert into auth.users (
+  id, instance_id, aud, role, phone, phone_confirmed_at, encrypted_password,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '51000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated', 'authenticated', '+919876543211', now(), 'x', '{}', '{}', now(), now()
+);
+
+insert into public.platform_users (
+  user_id, account_type, display_name, mobile, account_status
+) values (
+  '51000000-0000-0000-0000-000000000002',
+  'company', 'Existing Company User', '9876543211', 'pending'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '51000000-0000-0000-0000-000000000002', true);
+do $$
+declare
+  candidate_payload jsonb := jsonb_build_object(
+    'full_name','Role Conflict Candidate','age',24,'gender','Female','mobile','9876543211',
+    'whatsapp_number','9876543211','current_location','Kadi','district','Mahesana',
+    'state','Gujarat','highest_qualification','ITI','specialization','Fitter',
+    'candidate_type','Fresher','total_experience',null,'previous_job_role',null,
+    'interview_available','Yes','preferred_job_location','Sanand',
+    'additional_information',null,'consent',true
+  );
+  role_conflict_denied boolean := false;
+begin
+  begin
+    perform public.register_authenticated_candidate(candidate_payload, null);
+  exception when raise_exception then
+    role_conflict_denied := true;
+  end;
+  if not role_conflict_denied then
+    raise exception 'Non-candidate platform user obtained a Candidate profile';
+  end if;
+end;
+$$;
+reset role;
 
 rollback;
