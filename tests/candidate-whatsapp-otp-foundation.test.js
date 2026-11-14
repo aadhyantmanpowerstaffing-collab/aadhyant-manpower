@@ -4,10 +4,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 const exists = (name) => fs.existsSync(path.join(root, name));
+const readPublicConfig = () => {
+  const sandbox = { window: {} };
+  vm.runInNewContext(read('config.js'), sandbox, { filename: 'config.js' });
+  return sandbox.window.AADHYANT_CONFIG;
+};
 
 test('OTP stays disabled and CAPTCHA-gated until an approved rollout', () => {
   const config = read('config.js');
@@ -28,6 +34,25 @@ test('OTP stays disabled and CAPTCHA-gated until an approved rollout', () => {
   assert.match(client, /js\.hcaptcha\.com\/1\/api\.js\?render=explicit/);
   assert.match(client, /captchaAdapters\[captchaProvider\]/);
   assert.match(client, /window\[captchaAdapter\.global\]/);
+});
+
+test('public OTP configuration cannot expose server credentials or load arbitrary CAPTCHA code', () => {
+  const config = readPublicConfig();
+  assert.deepEqual([...Object.keys(config)].sort(), [
+    'candidateOtpCaptchaProvider',
+    'candidateOtpCaptchaSiteKey',
+    'candidateOtpEnabled',
+    'supabasePublishableKey',
+    'supabaseUrl',
+  ].sort());
+  assert.equal(Object.keys(config).some((key) => /secret|token|password|service.?role/i.test(key)), false);
+  assert.equal(config.candidateOtpEnabled, false);
+
+  const client = read('assets/js/candidate-otp.js');
+  assert.match(client, /const captchaAdapters = Object\.freeze\(\{/);
+  assert.match(client, /turnstile:\s*Object\.freeze\(\{/);
+  assert.match(client, /hcaptcha:\s*Object\.freeze\(\{/);
+  assert.doesNotMatch(client, /script\.src\s*=\s*[^;\n]*(candidateOtpCaptchaProvider|candidateOtpCaptchaSiteKey)/);
 });
 
 test('browser registration requires Supabase phone verification, not anonymous inserts', () => {
