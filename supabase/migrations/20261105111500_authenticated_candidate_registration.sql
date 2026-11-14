@@ -12,10 +12,14 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_phone text;
+  v_email text;
   v_mobile text;
   v_whatsapp text;
   v_name text;
   v_age int;
+  v_platform_account_type text;
+  v_platform_mobile text;
+  v_platform_display_name text;
   v_record public.candidates%rowtype;
   v_mobile_matches int;
   v_sanitized_candidate jsonb;
@@ -33,8 +37,8 @@ begin
   ] <> '{}'::jsonb then
     raise exception 'Unsupported candidate fields';
   end if;
-  select regexp_replace(u.phone,'[^0-9]','','g')
-    into v_phone
+  select regexp_replace(u.phone,'[^0-9]','','g'), nullif(btrim(u.email),'')
+    into v_phone, v_email
     from auth.users u
     where u.id = v_user_id and u.phone_confirmed_at is not null;
   v_mobile := regexp_replace(coalesce(p_candidate ->> 'mobile',''),'[^0-9]','','g');
@@ -64,6 +68,28 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('r11-candidate:' || v_mobile, 0)
   );
+  -- candidates.user_id references platform_users, not auth.users directly.
+  -- Create the candidate platform account in this verified, server-side path
+  -- before linking the Candidate record. A user already assigned to another
+  -- platform role can never silently acquire a Candidate profile.
+  select pu.account_type, pu.mobile, pu.display_name
+    into v_platform_account_type, v_platform_mobile, v_platform_display_name
+    from public.platform_users pu
+    where pu.user_id = v_user_id
+    for update;
+  if found then
+    if v_platform_account_type <> 'candidate'
+      or v_platform_mobile is distinct from v_mobile
+      or lower(btrim(v_platform_display_name)) is distinct from lower(v_name) then
+      raise exception 'Candidate account requires manual review';
+    end if;
+  else
+    insert into public.platform_users (
+      user_id, account_type, display_name, mobile, email, account_status
+    ) values (
+      v_user_id, 'candidate', v_name, v_mobile, v_email, 'pending'
+    );
+  end if;
   v_sanitized_candidate := p_candidate || jsonb_build_object(
     'full_name', v_name,
     'mobile', v_mobile,
