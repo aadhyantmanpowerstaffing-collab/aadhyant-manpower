@@ -68,7 +68,7 @@ These settings are intentionally not changed by this PR.
 | Auth project SMS limit for first rollout | At most `30` per hour |
 | CAPTCHA | Configure either free Cloudflare Turnstile or hCaptcha Basic in Supabase Auth. Set the matching public site key and `candidateOtpCaptchaProvider` in `config.js`. |
 | Send SMS HTTP Hook | `candidate-auth-whatsapp-hook`, signed with `SEND_SMS_HOOK_SECRET`, JWT verification disabled because the hook verifies the Standard Webhooks signature |
-| Hook secrets | `SEND_SMS_HOOK_SECRET`, `META_WA_OTP_TEMPLATE_NAME=aadhyant_candidate_otp_v1`, `META_WA_OTP_TEMPLATE_LANGUAGE=en_US`; retain the existing WhatsApp token and sender secrets |
+| Hook secrets | `SEND_SMS_HOOK_SECRET`, `META_WA_OTP_TEMPLATE_NAME=aadhyant_candidate_otp_v1`, `META_WA_OTP_TEMPLATE_LANGUAGE=en_US`; retain the existing WhatsApp token and sender secrets. The hook fails closed if the configured template name or language differs from this reviewed Authentication / Copy Code contract. |
 
 Use a new long random value for `SEND_SMS_HOOK_SECRET`. Never add it, a Meta
 token, a service-role key, or a Turnstile secret to this repository.
