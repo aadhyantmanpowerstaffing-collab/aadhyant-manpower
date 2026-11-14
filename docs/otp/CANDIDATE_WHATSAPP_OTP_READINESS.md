@@ -20,9 +20,10 @@ database.
    Supabase session.
 6. Only that verified session may call
    `register_authenticated_candidate()`, which first creates the Candidate's
-   `platform_users` account when required, then links or creates the Candidate
-   profile and marks the mobile as verified. A Company or Contractor account
-   cannot silently become a Candidate account.
+   active `platform_users` account when required, then links or creates the
+   active Candidate profile and marks the mobile as verified. An existing
+   inactive/archived Candidate, Company, or Contractor account cannot silently
+   be reactivated or become a Candidate account.
 
 The browser never receives a service key, Meta token, hook secret, or a
 database proof token.
