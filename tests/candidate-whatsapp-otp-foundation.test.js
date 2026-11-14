@@ -125,6 +125,9 @@ test('verified phone session authorizes Candidate account registration and final
   assert.match(registration, /insert into public\.platform_users/);
   assert.match(registration, /v_platform_account_type <> 'candidate'/);
   assert.match(registration, /v_platform_mobile is distinct from v_mobile/);
+  assert.match(registration, /v_user_id, 'candidate', v_name, v_mobile, v_email, 'active'/);
+  assert.match(registration, /v_record\.profile_status in \('inactive','archived'\)/);
+  assert.match(registration, /profile_status = case when profile_status = 'registered' then 'active'/);
   assert.match(registration, /where c\.mobile = v_mobile;/);
   assert.match(registration, /Candidate account requires manual review/);
   assert.match(registration, /grant execute on function public\.register_authenticated_candidate.*?\n\s*to authenticated/);
@@ -154,8 +157,10 @@ test('disposable-environment security test covers grants, dispatch cap, and acco
   assert.match(sql, /Legacy anonymous Candidate registration bypass remains open/);
   assert.match(sql, /Verified Candidate account was not linked/);
   assert.match(sql, /Verified Candidate platform account was not created/);
+  assert.match(sql, /Verified Candidate profile was not activated/);
   assert.match(sql, /Verified session registered a different WhatsApp number/);
   assert.match(sql, /Verified phone could overwrite a different Candidate identity/);
   assert.match(sql, /Non-candidate platform user obtained a Candidate profile/);
+  assert.match(sql, /Inactive Candidate profile was silently reactivated/);
   assert.match(sql, /rollback;/);
 });
