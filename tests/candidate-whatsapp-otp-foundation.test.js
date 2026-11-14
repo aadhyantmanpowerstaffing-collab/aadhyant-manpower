@@ -12,6 +12,7 @@ const exists = (name) => fs.existsSync(path.join(root, name));
 test('OTP stays disabled and CAPTCHA-gated until an approved rollout', () => {
   const config = read('config.js');
   assert.match(config, /candidateOtpEnabled:\s*false/);
+  assert.match(config, /candidateOtpCaptchaProvider:\s*'turnstile'/);
   assert.match(config, /candidateOtpCaptchaSiteKey:\s*''/);
 
   const page = read('candidate/register/index.html');
@@ -20,9 +21,13 @@ test('OTP stays disabled and CAPTCHA-gated until an approved rollout', () => {
 
   const client = read('assets/js/candidate-otp.js');
   assert.match(client, /candidateOtpEnabled !== true/);
+  assert.match(client, /candidateOtpCaptchaProvider/);
   assert.match(client, /candidateOtpCaptchaSiteKey/);
   assert.match(client, /captchaToken/);
   assert.match(client, /challenges\.cloudflare\.com\/turnstile/);
+  assert.match(client, /js\.hcaptcha\.com\/1\/api\.js\?render=explicit/);
+  assert.match(client, /captchaAdapters\[captchaProvider\]/);
+  assert.match(client, /window\[captchaAdapter\.global\]/);
 });
 
 test('browser registration requires Supabase phone verification, not anonymous inserts', () => {
