@@ -74,6 +74,10 @@ test('Meta hook verifies a signed Auth request and keeps within the hook budget'
   assert.match(hook, /WHATSAPP_ACCESS_TOKEN/);
   assert.match(hook, /WHATSAPP_PHONE_NUMBER_ID/);
   assert.match(hook, /META_WA_OTP_TEMPLATE_NAME/);
+  assert.match(hook, /const approvedTemplateName = "aadhyant_candidate_otp_v1"/);
+  assert.match(hook, /const approvedTemplateLanguage = "en_US"/);
+  assert.match(hook, /templateName !== approvedTemplateName/);
+  assert.match(hook, /templateLanguage !== approvedTemplateLanguage/);
   assert.match(hook, /candidate_otp_dispatch_reserve/);
   assert.match(hook, /candidate_otp_dispatch_complete/);
   assert.match(hook, /AbortSignal\.timeout\(2_500\)/);
