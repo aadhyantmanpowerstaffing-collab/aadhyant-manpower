@@ -31,7 +31,7 @@ export async function handleAuthHook(req:Request,get:Get,rpc:Rpc,fetcher:typeof 
  // Meta's Copy Code Authentication template is sent with the API's URL-button component encoding.
  // The client and hook payload cannot choose a sender, template or language.
  const payload={messaging_product:'whatsapp',to:phone.slice(1),type:'template',template:{
-  name:'aadhyant_candidate_login_otp_en_v1',language:{code:'en'},components:[
+  name:'aadhyant_candidate_otp_v1',language:{code:'en'},components:[
    {type:'body',parameters:[{type:'text',text:otp}]},
    {type:'button',sub_type:'url',index:'0',parameters:[{type:'text',text:otp}]}
   ]}};
